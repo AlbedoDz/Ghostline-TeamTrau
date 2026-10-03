@@ -1,0 +1,302 @@
+// Package scanner checks DNS servers in parallel and caches results per network.
+package scanner
+
+import (
+	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"errors"
+	"math/rand"
+	"net/netip"
+	"slices"
+	"strings"
+	"sync"
+	"time"
+
+	"github.com/AdguardTeam/dnsproxy/upstream"
+	"github.com/hashcott/ghostline/internal/model"
+	"github.com/hashcott/ghostline/internal/store"
+	"github.com/miekg/dns"
+)
+
+// Result is the outcome of checking one server.
+type Result struct {
+	ServerID  string        `json:"serverId"`
+	OK        bool          `json:"ok"`
+	Latency   time.Duration `json:"latency"`
+	Reason    string        `json:"reason,omitempty"` // "" | timeout | poisoned | rcode:<NAME> | empty | error
+	CheckedAt time.Time     `json:"checkedAt"`
+}
+
+// Checker checks one server.
+type Checker interface {
+	Check(ctx context.Context, s model.Server) Result
+}
+
+var nonPublic = []netip.Prefix{
+	netip.MustParsePrefix("0.0.0.0/8"), netip.MustParsePrefix("10.0.0.0/8"),
+	netip.MustParsePrefix("100.64.0.0/10"), netip.MustParsePrefix("127.0.0.0/8"),
+	netip.MustParsePrefix("169.254.0.0/16"), netip.MustParsePrefix("172.16.0.0/12"),
+	netip.MustParsePrefix("192.0.0.0/24"), netip.MustParsePrefix("192.0.2.0/24"),
+	netip.MustParsePrefix("192.168.0.0/16"), netip.MustParsePrefix("198.18.0.0/15"),
+	netip.MustParsePrefix("198.51.100.0/24"), netip.MustParsePrefix("203.0.113.0/24"),
+	netip.MustParsePrefix("224.0.0.0/4"), netip.MustParsePrefix("240.0.0.0/4"),
+	netip.MustParsePrefix("::/128"), netip.MustParsePrefix("::1/128"),
+	netip.MustParsePrefix("fc00::/7"), netip.MustParsePrefix("fe80::/10"),
+	netip.MustParsePrefix("ff00::/8"), netip.MustParsePrefix("2001:db8::/32"),
+}
+
+// IsPublicIP reports whether a is a globally routable unicast address.
+// Poisoned DNS answers typically point at private or reserved ranges.
+func IsPublicIP(a netip.Addr) bool {
+	a = a.Unmap()
+	for _, p := range nonPublic {
+		if p.Contains(a) {
+			return false
+		}
+	}
+	return a.IsValid()
+}
+
+// DNSChecker checks a server by resolving TestDomain twice; the second
+// query's duration is the latency (the first pays for the TLS handshake).
+type DNSChecker struct {
+	Build      func(model.Server) (upstream.Upstream, error)
+	TestDomain string
+	Timeout    time.Duration
+	Now        func() time.Time
+}
+
+// Check implements Checker.
+func (c DNSChecker) Check(ctx context.Context, s model.Server) Result {
+	now := time.Now
+	if c.Now != nil {
+		now = c.Now
+	}
+	r := Result{ServerID: s.ID, CheckedAt: now()}
+	u, err := c.Build(s)
+	if err != nil {
+		r.Reason = "error"
+		return r
+	}
+	defer u.Close()
+	q := new(dns.Msg).SetQuestion(dns.Fqdn(c.TestDomain), dns.TypeA)
+	var lat time.Duration
+	for i := 0; i < 2; i++ {
+		qctx, cancel := context.WithTimeout(ctx, c.Timeout)
+		start := time.Now()
+		resp, err := u.Exchange(qctx, q.Copy())
+		lat = time.Since(start)
+		timedOut := qctx.Err() != nil
+		cancel()
+		if err != nil {
+			if errors.Is(err, context.DeadlineExceeded) || timedOut || isTimeout(err) {
+				r.Reason = "timeout"
+			} else {
+				r.Reason = "error"
+			}
+			return r
+		}
+		if resp.Rcode != dns.RcodeSuccess {
+			r.Reason = "rcode:" + dns.RcodeToString[resp.Rcode]
+			return r
+		}
+		var any bool
+		for _, rr := range resp.Answer {
+			a, ok := rr.(*dns.A)
+			if !ok {
+				continue
+			}
+			any = true
+			ip, _ := netip.AddrFromSlice(a.A.To4())
+			if !IsPublicIP(ip) {
+				r.Reason = "poisoned"
+				return r
+			}
+		}
+		if !any {
+			r.Reason = "empty"
+			return r
+		}
+	}
+	r.OK, r.Latency = true, lat
+	return r
+}
+
+func isTimeout(err error) bool {
+	var t interface{ Timeout() bool }
+	return (errors.As(err, &t) && t.Timeout()) || strings.Contains(err.Error(), "timeout")
+}
+
+// Options controls a scan.
+type Options struct {
+	Workers    int           // parallel checks (default 16)
+	Want       int           // stop after this many OK results; 0 = check all
+	Budget     time.Duration // stop after this long; 0 = no limit
+	OnProgress func(done, total int, r Result)
+}
+
+// Scan checks servers with a shared work queue and returns results sorted
+// OK first, then by latency. Servers not reached before Want/Budget are
+// omitted.
+func Scan(ctx context.Context, list []model.Server, c Checker, o Options) []Result {
+	if o.Workers <= 0 {
+		o.Workers = 16
+	}
+	if o.Budget > 0 {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, o.Budget)
+		defer cancel()
+	}
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	jobs := make(chan model.Server)
+	var mu sync.Mutex
+	var out []Result
+	okCount, done := 0, 0
+	var wg sync.WaitGroup
+	for i := 0; i < o.Workers; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for s := range jobs {
+				r := c.Check(ctx, s)
+				mu.Lock()
+				if ctx.Err() == nil || r.OK {
+					out = append(out, r)
+					done++
+					if r.OK {
+						okCount++
+					}
+					if o.OnProgress != nil {
+						o.OnProgress(done, len(list), r)
+					}
+					if o.Want > 0 && okCount >= o.Want {
+						cancel()
+					}
+				}
+				mu.Unlock()
+			}
+		}()
+	}
+feed:
+	for _, s := range list {
+		select {
+		case jobs <- s:
+		case <-ctx.Done():
+			break feed
+		}
+	}
+	close(jobs)
+	wg.Wait()
+
+	slices.SortStableFunc(out, func(a, b Result) int {
+		switch {
+		case a.OK != b.OK:
+			if a.OK {
+				return -1
+			}
+			return 1
+		case a.OK && a.Latency != b.Latency:
+			if a.Latency < b.Latency {
+				return -1
+			}
+			return 1
+		}
+		return strings.Compare(a.ServerID, b.ServerID)
+	})
+	if o.Want > 0 {
+		// Keep exactly Want OK results when more finished concurrently.
+		n := 0
+		trimmed := out[:0]
+		for _, r := range out {
+			if r.OK {
+				if n >= o.Want {
+					continue
+				}
+				n++
+			}
+			trimmed = append(trimmed, r)
+		}
+		out = trimmed
+	}
+	return out
+}
+
+// Order puts previously good servers first (stable by ID) and shuffles the rest.
+func Order(list []model.Server, everOK map[string]bool, r *rand.Rand) []model.Server {
+	var good, rest []model.Server
+	for _, s := range list {
+		if everOK[s.ID] {
+			good = append(good, s)
+		} else {
+			rest = append(rest, s)
+		}
+	}
+	slices.SortStableFunc(good, func(a, b model.Server) int { return strings.Compare(a.ID, b.ID) })
+	r.Shuffle(len(rest), func(i, j int) { rest[i], rest[j] = rest[j], rest[i] })
+	return append(good, rest...)
+}
+
+// CacheEntry is one network's last scan.
+type CacheEntry struct {
+	ScannedAt time.Time `json:"scannedAt"`
+	Results   []Result  `json:"results"`
+}
+
+// Cache maps network keys to their last scan.
+type Cache struct {
+	Entries map[string]CacheEntry `json:"entries"`
+}
+
+// NetworkKey identifies the current network by its default gateway.
+func NetworkKey(gatewayIP, gatewayMAC string) string {
+	sum := sha256.Sum256([]byte(gatewayIP + "|" + gatewayMAC))
+	return hex.EncodeToString(sum[:])
+}
+
+// Fresh returns the network's results if scanned within ttl.
+func (c *Cache) Fresh(key string, now time.Time, ttl time.Duration) ([]Result, bool) {
+	e, ok := c.Entries[key]
+	if !ok || now.Sub(e.ScannedAt) > ttl {
+		return nil, false
+	}
+	return e.Results, true
+}
+
+// Put stores a scan.
+func (c *Cache) Put(key string, now time.Time, rs []Result) {
+	if c.Entries == nil {
+		c.Entries = map[string]CacheEntry{}
+	}
+	c.Entries[key] = CacheEntry{ScannedAt: now, Results: rs}
+}
+
+// EverOK lists servers that were OK on any network.
+func (c *Cache) EverOK() map[string]bool {
+	out := map[string]bool{}
+	for _, e := range c.Entries {
+		for _, r := range e.Results {
+			if r.OK {
+				out[r.ServerID] = true
+			}
+		}
+	}
+	return out
+}
+
+// LoadCache reads the cache; a missing or corrupt file gives an empty cache.
+func LoadCache(path string) (*Cache, error) {
+	c := &Cache{Entries: map[string]CacheEntry{}}
+	if err := store.ReadJSON(path, c); err != nil {
+		return &Cache{Entries: map[string]CacheEntry{}}, nil
+	}
+	if c.Entries == nil {
+		c.Entries = map[string]CacheEntry{}
+	}
+	return c, nil
+}
+
+// SaveCache writes the cache atomically.
+func SaveCache(path string, c *Cache) error { return store.WriteJSONAtomic(path, c) }
