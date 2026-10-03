@@ -102,6 +102,7 @@ settings.json          cài đặt người dùng
 state.json             trạng thái kết nối + bản chụp DNS (mục 5.4)
 scan-cache.json        kết quả quét, lưu theo từng mạng
 servers-remote.json    danh sách tải về (+ servers-remote.json.sig)
+servers-dnscrypt.md    bản cache danh sách DNSCrypt (+ .minisig)
 servers-custom.json    server người dùng tự thêm
 logs/ghostline.log     xoay vòng 3 × 5 MB, tiếng Anh, KHÔNG ghi tên miền
 bin/goodbyedpi/        goodbyedpi.exe, WinDivert.dll, WinDivert64.sys
@@ -218,7 +219,7 @@ Khôi phục luôn **idempotent**: chạy nhiều lần cho cùng kết quả, k
   "address": "https://cloudflare-dns.com/dns-query | tls://… | quic://… | sdns://…",
   "ips": ["1.1.1.1", "1.0.0.1"],
   "tags": ["no-filter", "no-log", "dnssec"],
-  "source": "builtin | remote | custom"
+  "source": "builtin | remote | dnscrypt | custom"
 }
 ```
 
@@ -226,11 +227,15 @@ Các nhãn dùng để lọc: `no-filter`, `adblock` và `family`. Chế độ �
 
 ### 6.2 Nguồn danh sách
 
-- **Danh sách nhúng sẵn:** `tools/genservers` tạo `lists/servers.json` từ 2 nguồn:
-  - danh sách **DNSCrypt public-resolvers v3** (dạng máy đọc được, có stamp và cờ thuộc tính);
-  - file `lists/seed.json` do dự án tự chọn lọc, gồm các nhà cung cấp lớn (Cloudflare, Quad9, Google, AdGuard, Mullvad, DNS.SB, Control D) với đủ biến thể DoH/DoT/DoQ.
-
-  Script chỉ giữ server có mã hoá, gắn nhãn dựa trên cờ thuộc tính trong stamp, và **ghi lại license của từng nguồn vào `NOTICE`**. Nguồn nào không cho phép phân phối lại thì không nhúng. Danh sách nhúng vào exe bằng `go:embed`.
+- **Danh sách nhúng sẵn:** `tools/genservers` tạo `lists/servers.json` từ `lists/seed.json`.
+  - `seed.json` do dự án tự chọn lọc, gồm các nhà cung cấp lớn (Cloudflare, Quad9, Google, AdGuard, Mullvad, DNS.SB, Control D) với đủ biến thể DoH/DoT/DoQ.
+  - Script kiểm tra từng địa chỉ và stamp, phân giải trước để điền `ips`, rồi ghi `generatedAt`.
+  - Danh sách nhúng vào exe bằng `go:embed`.
+- **Danh sách DNSCrypt public-resolvers v3:** app **tự tải lúc chạy**, không nhúng vào exe.
+  - Lý do: repo `DNSCrypt/dnscrypt-resolvers` không khai báo license, nên không phân phối lại. Danh sách này vốn được làm ra để client tải về, giống cách dnscrypt-proxy dùng.
+  - Tải tối đa 1 lần/ngày từ `https://download.dnscrypt.info/resolvers-list/v3/public-resolvers.md`, dự phòng bằng `https://raw.githubusercontent.com/DNSCrypt/dnscrypt-resolvers/master/v3/public-resolvers.md`.
+  - Kiểm tra chữ ký **minisign** (`.minisig`) bằng khoá công khai `RWQf6LRCGA9i53mlYecO4IzT51TGPpvWucNSCh1CBM0QTaLn73Y7GFO3`. Sai chữ ký thì bỏ qua và giữ bản cache cũ trong `servers-dnscrypt.md`.
+  - Chỉ giữ server có mã hoá (DoH, DNSCrypt). Nhãn lấy từ cờ thuộc tính trong stamp: cờ NoFilter cho nhãn `no-filter`, cờ NoLog cho nhãn `no-log`.
 - **Danh sách tải về:** `lists/servers.json` cùng `lists/servers.json.sig` trên nhánh `main` của repo, tải qua `raw.githubusercontent.com` tối đa 1 lần/ngày.
   - Chữ ký là **ed25519**. Khoá bí mật nằm trong GitHub Actions secret `SERVERLIST_SIGNING_KEY`, khoá công khai nằm trong `internal/brand`.
   - Sai chữ ký thì bỏ qua và giữ danh sách cũ.
@@ -434,7 +439,7 @@ Phát triển theo TDD. Test Go chạy bằng `go test ./...`. Test cần Window
   - `release.yml`, chạy khi đẩy tag `v*`: chạy `genservers`, ký `servers.json`, build installer và zip, tạo `SHA256SUMS`, tạo GitHub Release.
 - **Ký số file exe:** chưa làm ở giai đoạn 1. README ghi rõ là SmartScreen sẽ cảnh báo và hướng dẫn kiểm tra SHA-256. Sau này sẽ xin SignPath Foundation (ký miễn phí cho mã nguồn mở).
 - **Kiểm tra bản mới:** gọi `GET https://api.github.com/repos/hashcott/ghostline/releases/latest` tối đa 1 lần/ngày, so semver. Có bản mới thì báo trên giao diện và trong menu khay, kèm link tới trang Release.
-- **License và ghi công:** `LICENSE` (MIT). `NOTICE` liệt kê các thành phần bên thứ ba: dnsproxy (Apache-2.0), GoodbyeDPI (Apache-2.0), WinDivert (LGPLv3), JetBrains Mono (OFL-1.1) và license của các nguồn danh sách server.
+- **License và ghi công:** `LICENSE` (MIT). `NOTICE` liệt kê các thành phần bên thứ ba: dnsproxy (Apache-2.0), GoodbyeDPI (Apache-2.0), WinDivert (LGPLv3) và JetBrains Mono (OFL-1.1). Danh sách DNSCrypt chỉ được tải lúc chạy, không phân phối kèm app.
 
 ## 13. Cấu trúc repo
 
@@ -466,7 +471,7 @@ Phát triển theo TDD. Test Go chạy bằng `go test ./...`. Test cần Window
 
 | Rủi ro | Giảm thiểu |
 |---|---|
-| Wails v3 vẫn đang beta | Ghim đúng một phiên bản. Chỉ `main.go` và lớp bind trong `internal/app` phụ thuộc vào Wails. Nếu buộc phải quay về Wails v2 thì chỉ phải viết lại lớp bind và phần icon khay |
+| Wails v3 vẫn đang beta | Ghim đúng một phiên bản. Chỉ `main.go`, `internal/shell` và lớp bind trong `internal/app` phụ thuộc vào Wails. Nếu buộc phải quay về Wails v2 thì chỉ phải viết lại lớp bind và phần icon khay |
 | Antivirus báo nhầm (WinDivert, đổi DNS, exe chưa ký) | Không dùng UPX. Có `SHA256SUMS`. Có trang trợ giúp. Gửi mẫu cho Microsoft phân tích. Sau này ký số qua SignPath |
 | Cổng 53 bị chiếm (ICS, Hyper-V, Docker, tool DNS khác) | Phát hiện và cho biết process hoặc service đang giữ cổng. Chỉ dừng service khi người dùng đồng ý rõ ràng |
 | Bootstrap tự hỏi lại chính engine | Không bao giờ dùng resolver hệ thống để bootstrap (mục 6.4) |
