@@ -15,6 +15,7 @@ require (
 	github.com/AdguardTeam/dnscrypt v0.0.2 // indirect
 	github.com/AdguardTeam/golibs v0.35.13 // indirect
 	github.com/adrg/xdg v0.5.3 // indirect
+	github.com/bluele/gcache v0.0.2 // indirect
 	github.com/coder/websocket v1.8.14 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/go-ole/go-ole v1.3.0 // indirect
@@ -34,5 +35,6 @@ require (
 	golang.org/x/sys v0.47.0 // indirect
 	golang.org/x/text v0.40.0 // indirect
 	golang.org/x/tools v0.48.0 // indirect
+	gonum.org/v1/gonum v0.17.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
