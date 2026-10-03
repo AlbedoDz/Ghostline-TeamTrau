@@ -1,4 +1,267 @@
 {
-  "generatedAt": "2026-10-04T00:00:00Z",
-  "servers": []
+  "generatedAt": "2026-10-03T21:40:13Z",
+  "servers": [
+    {
+      "id": "adguard-doh",
+      "name": "AdGuard",
+      "provider": "AdGuard",
+      "protocol": "doh",
+      "address": "https://dns.adguard-dns.com/dns-query",
+      "ips": [
+        "2a10:50c0::ad2:ff",
+        "2a10:50c0::ad1:ff",
+        "94.140.14.14",
+        "94.140.15.15"
+      ],
+      "tags": [
+        "adblock"
+      ],
+      "source": "builtin"
+    },
+    {
+      "id": "adguard-family-doh",
+      "name": "AdGuard Family",
+      "provider": "AdGuard",
+      "protocol": "doh",
+      "address": "https://family.adguard-dns.com/dns-query",
+      "ips": [
+        "2a10:50c0::bad1:ff",
+        "2a10:50c0::bad2:ff",
+        "94.140.14.15",
+        "94.140.15.16"
+      ],
+      "tags": [
+        "family"
+      ],
+      "source": "builtin"
+    },
+    {
+      "id": "adguard-unfiltered-doh",
+      "name": "AdGuard (unfiltered)",
+      "provider": "AdGuard",
+      "protocol": "doh",
+      "address": "https://unfiltered.adguard-dns.com/dns-query",
+      "ips": [
+        "2a10:50c0::2:ff",
+        "2a10:50c0::1:ff",
+        "94.140.14.140",
+        "94.140.14.141"
+      ],
+      "tags": [
+        "no-filter"
+      ],
+      "source": "builtin"
+    },
+    {
+      "id": "adguard-unfiltered-doq",
+      "name": "AdGuard (unfiltered)",
+      "provider": "AdGuard",
+      "protocol": "doq",
+      "address": "quic://unfiltered.adguard-dns.com",
+      "ips": [
+        "2a10:50c0::1:ff",
+        "2a10:50c0::2:ff",
+        "94.140.14.141",
+        "94.140.14.140"
+      ],
+      "tags": [
+        "no-filter"
+      ],
+      "source": "builtin"
+    },
+    {
+      "id": "adguard-unfiltered-dot",
+      "name": "AdGuard (unfiltered)",
+      "provider": "AdGuard",
+      "protocol": "dot",
+      "address": "tls://unfiltered.adguard-dns.com",
+      "ips": [
+        "2a10:50c0::2:ff",
+        "2a10:50c0::1:ff",
+        "94.140.14.140",
+        "94.140.14.141"
+      ],
+      "tags": [
+        "no-filter"
+      ],
+      "source": "builtin"
+    },
+    {
+      "id": "cloudflare-doh",
+      "name": "Cloudflare",
+      "provider": "Cloudflare",
+      "protocol": "doh",
+      "address": "https://cloudflare-dns.com/dns-query",
+      "ips": [
+        "2606:4700::6810:f9f9",
+        "2606:4700::6810:f8f9",
+        "104.16.249.249",
+        "104.16.248.249"
+      ],
+      "tags": [
+        "no-filter"
+      ],
+      "source": "builtin"
+    },
+    {
+      "id": "cloudflare-dot",
+      "name": "Cloudflare",
+      "provider": "Cloudflare",
+      "protocol": "dot",
+      "address": "tls://one.one.one.one",
+      "ips": [
+        "2606:4700:4700::1111",
+        "2606:4700:4700::1001",
+        "1.0.0.1",
+        "1.1.1.1"
+      ],
+      "tags": [
+        "no-filter"
+      ],
+      "source": "builtin"
+    },
+    {
+      "id": "controld-free-doh",
+      "name": "Control D (free)",
+      "provider": "Control D",
+      "protocol": "doh",
+      "address": "https://freedns.controld.com/p0",
+      "ips": [
+        "2606:1a40::11",
+        "76.76.2.11"
+      ],
+      "tags": [
+        "no-filter"
+      ],
+      "source": "builtin"
+    },
+    {
+      "id": "controld-free-dot",
+      "name": "Control D (free)",
+      "provider": "Control D",
+      "protocol": "dot",
+      "address": "tls://p0.freedns.controld.com",
+      "ips": [
+        "2606:1a40::11",
+        "76.76.2.11"
+      ],
+      "tags": [
+        "no-filter"
+      ],
+      "source": "builtin"
+    },
+    {
+      "id": "dnssb-doh",
+      "name": "DNS.SB",
+      "provider": "DNS.SB",
+      "protocol": "doh",
+      "address": "https://doh.dns.sb/dns-query",
+      "ips": [
+        "2403:2c80::26",
+        "45.125.0.26"
+      ],
+      "tags": [
+        "no-filter"
+      ],
+      "source": "builtin"
+    },
+    {
+      "id": "google-doh",
+      "name": "Google",
+      "provider": "Google",
+      "protocol": "doh",
+      "address": "https://dns.google/dns-query",
+      "ips": [
+        "2001:4860:4860::8888",
+        "2001:4860:4860::8844",
+        "8.8.8.8",
+        "8.8.4.4"
+      ],
+      "tags": [
+        "no-filter"
+      ],
+      "source": "builtin"
+    },
+    {
+      "id": "google-dot",
+      "name": "Google",
+      "provider": "Google",
+      "protocol": "dot",
+      "address": "tls://dns.google",
+      "ips": [
+        "2001:4860:4860::8888",
+        "2001:4860:4860::8844",
+        "8.8.8.8",
+        "8.8.4.4"
+      ],
+      "tags": [
+        "no-filter"
+      ],
+      "source": "builtin"
+    },
+    {
+      "id": "mullvad-adblock-doh",
+      "name": "Mullvad (adblock)",
+      "provider": "Mullvad",
+      "protocol": "doh",
+      "address": "https://adblock.dns.mullvad.net/dns-query",
+      "ips": [
+        "2a07:e340::3",
+        "194.242.2.3"
+      ],
+      "tags": [
+        "adblock"
+      ],
+      "source": "builtin"
+    },
+    {
+      "id": "mullvad-doh",
+      "name": "Mullvad",
+      "provider": "Mullvad",
+      "protocol": "doh",
+      "address": "https://dns.mullvad.net/dns-query",
+      "ips": [
+        "2a07:e340::2",
+        "194.242.2.2"
+      ],
+      "tags": [
+        "no-filter"
+      ],
+      "source": "builtin"
+    },
+    {
+      "id": "quad9-unfiltered-doh",
+      "name": "Quad9 (unfiltered)",
+      "provider": "Quad9",
+      "protocol": "doh",
+      "address": "https://dns10.quad9.net/dns-query",
+      "ips": [
+        "2620:fe::10",
+        "2620:fe::fe:10",
+        "149.112.112.10",
+        "9.9.9.10"
+      ],
+      "tags": [
+        "no-filter"
+      ],
+      "source": "builtin"
+    },
+    {
+      "id": "quad9-unfiltered-dot",
+      "name": "Quad9 (unfiltered)",
+      "provider": "Quad9",
+      "protocol": "dot",
+      "address": "tls://dns10.quad9.net",
+      "ips": [
+        "2620:fe::fe:10",
+        "2620:fe::10",
+        "149.112.112.10",
+        "9.9.9.10"
+      ],
+      "tags": [
+        "no-filter"
+      ],
+      "source": "builtin"
+    }
+  ]
 }

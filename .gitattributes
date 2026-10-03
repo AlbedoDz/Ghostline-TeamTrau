@@ -5,3 +5,4 @@
 *.dll binary
 *.sys binary
 *.woff2 binary
+lists/servers.json.sig -text

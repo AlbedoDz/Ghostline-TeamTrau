@@ -1,0 +1,18 @@
+[
+  { "id": "cloudflare-doh", "name": "Cloudflare", "provider": "Cloudflare", "address": "https://cloudflare-dns.com/dns-query", "tags": ["no-filter"] },
+  { "id": "cloudflare-dot", "name": "Cloudflare", "provider": "Cloudflare", "address": "tls://one.one.one.one", "tags": ["no-filter"] },
+  { "id": "quad9-unfiltered-doh", "name": "Quad9 (unfiltered)", "provider": "Quad9", "address": "https://dns10.quad9.net/dns-query", "tags": ["no-filter"] },
+  { "id": "quad9-unfiltered-dot", "name": "Quad9 (unfiltered)", "provider": "Quad9", "address": "tls://dns10.quad9.net", "tags": ["no-filter"] },
+  { "id": "google-doh", "name": "Google", "provider": "Google", "address": "https://dns.google/dns-query", "tags": ["no-filter"] },
+  { "id": "google-dot", "name": "Google", "provider": "Google", "address": "tls://dns.google", "tags": ["no-filter"] },
+  { "id": "adguard-unfiltered-doh", "name": "AdGuard (unfiltered)", "provider": "AdGuard", "address": "https://unfiltered.adguard-dns.com/dns-query", "tags": ["no-filter"] },
+  { "id": "adguard-unfiltered-dot", "name": "AdGuard (unfiltered)", "provider": "AdGuard", "address": "tls://unfiltered.adguard-dns.com", "tags": ["no-filter"] },
+  { "id": "adguard-unfiltered-doq", "name": "AdGuard (unfiltered)", "provider": "AdGuard", "address": "quic://unfiltered.adguard-dns.com", "tags": ["no-filter"] },
+  { "id": "adguard-doh", "name": "AdGuard", "provider": "AdGuard", "address": "https://dns.adguard-dns.com/dns-query", "tags": ["adblock"] },
+  { "id": "adguard-family-doh", "name": "AdGuard Family", "provider": "AdGuard", "address": "https://family.adguard-dns.com/dns-query", "tags": ["family"] },
+  { "id": "mullvad-doh", "name": "Mullvad", "provider": "Mullvad", "address": "https://dns.mullvad.net/dns-query", "tags": ["no-filter"] },
+  { "id": "mullvad-adblock-doh", "name": "Mullvad (adblock)", "provider": "Mullvad", "address": "https://adblock.dns.mullvad.net/dns-query", "tags": ["adblock"] },
+  { "id": "dnssb-doh", "name": "DNS.SB", "provider": "DNS.SB", "address": "https://doh.dns.sb/dns-query", "tags": ["no-filter"] },
+  { "id": "controld-free-doh", "name": "Control D (free)", "provider": "Control D", "address": "https://freedns.controld.com/p0", "tags": ["no-filter"] },
+  { "id": "controld-free-dot", "name": "Control D (free)", "provider": "Control D", "address": "tls://p0.freedns.controld.com", "tags": ["no-filter"] }
+]
