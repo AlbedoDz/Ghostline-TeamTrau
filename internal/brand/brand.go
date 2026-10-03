@@ -1,0 +1,32 @@
+// Package brand holds every name, URL and key that identifies Ghostline.
+// Renaming the app means editing this file (and frontend/src/brand.ts).
+package brand
+
+const (
+	AppName          = "Ghostline"
+	AppID            = "ghostline"
+	RepoOwner        = "hashcott"
+	RepoName         = "ghostline"
+	TaskAutostart    = "Ghostline"
+	TaskRecovery     = "Ghostline Recovery"
+	StateMutex       = `Local\Ghostline-State`
+	SingleInstanceID = "io.github.hashcott.ghostline"
+
+	ServerListURL    = "https://raw.githubusercontent.com/hashcott/ghostline/main/lists/servers.json"
+	ServerListSigURL = ServerListURL + ".sig"
+	ReleasesAPI      = "https://api.github.com/repos/hashcott/ghostline/releases/latest"
+
+	DNSCryptMinisignKey = "RWQf6LRCGA9i53mlYecO4IzT51TGPpvWucNSCh1CBM0QTaLn73Y7GFO3"
+)
+
+// DNSCryptListURLs are tried in order to fetch the public resolvers list.
+var DNSCryptListURLs = []string{
+	"https://download.dnscrypt.info/resolvers-list/v3/public-resolvers.md",
+	"https://raw.githubusercontent.com/DNSCrypt/dnscrypt-resolvers/master/v3/public-resolvers.md",
+}
+
+// Version is overridden at build time with -ldflags -X.
+var Version = "dev"
+
+// ServerListPublicKeyHex is the ed25519 public key that signs lists/servers.json.
+var ServerListPublicKeyHex = ""

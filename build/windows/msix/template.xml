@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<MsixPackagingToolTemplate
+    xmlns="http://schemas.microsoft.com/msix/packaging/msixpackagingtool/template/2022">
+    <Settings
+        AllowTelemetry="false"
+        ApplyACLsToPackageFiles="true"
+        GenerateCommandLineFile="true"
+        AllowPromptForPassword="false">
+    </Settings>
+    <Installer
+        Path="ghostline.exe"
+        Arguments=""
+        InstallLocation="C:\Program Files\Ghostline\Ghostline">
+    </Installer>
+    <PackageInformation
+        PackageName="Ghostline"
+        PackageDisplayName="Ghostline"
+        PublisherName="CN=Ghostline"
+        PublisherDisplayName="Ghostline"
+        Version="0.1.0.0"
+        PackageDescription="A ghostline application">
+        <Capabilities>
+            <Capability Name="runFullTrust" />
+            
+        </Capabilities>
+        <Applications>
+            <Application
+                Id="io.github.hashcott.ghostline"
+                Description="A ghostline application"
+                DisplayName="Ghostline"
+                ExecutableName="ghostline.exe"
+                EntryPoint="Windows.FullTrustApplication">
+                
+            </Application>
+        </Applications>
+        <Resources>
+            <Resource Language="en-us" />
+        </Resources>
+        <Dependencies>
+            <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.17763.0" MaxVersionTested="10.0.19041.0" />
+        </Dependencies>
+        <Properties>
+            <Framework>false</Framework>
+            <DisplayName>Ghostline</DisplayName>
+            <PublisherDisplayName>Ghostline</PublisherDisplayName>
+            <Description>A ghostline application</Description>
+            <Logo>Assets\AppIcon.png</Logo>
+        </Properties>
+    </PackageInformation>
+    <SaveLocation PackagePath="ghostline.msix" />
+    <PackageIntegrity>
+        <CertificatePath></CertificatePath>
+    </PackageIntegrity>
+</MsixPackagingToolTemplate>
