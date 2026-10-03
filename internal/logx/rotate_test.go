@@ -15,7 +15,7 @@ func TestRotating_RotatesAtMaxAndKeepsN(t *testing.T) {
 	w, err := logx.NewRotating(dir, "base", 100, 3)
 	require.NoError(t, err)
 	line := append(bytes.Repeat([]byte("x"), 49), '\n') // 50 bytes
-	for i := 0; i < 9; i++ {                              // 450 bytes
+	for i := 0; i < 9; i++ {                            // 450 bytes
 		_, err := w.Write(line)
 		require.NoError(t, err)
 	}
