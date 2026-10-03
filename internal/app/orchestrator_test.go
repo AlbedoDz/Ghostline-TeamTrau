@@ -1,0 +1,219 @@
+package app
+
+import (
+	"context"
+	"sync"
+	"testing"
+	"time"
+
+	"github.com/hashcott/ghostline/internal/store"
+	"github.com/hashcott/ghostline/internal/winutil"
+	"github.com/stretchr/testify/require"
+)
+
+var happy = []string{"sys.admin", "sys.ports", "pick", "build", "engine.start", "engine.selftest", "dns.select", "dns.snapshot",
+	"state.dns_set", "safety.watchdog", "safety.task.create", "dns.apply", "dns.flush", "engine.expect", "resolve", "engine.saw"}
+
+func TestConnect_HappyPathOrder(t *testing.T) {
+	h := newHarness(t)
+	require.NoError(t, h.o.Connect(context.Background()))
+	require.Equal(t, happy, h.r.list())
+	sn := h.o.Snapshot()
+	require.Equal(t, StatusProtected, sn.Status)
+	require.Equal(t, []string{"Cloudflare"}, sn.Servers)
+	require.False(t, sn.Since.IsZero())
+	st, _ := h.states.Load()
+	require.Equal(t, store.PhaseDNSSet, st.Phase)
+	require.Equal(t, uint32(1234), st.PID)
+	require.Len(t, st.Snapshot, 1)
+}
+
+func TestConnect_FailureAtEachStepRollsBack(t *testing.T) {
+	cases := []struct {
+		fail string
+		code string
+		undo []string
+	}{
+		{"pick", CodeNoServers, nil},
+		{"engine.start", CodeEngineSelfTest, nil},
+		{"engine.selftest", CodeEngineSelfTest, []string{"engine.stop"}},
+		{"dns.snapshot", CodeSetDNSFailed, []string{"engine.stop"}},
+		{"safety.watchdog", CodeInternal, []string{"state.clean", "engine.stop"}},
+		{"dns.apply", CodeSetDNSFailed, []string{"safety.task.delete", "safety.watchdog.stop", "state.clean", "engine.stop"}},
+		{"engine.saw", CodeVerifyLeak, []string{"dns.restore", "dns.flush", "safety.task.delete", "safety.watchdog.stop", "state.clean", "engine.stop"}},
+	}
+	for _, c := range cases {
+		t.Run(c.fail, func(t *testing.T) {
+			h := newHarness(t)
+			h.r.fail[c.fail] = true
+			require.Error(t, h.o.Connect(context.Background()))
+			calls := h.r.list()
+			i := indexOf(calls, c.fail)
+			require.GreaterOrEqual(t, i, 0, calls)
+			require.Equal(t, c.undo, nilIfEmpty(calls[i+1:]), "calls after failure")
+			sn := h.o.Snapshot()
+			require.Equal(t, StatusError, sn.Status)
+			require.Equal(t, c.code, sn.Error.Code)
+			st, _ := h.states.Load()
+			require.Equal(t, store.PhaseClean, st.Phase)
+		})
+	}
+}
+
+func indexOf(s []string, v string) int {
+	for i, x := range s {
+		if x == v {
+			return i
+		}
+	}
+	return -1
+}
+
+func nilIfEmpty(s []string) []string {
+	if len(s) == 0 {
+		return nil
+	}
+	return s
+}
+
+func TestDisconnect_RestoresBeforeEngineStop(t *testing.T) {
+	h := newHarness(t)
+	require.NoError(t, h.o.Connect(context.Background()))
+	n := len(h.r.list())
+	require.NoError(t, h.o.Disconnect(context.Background()))
+	require.Equal(t, []string{"dns.restore", "dns.flush", "engine.stop", "state.clean", "safety.watchdog.stop", "safety.task.delete"}, h.r.list()[n:])
+	require.Equal(t, StatusDisconnected, h.o.Snapshot().Status)
+}
+
+func TestDisconnect_StopsRunningDPI(t *testing.T) {
+	h := newHarness(t)
+	require.NoError(t, h.o.Connect(context.Background()))
+	h.dpi.running = true
+	n := len(h.r.list())
+	require.NoError(t, h.o.Disconnect(context.Background()))
+	require.Equal(t, []string{"dns.restore", "dns.flush", "dpi.stop", "engine.stop"}, h.r.list()[n:n+4])
+}
+
+func TestDisconnect_RestoreFailureWarnsAndKeepsStateDirty(t *testing.T) {
+	h := newHarness(t)
+	require.NoError(t, h.o.Connect(context.Background()))
+	h.dns.restoreErr = true
+	require.NoError(t, h.o.Disconnect(context.Background()))
+	sn := h.o.Snapshot()
+	require.Len(t, sn.Warnings, 1)
+	require.Equal(t, CodeRestoreFailed, sn.Warnings[0].Code)
+	require.Equal(t, "Wi-Fi", sn.Warnings[0].Params["adapter"])
+	st, _ := h.states.Load()
+	require.Equal(t, store.PhaseDNSSet, st.Phase)
+	require.Contains(t, h.r.list(), "engine.stop")
+}
+
+func TestConnect_CancelDuringPickRollsBackToDisconnected(t *testing.T) {
+	h := newHarness(t)
+	h.pick.block = make(chan struct{})
+	done := make(chan error, 1)
+	go func() { done <- h.o.Connect(context.Background()) }()
+	require.Eventually(t, func() bool { return indexOf(h.r.list(), "pick") >= 0 }, time.Second, 5*time.Millisecond)
+	h.o.Cancel()
+	<-done
+	require.Equal(t, StatusDisconnected, h.o.Snapshot().Status)
+	require.Nil(t, h.o.Snapshot().Error)
+}
+
+func TestConnect_ConcurrentCallsAreSerialized(t *testing.T) { // Review Focus #1
+	h := newHarness(t)
+	h.pick.block = make(chan struct{})
+	var wg sync.WaitGroup
+	errs := make([]error, 2)
+	for i := range errs {
+		wg.Add(1)
+		go func() { defer wg.Done(); errs[i] = h.o.Connect(context.Background()) }()
+	}
+	require.Eventually(t, func() bool { return indexOf(h.r.list(), "pick") >= 0 }, time.Second, 5*time.Millisecond)
+	time.Sleep(20 * time.Millisecond)
+	close(h.pick.block)
+	wg.Wait()
+	require.NoError(t, errs[0])
+	require.NoError(t, errs[1])
+	count := func(name string) int {
+		n := 0
+		for _, c := range h.r.list() {
+			if c == name {
+				n++
+			}
+		}
+		return n
+	}
+	require.Equal(t, 1, count("pick"))
+	require.Equal(t, 1, count("dns.snapshot"))
+}
+
+func TestConnect_WhileDisconnectingIsNoop(t *testing.T) {
+	h := newHarness(t)
+	require.NoError(t, h.o.Connect(context.Background()))
+	h.o.mu.Lock()
+	h.o.snap.Status = StatusDisconnecting
+	h.o.mu.Unlock()
+	n := len(h.r.list())
+	require.NoError(t, h.o.Connect(context.Background()))
+	require.Len(t, h.r.list(), n)
+}
+
+func TestConnect_NotAdmin(t *testing.T) {
+	h := newHarness(t)
+	h.sys.admin = false
+	require.Error(t, h.o.Connect(context.Background()))
+	require.Equal(t, CodeNotAdmin, h.o.Snapshot().Error.Code)
+	require.Equal(t, []string{"sys.admin"}, h.r.list())
+}
+
+func TestConnect_Port53Busy(t *testing.T) {
+	h := newHarness(t)
+	h.sys.owners = []winutil.PortOwner{{PID: 1234, Name: "svchost.exe", Service: "SharedAccess", Proto: "udp"}}
+	require.Error(t, h.o.Connect(context.Background()))
+	e := h.o.Snapshot().Error
+	require.Equal(t, CodePort53Busy, e.Code)
+	require.Equal(t, uint32(1234), e.Params["pid"])
+	require.Equal(t, "svchost.exe", e.Params["name"])
+	require.Equal(t, "SharedAccess", e.Params["service"])
+}
+
+func TestConnect_DirtyStateRecoversFirst(t *testing.T) {
+	h := newHarness(t)
+	require.NoError(t, h.states.s.Update(func(st *store.State) error { st.Phase = store.PhaseDNSSet; return nil }))
+	require.NoError(t, h.o.Connect(context.Background()))
+	calls := h.r.list()
+	require.Less(t, indexOf(calls, "recover"), indexOf(calls, "sys.ports"))
+	require.Equal(t, 1, h.recovers)
+}
+
+func TestConnect_NoServersParams(t *testing.T) {
+	h := newHarness(t)
+	h.pick.err = &NoServersError{Checked: 16, Elapsed: 20 * time.Second}
+	require.Error(t, h.o.Connect(context.Background()))
+	e := h.o.Snapshot().Error
+	require.Equal(t, CodeNoServers, e.Code)
+	require.Equal(t, 16, e.Params["checked"])
+	require.Equal(t, int64(20), e.Params["elapsed"])
+}
+
+func TestConnect_EmitsSteps(t *testing.T) {
+	h := newHarness(t)
+	require.NoError(t, h.o.Connect(context.Background()))
+	var steps []int
+	for _, s := range h.sink.states {
+		if s.Status == StatusConnecting && (len(steps) == 0 || steps[len(steps)-1] != s.Step) {
+			steps = append(steps, s.Step)
+		}
+	}
+	require.Equal(t, []int{0, 1, 2, 3, 4, 5, 6, 7}, steps)
+}
+
+func TestWarnings_AddAndClear(t *testing.T) {
+	h := newHarness(t)
+	h.o.AddWarning(AppError{Code: CodeSettingsReset})
+	h.o.AddWarning(AppError{Code: CodeSettingsReset})
+	require.Len(t, h.o.Snapshot().Warnings, 1)
+	h.o.ClearWarning(CodeSettingsReset)
+	require.Empty(t, h.o.Snapshot().Warnings)
+}
