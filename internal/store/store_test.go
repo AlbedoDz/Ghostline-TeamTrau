@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/hashcott/ghostline/internal/store"
 	"github.com/stretchr/testify/require"
@@ -147,4 +148,12 @@ func TestStateStore_Reset(t *testing.T) {
 	st, err := s.Load()
 	require.NoError(t, err)
 	require.Equal(t, store.PhaseClean, st.Phase)
+}
+
+func TestMeta_RoundTrip(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "meta.json")
+	require.Equal(t, store.Meta{}, store.LoadMeta(path))
+	m := store.Meta{LastUpdateCheck: time.Date(2026, 10, 4, 1, 2, 3, 0, time.UTC)}
+	require.NoError(t, store.SaveMeta(path, m))
+	require.True(t, store.LoadMeta(path).LastUpdateCheck.Equal(m.LastUpdateCheck))
 }
