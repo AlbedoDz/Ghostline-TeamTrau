@@ -24,7 +24,7 @@ func main() {
 	}
 	switch mode.Kind {
 	case cli.KindWatchdog, cli.KindRestore:
-		os.Exit(0) // wired in a later task
+		os.Exit(runHeadless(mode))
 	}
 
 	app := application.New(application.Options{

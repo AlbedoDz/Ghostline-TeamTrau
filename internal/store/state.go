@@ -55,6 +55,22 @@ type StateStore struct {
 
 func NewStateStore(path string, l Locker) *StateStore { return &StateStore{path: path, lock: l} }
 
+// Path is the state file location.
+func (s *StateStore) Path() string { return s.path }
+
+// Locked runs fn while holding the cross-process lock, for read-decide-write
+// sequences that span more than one Update (e.g. restore after corruption).
+func (s *StateStore) Locked(fn func() error) error {
+	if err := s.lock.Lock(); err != nil {
+		return err
+	}
+	defer s.lock.Unlock()
+	return fn()
+}
+
+// Write replaces state.json; callers must hold the lock (see Locked).
+func (s *StateStore) Write(st State) error { return WriteJSONAtomic(s.path, st) }
+
 // Load reads state.json; a missing file is a clean state.
 func (s *StateStore) Load() (State, error) {
 	b, err := os.ReadFile(s.path)
