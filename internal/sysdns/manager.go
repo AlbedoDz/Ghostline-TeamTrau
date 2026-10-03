@@ -1,0 +1,219 @@
+package sysdns
+
+import (
+	"slices"
+	"sync"
+	"time"
+
+	"github.com/hashcott/ghostline/internal/model"
+)
+
+// Manager snapshots, sets and restores adapter DNS settings.
+type Manager struct {
+	api   API
+	sleep func(time.Duration)
+}
+
+// NewManager wraps api; sleep is injectable for tests.
+func NewManager(api API, sleep func(time.Duration)) *Manager {
+	if sleep == nil {
+		sleep = time.Sleep
+	}
+	return &Manager{api: api, sleep: sleep}
+}
+
+// Select returns the adapters to manage. "auto" picks Ethernet and Wi-Fi
+// adapters that are up and have a default gateway; "manual" picks guids
+// that still exist.
+func (m *Manager) Select(mode string, guids []string) ([]Adapter, error) {
+	all, err := m.api.Adapters()
+	if err != nil {
+		return nil, err
+	}
+	var out []Adapter
+	for _, a := range all {
+		if mode == "manual" {
+			if slices.Contains(guids, a.GUID) {
+				out = append(out, a)
+			}
+			continue
+		}
+		if (a.IfType == ifTypeEthernet || a.IfType == ifTypeWiFi) && a.Up && a.HasGateway {
+			out = append(out, a)
+		}
+	}
+	return out, nil
+}
+
+func family(servers []string) model.FamilyDNS {
+	if len(servers) == 0 {
+		return model.FamilyDNS{Mode: model.DNSModeDHCP}
+	}
+	return model.FamilyDNS{Mode: model.DNSModeStatic, Servers: servers}
+}
+
+// Snapshot records the current DNS of each adapter.
+func (m *Manager) Snapshot(ads []Adapter) ([]model.AdapterSnapshot, error) {
+	out := make([]model.AdapterSnapshot, 0, len(ads))
+	for _, a := range ads {
+		s := model.AdapterSnapshot{GUID: a.GUID, LUID: a.LUID, IfIndex: a.IfIndex, Alias: a.Alias,
+			IPv6: model.FamilyDNS{Mode: model.DNSModeDHCP}}
+		v4, err := m.api.GetDNS(a.GUID, false)
+		if err != nil {
+			return nil, err
+		}
+		s.IPv4 = family(v4)
+		if a.HasIPv6 {
+			v6, err := m.api.GetDNS(a.GUID, true)
+			if err != nil {
+				return nil, err
+			}
+			s.IPv6 = family(v6)
+		}
+		out = append(out, s)
+	}
+	return out, nil
+}
+
+// ApplyLoopback points every snapshotted adapter at 127.0.0.1 (and ::1 when
+// v6 is true and the adapter has IPv6).
+func (m *Manager) ApplyLoopback(snaps []model.AdapterSnapshot, v6 bool) error {
+	ads, err := m.byGUID()
+	if err != nil {
+		return err
+	}
+	for _, s := range snaps {
+		a, ok := ads[s.GUID]
+		if !ok {
+			continue
+		}
+		if err := m.api.SetDNS(s.GUID, false, []string{"127.0.0.1"}); err != nil {
+			if err := m.api.NetshSetDNS(a.IfIndex, false, []string{"127.0.0.1"}); err != nil {
+				return err
+			}
+		}
+		if v6 && a.HasIPv6 {
+			if err := m.api.SetDNS(s.GUID, true, []string{"::1"}); err != nil {
+				if err := m.api.NetshSetDNS(a.IfIndex, true, []string{"::1"}); err != nil {
+					return err
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func (m *Manager) byGUID() (map[string]Adapter, error) {
+	all, err := m.api.Adapters()
+	if err != nil {
+		return nil, err
+	}
+	out := make(map[string]Adapter, len(all))
+	for _, a := range all {
+		out[a.GUID] = a
+	}
+	return out, nil
+}
+
+// Restore puts each adapter back to its snapshot, keyed by GUID (aliases can
+// change). Per family: SetDNS ×3, then netsh by interface index, then netsh
+// DHCP. Adapters that no longer exist are skipped. The DNS cache is flushed.
+func (m *Manager) Restore(snaps []model.AdapterSnapshot) []RestoreError {
+	ads, err := m.byGUID()
+	if err != nil {
+		var out []RestoreError
+		for _, s := range snaps {
+			out = append(out, RestoreError{GUID: s.GUID, Alias: s.Alias, Err: err})
+		}
+		return out
+	}
+	var out []RestoreError
+	for _, s := range snaps {
+		a, ok := ads[s.GUID]
+		if !ok {
+			continue
+		}
+		for _, f := range []struct {
+			v6  bool
+			dns model.FamilyDNS
+		}{{false, s.IPv4}, {true, s.IPv6}} {
+			if f.dns.Mode == "" || (f.v6 && !a.HasIPv6) {
+				continue // nothing recorded for this family
+			}
+			if err := m.restoreFamily(a, f.v6, f.dns); err != nil {
+				out = append(out, RestoreError{GUID: s.GUID, Alias: s.Alias, Err: err})
+			}
+		}
+	}
+	_ = m.api.Flush()
+	return out
+}
+
+func (m *Manager) restoreFamily(a Adapter, v6 bool, f model.FamilyDNS) error {
+	var servers []string
+	if f.Mode == model.DNSModeStatic {
+		servers = f.Servers
+	}
+	var err error
+	for i := 0; i < 3; i++ {
+		if i > 0 {
+			m.sleep(200 * time.Millisecond)
+		}
+		if err = m.api.SetDNS(a.GUID, v6, servers); err == nil {
+			return nil
+		}
+	}
+	if err = m.api.NetshSetDNS(a.IfIndex, v6, servers); err == nil {
+		return nil
+	}
+	if len(servers) > 0 {
+		if err = m.api.NetshSetDNS(a.IfIndex, v6, nil); err == nil {
+			return nil
+		}
+	}
+	return err
+}
+
+// LoopbackAdapters lists adapters whose DNS is exactly 127.0.0.1 or ::1 —
+// the fingerprint Ghostline leaves when it cannot read its own state.
+func (m *Manager) LoopbackAdapters() ([]Adapter, error) {
+	all, err := m.api.Adapters()
+	if err != nil {
+		return nil, err
+	}
+	var out []Adapter
+	for _, a := range all {
+		v4, _ := m.api.GetDNS(a.GUID, false)
+		v6, _ := m.api.GetDNS(a.GUID, true)
+		if slices.Equal(v4, []string{"127.0.0.1"}) || slices.Equal(v6, []string{"::1"}) {
+			out = append(out, a)
+		}
+	}
+	return out, nil
+}
+
+// Flush clears the Windows DNS cache.
+func (m *Manager) Flush() error { return m.api.Flush() }
+
+// Debounce returns trigger, which calls f once d after the last trigger in a
+// burst, and stop, which cancels a pending call.
+func Debounce(d time.Duration, f func()) (trigger func(), stop func()) {
+	var mu sync.Mutex
+	var t *time.Timer
+	trigger = func() {
+		mu.Lock()
+		defer mu.Unlock()
+		if t != nil {
+			t.Stop()
+		}
+		t = time.AfterFunc(d, f)
+	}
+	stop = func() {
+		mu.Lock()
+		defer mu.Unlock()
+		if t != nil {
+			t.Stop()
+		}
+	}
+	return trigger, stop
+}
