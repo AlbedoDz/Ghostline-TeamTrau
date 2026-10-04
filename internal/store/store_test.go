@@ -157,3 +157,12 @@ func TestMeta_RoundTrip(t *testing.T) {
 	require.NoError(t, store.SaveMeta(path, m))
 	require.True(t, store.LoadMeta(path).LastUpdateCheck.Equal(m.LastUpdateCheck))
 }
+
+func TestLoadSettings_AcceptsUTF8BOM(t *testing.T) { // Notepad may add a BOM
+	path := filepath.Join(t.TempDir(), "settings.json")
+	require.NoError(t, os.WriteFile(path, append([]byte{0xEF, 0xBB, 0xBF}, []byte(`{"mode":"advanced"}`)...), 0o644))
+	s, recovered, err := store.LoadSettings(path)
+	require.NoError(t, err)
+	require.False(t, recovered)
+	require.Equal(t, "advanced", s.Mode)
+}

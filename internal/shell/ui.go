@@ -77,7 +77,10 @@ type ui struct {
 }
 
 func (u *ui) createWindow(hidden bool) {
-	u.win = u.app.Window.NewWithOptions(application.WebviewWindowOptions{
+	// The initial size must match the saved mode: resizing a window that
+	// has not been shown yet is ignored.
+	s := u.box.Get()
+	opts := application.WebviewWindowOptions{
 		Name:                "main",
 		Title:               brand.AppName,
 		Width:               simpleW,
@@ -88,7 +91,13 @@ func (u *ui) createWindow(hidden bool) {
 		BackgroundColour:    application.NewRGB(5, 7, 10),
 		URL:                 "/",
 		Hidden:              hidden,
-	})
+	}
+	if s.Mode == "advanced" {
+		opts.Width, opts.Height = max(s.AdvancedWindow.Width, minAdvW), max(s.AdvancedWindow.Height, minAdvH)
+		opts.MinWidth, opts.MinHeight = minAdvW, minAdvH
+		opts.DisableResize = false
+	}
+	u.win = u.app.Window.NewWithOptions(opts)
 	u.win.RegisterHook(events.Common.WindowClosing, func(e *application.WindowEvent) {
 		if u.box.Get().CloseToTray {
 			u.win.Hide()
@@ -97,9 +106,6 @@ func (u *ui) createWindow(hidden bool) {
 		}
 		u.app.Quit()
 	})
-	if u.box.Get().Mode == "advanced" {
-		u.setMode("advanced")
-	}
 }
 
 func (u *ui) show() {

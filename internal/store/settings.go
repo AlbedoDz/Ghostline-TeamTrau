@@ -1,6 +1,7 @@
 package store
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"io/fs"
@@ -86,6 +87,7 @@ func LoadSettings(path string) (s Settings, recovered bool, err error) {
 	if err != nil {
 		return s, false, err
 	}
+	b = bytes.TrimPrefix(b, []byte{0xEF, 0xBB, 0xBF}) // tolerate a UTF-8 BOM (Notepad)
 	if jerr := json.Unmarshal(b, &s); jerr != nil {
 		if err := os.Rename(path, path+".bak"); err != nil {
 			return DefaultSettings(), true, err
