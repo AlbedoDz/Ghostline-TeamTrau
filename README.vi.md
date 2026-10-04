@@ -9,7 +9,7 @@
 [![CI](https://github.com/hashcott/ghostline/actions/workflows/ci.yml/badge.svg)](https://github.com/hashcott/ghostline/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/hashcott/ghostline?include_prereleases)](https://github.com/hashcott/ghostline/releases)
 [![Downloads](https://img.shields.io/github/downloads/hashcott/ghostline/total)](https://github.com/hashcott/ghostline/releases)
-[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![License: GPL v3](https://img.shields.io/badge/license-GPL--3.0-blue.svg)](LICENSE)
 ![Platform](https://img.shields.io/badge/platform-Windows%2010%2F11%20x64-blue)
 
 [English](README.md) · Tiếng Việt
@@ -162,6 +162,6 @@ Vui lòng **không** báo lỗ hổng bảo mật qua issue công khai. Xem [SEC
 
 ## Giấy phép và ghi công
 
-Ghostline phát hành theo [giấy phép MIT](LICENSE).
+Ghostline là phần mềm tự do, phát hành theo [giấy phép GNU GPL v3.0 (chỉ phiên bản 3)](LICENSE). Bạn được dùng, nghiên cứu, chia sẻ và sửa đổi; nếu phân phối bản đã sửa, bạn phải công khai mã nguồn của bản đó theo cùng giấy phép. Hai bản v0.1.0 và v0.1.1 đã phát hành theo giấy phép MIT.
 
 Dự án được xây dựng trên [dnsproxy](https://github.com/AdguardTeam/dnsproxy), [GoodbyeDPI](https://github.com/ValdikSS/GoodbyeDPI), [WinDivert](https://github.com/basil00/WinDivert) và [Wails](https://wails.io), và lấy cảm hứng từ [DNSveil / SecureDNSClient](https://github.com/msasanmh/SecureDNSClient). Giấy phép của các thành phần bên thứ ba được liệt kê trong [NOTICE](NOTICE).

@@ -35,4 +35,4 @@ wails3 dev
 - Code that stops or kills third-party processes or services without the user's explicit consent.
 - Changes to the bundled GoodbyeDPI binaries without updating their pinned hashes and NOTICE.
 
-By contributing, you agree that your contributions are licensed under the [MIT License](LICENSE).
+By contributing, you agree that your contributions are licensed under the [GNU GPL v3.0 only](LICENSE).

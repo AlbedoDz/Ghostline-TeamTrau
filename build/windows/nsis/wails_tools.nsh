@@ -17,7 +17,7 @@
     !define INFO_PRODUCTVERSION "0.1.1"
 !endif
 !ifndef INFO_COPYRIGHT
-    !define INFO_COPYRIGHT "© 2026 Harry Nguyen. MIT License."
+    !define INFO_COPYRIGHT "© 2026 Harry Nguyen. GPL-3.0-only."
 !endif
 !ifndef PRODUCT_EXECUTABLE
     !define PRODUCT_EXECUTABLE "${INFO_PROJECTNAME}.exe"

@@ -54,7 +54,7 @@ Ghostline là ứng dụng **Secure DNS Client cho Windows**. App mã hoá toàn
 | Mặc định khi Connect | Chỉ bật DNS mã hoá. Nếu trang mẫu bị chặn ở tầng TLS thì gợi ý "Tự dò vượt DPI" |
 | Phát hành | Có cả **installer NSIS** và **zip portable** |
 | Cập nhật | **Chỉ báo có bản mới**, dựa trên GitHub Releases |
-| License | **MIT**, mã nguồn mở trên GitHub. Module mặc định là `github.com/hashcott/ghostline`, đổi trong `internal/brand` |
+| License | **GPL-3.0-only** (từ v0.1.2; v0.1.0–v0.1.1 là MIT), mã nguồn mở trên GitHub. Module mặc định là `github.com/hashcott/ghostline`, đổi trong `internal/brand` |
 
 ## 4. Kiến trúc
 
@@ -439,7 +439,7 @@ Phát triển theo TDD. Test Go chạy bằng `go test ./...`. Test cần Window
   - `release.yml`, chạy khi đẩy tag `v*`: chạy `genservers`, ký `servers.json`, build installer và zip, tạo `SHA256SUMS`, tạo GitHub Release.
 - **Ký số file exe:** chưa làm ở giai đoạn 1. README ghi rõ là SmartScreen sẽ cảnh báo và hướng dẫn kiểm tra SHA-256. Sau này sẽ xin SignPath Foundation (ký miễn phí cho mã nguồn mở).
 - **Kiểm tra bản mới:** gọi `GET https://api.github.com/repos/hashcott/ghostline/releases/latest` tối đa 1 lần/ngày, so semver. Có bản mới thì báo trên giao diện và trong menu khay, kèm link tới trang Release.
-- **License và ghi công:** `LICENSE` (MIT). `NOTICE` liệt kê các thành phần bên thứ ba: dnsproxy (Apache-2.0), GoodbyeDPI (Apache-2.0), WinDivert (LGPLv3) và JetBrains Mono (OFL-1.1). Danh sách DNSCrypt chỉ được tải lúc chạy, không phân phối kèm app.
+- **License và ghi công:** `LICENSE` (GPL-3.0-only). `NOTICE` liệt kê các thành phần bên thứ ba: dnsproxy (Apache-2.0), GoodbyeDPI (Apache-2.0), WinDivert (LGPLv3) và JetBrains Mono (OFL-1.1). Danh sách DNSCrypt chỉ được tải lúc chạy, không phân phối kèm app.
 
 ## 13. Cấu trúc repo
 

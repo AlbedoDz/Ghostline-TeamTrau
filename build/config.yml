@@ -9,7 +9,7 @@ info:
   productName: "Ghostline" # The name of the application
   productIdentifier: "io.github.hashcott.ghostline" # The unique product identifier
   description: "Ghostline - Secure DNS client" # The application description
-  copyright: "© 2026 Harry Nguyen. MIT License." # Copyright text
+  copyright: "© 2026 Harry Nguyen. GPL-3.0-only." # Copyright text
   comments: "https://github.com/hashcott/ghostline" # Comments
   version: "0.1.1" # The application version
   # cfBundleIconName: "appicon" # The macOS icon name in Assets.car icon bundles (optional)

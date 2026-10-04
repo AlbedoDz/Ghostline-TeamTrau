@@ -8,7 +8,7 @@
 			"ProductVersion": "0.1.1",
 			"CompanyName": "Ghostline",
 			"FileDescription": "Ghostline - Secure DNS client",
-			"LegalCopyright": "© 2026 Harry Nguyen. MIT License.",
+			"LegalCopyright": "© 2026 Harry Nguyen. GPL-3.0-only.",
 			"ProductName": "Ghostline",
 			"Comments": "https://github.com/hashcott/ghostline"
 		}
