@@ -86,7 +86,7 @@ func RestoreIfOrphaned(d Deps) (Outcome, error) {
 			out = OwnerAlive
 			return nil
 		}
-		rerr := joinRestore(d.DNS.Restore(st.Snapshot))
+		rerr := joinRestore(d.DNS.Restore(stillOurs(d.DNS, st.Snapshot)))
 		if st.DPI.Running && d.StopDPI != nil {
 			_ = d.StopDPI()
 		}
@@ -98,6 +98,27 @@ func RestoreIfOrphaned(d Deps) (Outcome, error) {
 		return d.States.Write(store.State{Version: 1, Phase: store.PhaseClean})
 	})
 	return out, err
+}
+
+// stillOurs keeps the snapshots of adapters whose DNS still points at
+// loopback. An adapter the user re-configured after a crash keeps their
+// settings. If the current DNS cannot be read, everything is restored.
+func stillOurs(dns Restorer, snaps []model.AdapterSnapshot) []model.AdapterSnapshot {
+	ads, err := dns.LoopbackAdapters()
+	if err != nil {
+		return snaps
+	}
+	on := make(map[string]bool, len(ads))
+	for _, a := range ads {
+		on[a.GUID] = true
+	}
+	var out []model.AdapterSnapshot
+	for _, s := range snaps {
+		if on[s.GUID] {
+			out = append(out, s)
+		}
+	}
+	return out
 }
 
 func joinRestore(errs []sysdns.RestoreError) error {

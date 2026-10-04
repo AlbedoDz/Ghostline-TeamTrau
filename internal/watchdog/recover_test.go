@@ -40,7 +40,7 @@ func setup(t *testing.T, alive bool, st *store.State) (watchdog.Deps, *fakeDNS, 
 	if st != nil {
 		require.NoError(t, ss.Update(func(s *store.State) error { *s = *st; return nil }))
 	}
-	fd := &fakeDNS{}
+	fd := &fakeDNS{loopback: []sysdns.Adapter{{GUID: snap.GUID}}} // still pointing at Ghostline
 	stops := 0
 	return watchdog.Deps{
 		States: ss, DNS: fd,
@@ -134,7 +134,7 @@ func (f *failingDNS) Restore(s []model.AdapterSnapshot) []sysdns.RestoreError {
 
 func TestRestore_FailureKeepsSnapshotForLaterLayers(t *testing.T) {
 	d, _, _ := setup(t, false, dirty())
-	d.DNS = &failingDNS{}
+	d.DNS = &failingDNS{fakeDNS{loopback: []sysdns.Adapter{{GUID: snap.GUID}}}}
 	out, err := watchdog.RestoreIfOrphaned(d)
 	require.Error(t, err)
 	require.Equal(t, watchdog.Restored, out)
@@ -171,4 +171,34 @@ func TestRunWatchdog_KeepsWaitingWhileParentAlive(t *testing.T) { // review mino
 	require.NoError(t, watchdog.RunWatchdog(42, time.Unix(100, 0), func(uint32) error { waits++; return nil }, d))
 	require.Equal(t, 3, waits, "a spurious wakeup must not end the watch")
 	require.Len(t, fd.restored, 1)
+}
+
+type brokenLookup struct{ fakeDNS }
+
+func (*brokenLookup) LoopbackAdapters() ([]sysdns.Adapter, error) { return nil, os.ErrPermission }
+
+// An adapter the user re-configured by hand after a crash keeps their DNS;
+// only adapters still pointing at Ghostline's loopback are restored.
+func TestRestore_SkipsAdaptersNoLongerOnLoopback(t *testing.T) {
+	other := model.AdapterSnapshot{GUID: "{B}", Alias: "Ethernet", IPv4: model.FamilyDNS{Mode: model.DNSModeDHCP}}
+	st := dirty()
+	st.Snapshot = append(st.Snapshot, other)
+	d, fd, _ := setup(t, false, st)
+	fd.loopback = []sysdns.Adapter{{GUID: "{B}"}} // {A} was changed by the user
+	out, err := watchdog.RestoreIfOrphaned(d)
+	require.NoError(t, err)
+	require.Equal(t, watchdog.Restored, out)
+	require.Equal(t, []model.AdapterSnapshot{other}, fd.restored)
+	st2, _ := d.States.Load()
+	require.Equal(t, store.PhaseClean, st2.Phase)
+}
+
+// If the current DNS cannot be read, restoring everything is the safe side.
+func TestRestore_LoopbackLookupFailureRestoresAll(t *testing.T) {
+	d, _, _ := setup(t, false, dirty())
+	bl := &brokenLookup{}
+	d.DNS = bl
+	_, err := watchdog.RestoreIfOrphaned(d)
+	require.NoError(t, err)
+	require.Equal(t, []model.AdapterSnapshot{snap}, bl.restored)
 }
