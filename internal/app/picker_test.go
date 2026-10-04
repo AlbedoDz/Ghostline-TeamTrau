@@ -194,3 +194,23 @@ func TestPicker_CheckOneUpdatesCache(t *testing.T) {
 	_, err = p.CheckOne(context.Background(), "nope")
 	require.Error(t, err)
 }
+
+// Reported: connecting with "use pinned servers only" wiped every other
+// server's status on the Servers page.
+func TestPicker_PinnedOnlyKeepsOtherResults(t *testing.T) {
+	chk := &fChecker{ok: map[string]time.Duration{"s01": 10}}
+	s := store.DefaultSettings()
+	s.PinnedOnly, s.Pinned = true, []string{"s01"}
+	p, _ := newPicker(chk, s)
+	p.Cache.Put("net1", p.Now().Add(-time.Hour), []scanner.Result{
+		{ServerID: "s02", OK: true, Latency: 5}, {ServerID: "s03", OK: true, Latency: 6}})
+	_, err := p.Pick(context.Background(), nil)
+	require.NoError(t, err)
+	ids := map[string]bool{}
+	for _, r := range p.Results() {
+		ids[r.ServerID] = true
+	}
+	require.True(t, ids["s01"])
+	require.True(t, ids["s02"], "other servers' results must survive a pinned-only connect")
+	require.True(t, ids["s03"])
+}

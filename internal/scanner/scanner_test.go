@@ -234,3 +234,38 @@ func TestDNSChecker_TimeoutCoversWholeCheck(t *testing.T) { // review minor: was
 	require.Equal(t, "timeout", r.Reason)
 	require.Less(t, time.Since(start), 300*time.Millisecond)
 }
+
+// A partial scan (quick scan, pinned servers only, a cancelled full scan)
+// must not wipe the other servers' results.
+func TestCache_MergeKeepsOtherResults(t *testing.T) {
+	t0 := time.Date(2026, 10, 5, 8, 0, 0, 0, time.UTC)
+	c := &scanner.Cache{}
+	c.Merge("net", t0, []scanner.Result{{ServerID: "a", OK: true, CheckedAt: t0}, {ServerID: "b", OK: true, CheckedAt: t0}, {ServerID: "c", CheckedAt: t0}})
+	t1 := t0.Add(time.Hour)
+	c.Merge("net", t1, []scanner.Result{{ServerID: "b", OK: false, Reason: "timeout", CheckedAt: t1}, {ServerID: "d", OK: true, CheckedAt: t1}})
+	rs, ok := c.Fresh("net", t1, 24*time.Hour)
+	require.True(t, ok)
+	byID := map[string]scanner.Result{}
+	for _, r := range rs {
+		byID[r.ServerID] = r
+	}
+	require.Len(t, byID, 4)
+	require.True(t, byID["a"].OK)
+	require.False(t, byID["b"].OK) // replaced by the newer check
+	require.True(t, byID["d"].OK)
+}
+
+// Freshness is per result: merging new checks must not make old ones fresh.
+func TestCache_FreshIsPerResult(t *testing.T) {
+	t0 := time.Date(2026, 10, 5, 8, 0, 0, 0, time.UTC)
+	c := &scanner.Cache{}
+	c.Merge("net", t0, []scanner.Result{{ServerID: "old", OK: true, CheckedAt: t0}})
+	t1 := t0.Add(30 * time.Hour)
+	c.Merge("net", t1, []scanner.Result{{ServerID: "new", OK: true, CheckedAt: t1}})
+	rs, ok := c.Fresh("net", t1, 24*time.Hour)
+	require.True(t, ok)
+	require.Len(t, rs, 1)
+	require.Equal(t, "new", rs[0].ServerID)
+	// Results() for the UI still lists both.
+	require.Len(t, c.Entries["net"].Results, 2)
+}

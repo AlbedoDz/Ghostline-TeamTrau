@@ -259,21 +259,59 @@ func NetworkKey(gatewayIP, gatewayMAC string) string {
 	return hex.EncodeToString(sum[:])
 }
 
-// Fresh returns the network's results if scanned within ttl.
+// Fresh returns the network's results checked within ttl (by each result's
+// CheckedAt; results without one use the entry's scan time). ok is false
+// when none is fresh.
 func (c *Cache) Fresh(key string, now time.Time, ttl time.Duration) ([]Result, bool) {
 	e, ok := c.Entries[key]
-	if !ok || now.Sub(e.ScannedAt) > ttl {
+	if !ok {
 		return nil, false
 	}
-	return e.Results, true
+	var out []Result
+	for _, r := range e.Results {
+		at := r.CheckedAt
+		if at.IsZero() {
+			at = e.ScannedAt
+		}
+		if now.Sub(at) <= ttl {
+			out = append(out, r)
+		}
+	}
+	return out, len(out) > 0
 }
 
-// Put stores a scan.
+// Put replaces the network's results (a full, completed scan).
 func (c *Cache) Put(key string, now time.Time, rs []Result) {
 	if c.Entries == nil {
 		c.Entries = map[string]CacheEntry{}
 	}
 	c.Entries[key] = CacheEntry{ScannedAt: now, Results: rs}
+}
+
+// Merge records the results of a partial scan (quick scan, pinned servers,
+// a single re-check): each server's result is replaced, the others kept.
+func (c *Cache) Merge(key string, now time.Time, rs []Result) {
+	if c.Entries == nil {
+		c.Entries = map[string]CacheEntry{}
+	}
+	e := c.Entries[key]
+	idx := make(map[string]int, len(e.Results))
+	for i, r := range e.Results {
+		idx[r.ServerID] = i
+	}
+	for _, r := range rs {
+		if r.CheckedAt.IsZero() {
+			r.CheckedAt = now
+		}
+		if i, ok := idx[r.ServerID]; ok {
+			e.Results[i] = r
+		} else {
+			idx[r.ServerID] = len(e.Results)
+			e.Results = append(e.Results, r)
+		}
+	}
+	e.ScannedAt = now
+	c.Entries[key] = e
 }
 
 // EverOK lists servers that were OK on any network.

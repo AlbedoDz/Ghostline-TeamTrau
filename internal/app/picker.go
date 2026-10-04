@@ -172,7 +172,7 @@ func (p *ScanPicker) pickFrom(ctx context.Context, pool []model.Server, want int
 		return nil, err
 	}
 	p.mu.Lock()
-	p.Cache.Put(key, now, append(slices.Clone(rs), extra...))
+	p.Cache.Merge(key, now, append(slices.Clone(rs), extra...))
 	_ = p.SaveCache(p.Cache)
 	p.mu.Unlock()
 
@@ -183,8 +183,8 @@ func (p *ScanPicker) pickFrom(ctx context.Context, pool []model.Server, want int
 	return top, nil
 }
 
-// CheckOne re-tests one server and records the result in the current
-// network's cached scan (without making the rest of the cache look fresh).
+// CheckOne re-tests one server and merges the result into the current
+// network's cached scan.
 func (p *ScanPicker) CheckOne(ctx context.Context, id string) (scanner.Result, error) {
 	var srv *model.Server
 	for _, sv := range p.Catalog() {
@@ -201,17 +201,7 @@ func (p *ScanPicker) CheckOne(ctx context.Context, id string) (scanner.Result, e
 	key := p.NetKey()
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	if p.Cache.Entries == nil {
-		p.Cache.Entries = map[string]scanner.CacheEntry{}
-	}
-	e := p.Cache.Entries[key]
-	i := slices.IndexFunc(e.Results, func(x scanner.Result) bool { return x.ServerID == id })
-	if i >= 0 {
-		e.Results[i] = r
-	} else {
-		e.Results = append(e.Results, r)
-	}
-	p.Cache.Entries[key] = e
+	p.Cache.Merge(key, p.Now(), []scanner.Result{r})
 	_ = p.SaveCache(p.Cache)
 	return r, nil
 }
@@ -229,7 +219,7 @@ func (p *ScanPicker) Rescan(ctx context.Context, onProgress func(done, total int
 	}
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	p.Cache.Put(p.NetKey(), p.Now(), rs)
+	p.Cache.Merge(p.NetKey(), p.Now(), rs) // a cancelled full scan keeps the rest
 	return rs, p.SaveCache(p.Cache)
 }
 
