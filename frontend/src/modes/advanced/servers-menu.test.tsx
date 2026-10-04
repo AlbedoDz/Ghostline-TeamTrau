@@ -108,8 +108,11 @@ test("pinned-only switch is disabled with nothing pinned; unpin all turns it off
   svc.ListServers.mockResolvedValue(rows.map((r) => ({ ...r, pinned: false })));
   render(<Servers />);
   await rowOf("Cloudflare");
-  expect(screen.getByRole("switch", { name: "chỉ dùng máy chủ đã ghim" })).toBeDisabled();
-  expect(screen.getByText("ghim ít nhất một máy chủ để bật")).toBeInTheDocument();
+  const sw = screen.getByRole("switch", { name: "chỉ dùng máy chủ đã ghim" });
+  expect(sw).toBeDisabled();
+  const hint = "ⓘ Chưa ghim máy chủ nào. Bấm ☆ hoặc double-click một dòng để ghim; cần có ít nhất một máy chủ ghim mới bật được \"chỉ dùng máy chủ đã ghim\".";
+  expect(screen.getByText(hint)).toBeInTheDocument();
+  expect(sw.closest("[title]")?.getAttribute("title")).toBe(hint);
 });
 
 test("unpin all with pinned-only on reloads settings (Go turns it off)", async () => {
