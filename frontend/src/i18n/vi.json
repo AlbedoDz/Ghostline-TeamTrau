@@ -125,6 +125,7 @@
     "chunks": "số mảnh",
     "delay": "độ trễ (ms)",
     "redundant": "ⓘ thừa khi GoodbyeDPI đang bật",
+    "waiting": "Đã bật — GoodbyeDPI sẽ chạy khi kết nối",
     "probeSites": "TRANG MẪU",
     "probeAgain": "⟳ thử lại",
     "stage": {

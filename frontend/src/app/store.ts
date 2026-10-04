@@ -87,6 +87,11 @@ export const useGhost = create<State>((set) => ({
       // A new connection shows the DPI suggestion again.
       bannerDismissed: snapshot.status === "connecting" ? false : s.bannerDismissed,
       latency: snapshot.status === "disconnected" ? [] : s.latency,
+      // DPI can be switched from the tray too; the snapshot wins.
+      settings:
+        s.settings && typeof snapshot.dpi?.enabled === "boolean" && snapshot.dpi.enabled !== s.settings.dpi.enabled
+          ? { ...s.settings, dpi: { ...s.settings.dpi, enabled: snapshot.dpi.enabled } }
+          : s.settings,
     })),
   setSettings: (settings) => set({ settings }),
   setInfo: (info) => set({ info }),

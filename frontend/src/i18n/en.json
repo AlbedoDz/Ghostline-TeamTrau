@@ -125,6 +125,7 @@
     "chunks": "chunks",
     "delay": "delay (ms)",
     "redundant": "ⓘ redundant while GoodbyeDPI is on",
+    "waiting": "On — GoodbyeDPI starts when you connect",
     "probeSites": "TEST SITES",
     "probeAgain": "⟳ test again",
     "stage": {

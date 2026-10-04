@@ -1,5 +1,5 @@
 import { beforeAll, beforeEach, expect, test, vi } from "vitest";
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { Dpi } from "./pages/Dpi";
 import { Logs } from "./pages/Logs";
 import { Settings } from "./pages/Settings";
@@ -138,4 +138,21 @@ test("errors from Go are translated, not shown raw", async () => {
   fireEvent.click(screen.getByRole("switch", { name: "GOODBYEDPI" }));
   expect(await screen.findByText(/GoodbyeDPI không chạy được/)).toBeInTheDocument();
   expect(screen.queryByText(/map\[/)).toBeNull();
+});
+
+test("dpi toggle reflects the new state and the snapshot from Go", async () => {
+  render(<Dpi />);
+  const sw = screen.getByRole("switch", { name: "GOODBYEDPI" });
+  fireEvent.click(sw);
+  await waitFor(() => expect(sw).toHaveAttribute("aria-checked", "true"));
+  // Turned off from the tray: the snapshot is the source of truth.
+  act(() => useGhost.getState().setSnapshot({ ...useGhost.getState().snapshot, dpi: { enabled: false, running: false, preset: "light" } } as any));
+  expect(sw).toHaveAttribute("aria-checked", "false");
+  expect(useGhost.getState().settings?.dpi.enabled).toBe(false);
+});
+
+test("dpi shows that it waits for a connection", () => {
+  useGhost.getState().setSnapshot({ status: "disconnected", warnings: [], servers: [], blockedSites: [], dpi: { enabled: true, running: false, preset: "light" } } as any);
+  render(<Dpi />);
+  expect(screen.getByText(/chạy khi kết nối/)).toBeInTheDocument();
 });

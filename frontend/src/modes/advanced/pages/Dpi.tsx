@@ -34,6 +34,18 @@ export function Dpi() {
 
   const save = async (patch: Parameters<typeof saveSettings>[0]) => setError(await saveSettings(patch));
   const running = snap.dpi?.running;
+  const setEnabled = (on: boolean) => {
+    const s = useGhost.getState().settings;
+    if (s) useGhost.getState().setSettings({ ...s, dpi: { ...s.dpi, enabled: on } });
+  };
+  const toggleDPI = (on: boolean) => {
+    setError(null);
+    setEnabled(on);
+    Service.SetDPIEnabled(on).catch((e) => {
+      setEnabled(!on);
+      setError(describeError(e));
+    });
+  };
 
   return (
     <div className={css.page}>
@@ -42,7 +54,7 @@ export function Dpi() {
       <div className={css.panel}>
         <div className={css.panelTitle}>
           <span>{t("dpi.goodbyedpi")}</span>
-          <Toggle label={t("dpi.goodbyedpi")} checked={dpi.enabled} onChange={(v) => void Service.SetDPIEnabled(v).catch((e) => setError(describeError(e)))} />
+          <Toggle label={t("dpi.goodbyedpi")} checked={dpi.enabled} onChange={toggleDPI} />
         </div>
         <div className={css.setting}>
           <span>{t("dpi.preset")}</span>
@@ -89,7 +101,11 @@ export function Dpi() {
         <div className={css.code} aria-label={t("dpi.preview")}>
           goodbyedpi.exe {preview.join(" ")}
         </div>
-        {running && <div className={css.ok}>● {t("log.DPI_STARTED", { preset: snap.dpi.preset })}</div>}
+        {running ? (
+          <div className={css.ok}>● {t("log.DPI_STARTED", { preset: snap.dpi.preset })}</div>
+        ) : dpi.enabled ? (
+          <div className={css.dim}>○ {t("dpi.waiting")}</div>
+        ) : null}
       </div>
 
       {blacklist !== null && (
