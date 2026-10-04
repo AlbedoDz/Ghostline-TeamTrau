@@ -9,6 +9,7 @@ import (
 	"net"
 	"os"
 	"regexp"
+	"slices"
 	"strconv"
 )
 
@@ -178,8 +179,15 @@ func LoadSettings(path string) (s Settings, recovered bool, err error) {
 	if s.Proxy.Upstreams == nil {
 		s.Proxy.Upstreams = []UpstreamProxy{}
 	}
+	if slices.Equal(s.ProbeSites, oldProbeSites) {
+		s.ProbeSites = DefaultSettings().ProbeSites
+	}
 	return s, false, nil
 }
+
+// oldProbeSites is the default test-site list before v0.2.5. Files that
+// still hold it untouched move to the current default; edited lists stay.
+var oldProbeSites = []string{"youtube.com", "discord.com", "telegram.org", "x.com"}
 
 // SaveSettings writes settings atomically.
 func SaveSettings(path string, s Settings) error {

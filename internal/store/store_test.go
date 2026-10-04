@@ -77,6 +77,22 @@ func TestLoadSettings_PartialFileKeepsDefaults(t *testing.T) {
 	require.Equal(t, 5, s.MaxUpstreams)
 }
 
+func TestLoadSettings_OldDefaultProbeSitesMoveToNewDefault(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "settings.json")
+	require.NoError(t, os.WriteFile(path, []byte(`{"probeSites":["youtube.com","discord.com","telegram.org","x.com"]}`), 0o644))
+	s, _, err := store.LoadSettings(path)
+	require.NoError(t, err)
+	require.Equal(t, []string{"youtube.com", "discord.com", "x.com"}, s.ProbeSites)
+}
+
+func TestLoadSettings_EditedProbeSitesAreKept(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "settings.json")
+	require.NoError(t, os.WriteFile(path, []byte(`{"probeSites":["telegram.org","example.com"]}`), 0o644))
+	s, _, err := store.LoadSettings(path)
+	require.NoError(t, err)
+	require.Equal(t, []string{"telegram.org", "example.com"}, s.ProbeSites)
+}
+
 func TestLoadSettings_CorruptRenamesToBak(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "settings.json")
 	require.NoError(t, os.WriteFile(path, []byte("{oops"), 0o644))
