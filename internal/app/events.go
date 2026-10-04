@@ -5,6 +5,7 @@ import (
 	"sync/atomic"
 
 	"github.com/hashcott/ghostline/internal/engine"
+	"github.com/hashcott/ghostline/internal/proxy"
 	"github.com/hashcott/ghostline/internal/scanner"
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
@@ -18,6 +19,11 @@ const (
 	EventScan     = "scan:progress"
 	EventAutotune = "dpi:autotune"
 	EventUpdate   = "update"
+
+	EventProxyStats    = "proxy:stats"
+	EventProxyConn     = "proxy:conn"
+	EventRulesCompiled = "rules:compiled"
+	EventListsProgress = "lists:progress"
 )
 
 // StatsEvent is emitted every second while protected.
@@ -57,6 +63,10 @@ func init() {
 	application.RegisterEvent[ScanProgress](EventScan)
 	application.RegisterEvent[AutotuneProgress](EventAutotune)
 	application.RegisterEvent[UpdateInfo](EventUpdate)
+	application.RegisterEvent[proxy.Stats](EventProxyStats)
+	application.RegisterEvent[proxy.ConnEvent](EventProxyConn)
+	application.RegisterEvent[RulesCompiled](EventRulesCompiled)
+	application.RegisterEvent[ListsProgress](EventListsProgress)
 }
 
 // Emitter sends events to the UI.

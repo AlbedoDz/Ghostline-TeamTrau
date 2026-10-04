@@ -16,6 +16,8 @@ import (
 	"github.com/hashcott/ghostline/internal/engine"
 	"github.com/hashcott/ghostline/internal/model"
 	"github.com/hashcott/ghostline/internal/probe"
+	"github.com/hashcott/ghostline/internal/rules"
+	"github.com/hashcott/ghostline/internal/rules/lists"
 	"github.com/hashcott/ghostline/internal/scanner"
 	"github.com/hashcott/ghostline/internal/servers"
 	"github.com/hashcott/ghostline/internal/store"
@@ -83,6 +85,18 @@ type ServiceDeps struct {
 	Info         func() AppInfo
 	// OnSettingsChanged lets the shell react (autostart task, language…).
 	OnSettingsChanged func(old, new store.Settings)
+
+	// Phase 2A.
+	Rules        *rules.Holder
+	RulesPath    string
+	Fetcher      *lists.Fetcher
+	MaxEntries   int // 0 = DefaultMaxEntries
+	FragCache    *store.FragCache
+	NetKey       func() string
+	Proxy        ProxyQuery
+	LANInfo      func() LANInfo
+	Protect      func(string) (string, error) // DPAPI
+	TestUpstream func(ctx context.Context, id string) error
 }
 
 // Service is bound to the frontend by Wails; its exported methods are the
@@ -94,6 +108,11 @@ type Service struct {
 	mu         sync.Mutex
 	scanCancel context.CancelFunc
 	tuneCancel context.CancelFunc
+	overrideCh chan bool
+
+	rmu sync.Mutex // guards rf
+	rf  store.RulesFile
+	bg  sync.WaitGroup
 }
 
 // NewService creates the UI service.
@@ -133,6 +152,12 @@ func (s *Service) SaveSettings(n store.Settings) error {
 			return fmt.Errorf("settings: bootstrap %q must be ip:port", b)
 		}
 	}
+	if err := store.ValidateProxy(n.Proxy); err != nil {
+		return err
+	}
+	if n.DNSBlockMode != "zero" && n.DNSBlockMode != "nxdomain" {
+		return fmt.Errorf("settings: dnsBlockMode must be zero or nxdomain")
+	}
 	if n.DPI.Preset == "custom" || n.DPI.CustomArgs != "" {
 		if _, err := dpi.ValidateCustom(n.DPI.CustomArgs); err != nil {
 			return err
@@ -144,6 +169,10 @@ func (s *Service) SaveSettings(n store.Settings) error {
 	}
 	if s.x.OnSettingsChanged != nil {
 		s.x.OnSettingsChanged(old, n)
+	}
+	if proxyPhaseChanged(old.Proxy, n.Proxy) {
+		// May wait for the SYSPROXY_EXISTING answer: do not block the UI call.
+		s.background(func(ctx context.Context) { _ = s.o.ReapplyProxy(ctx) })
 	}
 	return nil
 }
