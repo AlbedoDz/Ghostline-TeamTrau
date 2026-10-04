@@ -68,6 +68,8 @@ type ui struct {
 	tray      *application.SystemTray
 	connItem  *application.MenuItem
 	dpiItem   *application.MenuItem
+	proxyItem *application.MenuItem
+	svc       *app.Service
 	openItem  *application.MenuItem
 	quitItem  *application.MenuItem
 	updItem   *application.MenuItem
@@ -173,6 +175,14 @@ func (u *ui) createTray() {
 			}
 		}()
 	})
+	u.proxyItem = menu.Add(tt.proxyLabel(u.box.Get().Proxy.Enabled)).OnClick(func(*application.Context) {
+		go func() {
+			if u.svc != nil {
+				_ = u.svc.SetProxyEnabled(!u.box.Get().Proxy.Enabled)
+			}
+			u.onLanguage()
+		}()
+	})
 	menu.AddSeparator()
 	u.openItem = menu.Add(tt.open).OnClick(func(*application.Context) { u.show() })
 	menu.Add("Ghostline " + brand.Version).SetEnabled(false)
@@ -218,6 +228,7 @@ func (u *ui) relabel(status app.Status) {
 		u.connItem.SetLabel(tt.connect)
 	}
 	u.dpiItem.SetLabel(tt.dpi)
+	u.proxyItem.SetLabel(tt.proxyLabel(u.box.Get().Proxy.Enabled))
 	u.openItem.SetLabel(tt.open)
 	u.quitItem.SetLabel(tt.quit)
 }

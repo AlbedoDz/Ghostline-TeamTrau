@@ -402,6 +402,7 @@ func (s *Service) SetQueryLog(on bool) {
 	s.x.Bus.queryLog.Store(on)
 	if !on {
 		s.x.Bus.queries.Reset()
+		s.x.Bus.conns.Reset()
 	}
 }
 

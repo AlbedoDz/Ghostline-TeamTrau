@@ -117,6 +117,7 @@ Section "uninstall"
     ; snapshot, remove the logon tasks, remove the WinDivert driver service.
     nsExec::Exec 'taskkill /IM ${PRODUCT_EXECUTABLE} /F'
     ExecWait '"$INSTDIR\${PRODUCT_EXECUTABLE}" --restore'
+    nsExec::Exec 'netsh advfirewall firewall delete rule name="Ghostline Proxy"'
     nsExec::Exec 'schtasks /Delete /TN "Ghostline" /F'
     nsExec::Exec 'schtasks /Delete /TN "Ghostline Recovery" /F'
     nsExec::Exec 'sc stop WinDivert'

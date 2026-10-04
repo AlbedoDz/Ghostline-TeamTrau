@@ -123,6 +123,8 @@ func Run(o Options) error {
 	em := &emitter{}
 	bus := app.NewBus(em)
 	eng := engine.New(bus.Query)
+	pw := newProxyWiring(box, eng, paths, o.Executable, bus, log)
+	var svc *app.Service // assigned below; ConfirmOverride runs only after startup
 	orch := app.New(app.Deps{
 		Engine: eng, DNS: dnsMgr, DPI: dpiMgr, Safety: safety{exe: o.Executable}, System: system{},
 		Picker: picker, Scans: picker, Builder: build, Resolver: net.DefaultResolver,
@@ -144,6 +146,13 @@ func Run(o Options) error {
 			return t.C, t.Stop
 		},
 		BlacklistPath: paths.DPIBlacklist,
+		Proxy:         pw,
+		SysProxy:      sysproxy.Manager{API: sysproxy.NewWindowsAPI()},
+		Firewall:      firewall{exe: o.Executable},
+		ConfirmOverride: func(server, pac string) bool {
+			return svc != nil && app.AskOverride(svc, server, pac, 60*time.Second)
+		},
+		Rules: pw.holder.Load,
 	})
 	if settingsReset {
 		orch.AddWarning(app.AppError{Code: app.CodeSettingsReset})
@@ -154,7 +163,7 @@ func Run(o Options) error {
 
 	ui := &ui{orch: orch, box: box, log: log}
 	update := &updateState{}
-	svc := app.NewService(orch, app.ServiceDeps{
+	svc = app.NewService(orch, app.ServiceDeps{
 		Bus: bus, Paths: paths, Settings: box, Catalog: cat.get,
 		LoadCustom: cat.loadCustom, SaveCustom: cat.saveCustom,
 		ListAdapters: func() ([]sysdns.Adapter, error) { return sysdns.NewWindowsAPI().Adapters() },
@@ -183,8 +192,25 @@ func Run(o Options) error {
 			if !slices.Equal(old.Bootstrap, n.Bootstrap) || old.TestDomain != n.TestDomain {
 				picker.Checker = scanner.DNSChecker{Build: build.Build, TestDomain: n.TestDomain, Timeout: 3 * time.Second}
 			}
+			if old.Proxy.Enabled != n.Proxy.Enabled {
+				ui.onLanguage() // relabels the tray's proxy item
+			}
 		},
+		Rules:        pw.holder,
+		RulesPath:    paths.Rules,
+		Fetcher:      pw.fetcher(),
+		FragCache:    pw.frag,
+		NetKey:       networkKey,
+		Proxy:        pw,
+		LANInfo:      pw.lanInfo,
+		Protect:      winutil.ProtectString,
+		TestUpstream: pw.testUpstream,
 	})
+	ui.svc = svc
+	if recovered, err := app.LoadRules(svc); err != nil || recovered {
+		log.Warn("rules.json", "err", err, "recovered", recovered)
+		orch.AddWarning(app.AppError{Code: app.CodeRulesParse, Params: map[string]any{"line": 0}})
+	}
 
 	wapp = application.New(application.Options{
 		Name:        brand.AppName,
@@ -224,6 +250,11 @@ func Run(o Options) error {
 	ui.createTray()
 	em.onState = ui.onState
 
+	if stopProxyWatch, err := sysproxy.Watch(orch.OnSysProxyChanged); err != nil {
+		log.Warn("system proxy watch", "err", err)
+	} else {
+		defer stopProxyWatch()
+	}
 	stopWatch, err := sysdns.Watch(func() { orch.OnNetworkChange(context.Background()) })
 	if err != nil {
 		log.Warn("network watch", "err", err)
@@ -235,6 +266,10 @@ func Run(o Options) error {
 	statTick := time.NewTicker(time.Second)
 	defer statTick.Stop()
 	go app.RunStats(svc, ctx, statTick.C)
+	proxyTick := time.NewTicker(time.Second)
+	defer proxyTick.Stop()
+	go runProxyStats(ctx, pw, proxyTick.C)
+	go runLists(ctx, svc)
 	go runUpdates(ctx, paths, box, cat, update, bus, log, ui.onUpdate)
 
 	if o.Mode.Kind == cli.KindAutostart && box.Get().AutoConnect {

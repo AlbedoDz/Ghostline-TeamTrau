@@ -52,15 +52,19 @@ func (nopUp) Address() string                                      { return "nop
 func (nopUp) Close() error                                         { return nil }
 
 type fEngine struct {
-	r     *rec
-	saw   bool
-	swaps int
-	stats engine.Stats
-	selfE error
-	mu    sync.Mutex
+	lastCfg engine.Config
+	r       *rec
+	saw     bool
+	swaps   int
+	stats   engine.Stats
+	selfE   error
+	mu      sync.Mutex
 }
 
-func (e *fEngine) Start(context.Context, engine.Config) error { return e.r.add("engine.start") }
+func (e *fEngine) Start(_ context.Context, cfg engine.Config) error {
+	e.lastCfg = cfg
+	return e.r.add("engine.start")
+}
 func (e *fEngine) Swap(context.Context, []upstream.Upstream) error {
 	e.mu.Lock()
 	e.swaps++

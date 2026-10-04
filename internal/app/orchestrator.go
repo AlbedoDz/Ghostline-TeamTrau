@@ -300,7 +300,8 @@ func (o *Orchestrator) connectSteps() []step {
 			if err != nil {
 				return appErr(CodeEngineSelfTest, err)
 			}
-			cfg := engine.Config{ListenV4: o.d.ListenV4, Upstreams: ups, CacheEnabled: true}
+			cfg := engine.Config{ListenV4: o.d.ListenV4, Upstreams: ups, CacheEnabled: true,
+				Rules: o.d.Rules, BlockMode: o.d.Settings().DNSBlockMode}
 			if v6 {
 				cfg.ListenV6 = o.d.ListenV6
 			}

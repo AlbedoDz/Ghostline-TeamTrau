@@ -80,13 +80,27 @@ type Bus struct {
 	em       Emitter
 	logs     *LogBuffer
 	queries  *Ring[engine.QueryEvent]
+	conns    *Ring[proxy.ConnEvent]
 	queryLog atomic.Bool
 }
 
 // NewBus creates a bus emitting through em.
 func NewBus(em Emitter) *Bus {
-	return &Bus{em: em, logs: NewLogBuffer(1000), queries: NewRing[engine.QueryEvent](500)}
+	return &Bus{em: em, logs: NewLogBuffer(1000), queries: NewRing[engine.QueryEvent](500), conns: NewRing[proxy.ConnEvent](500)}
 }
+
+// ProxyConn receives every proxied connection; like queries it is kept
+// (RAM only) and shown only while the query view is on.
+func (b *Bus) ProxyConn(e proxy.ConnEvent) {
+	if !b.queryLog.Load() {
+		return
+	}
+	b.conns.Add(e)
+	b.em.Emit(EventProxyConn, e)
+}
+
+// ProxyConns returns the RAM-only recent proxy connections.
+func (b *Bus) ProxyConns() []proxy.ConnEvent { return b.conns.All() }
 
 // State implements Sink.
 func (b *Bus) State(s Snapshot) { b.em.Emit(EventState, s) }

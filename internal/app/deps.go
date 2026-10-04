@@ -9,6 +9,7 @@ import (
 	"github.com/hashcott/ghostline/internal/engine"
 	"github.com/hashcott/ghostline/internal/model"
 	"github.com/hashcott/ghostline/internal/probe"
+	"github.com/hashcott/ghostline/internal/rules"
 	"github.com/hashcott/ghostline/internal/store"
 	"github.com/hashcott/ghostline/internal/sysdns"
 	"github.com/hashcott/ghostline/internal/watchdog"
@@ -147,6 +148,8 @@ type Deps struct {
 	// ConfirmOverride asks the user before replacing another app's system
 	// proxy or PAC (SYSPROXY_EXISTING); nil means "do not replace".
 	ConfirmOverride func(server, pac string) bool
-	ListenV4        netip.AddrPort // default 127.0.0.1:53
-	ListenV6        netip.AddrPort // default [::1]:53
+	// Rules returns the current rules for the DNS engine; nil means none.
+	Rules    func() *rules.Compiled
+	ListenV4 netip.AddrPort // default 127.0.0.1:53
+	ListenV6 netip.AddrPort // default [::1]:53
 }

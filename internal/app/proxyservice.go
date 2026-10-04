@@ -19,10 +19,9 @@ type LANInfo struct {
 	Public bool     `json:"public"`
 }
 
-// ProxyQuery reads live proxy data (nil when the proxy is not wired).
+// ProxyQuery reads live proxy counters (nil when the proxy is not wired).
 type ProxyQuery interface {
 	Stats() proxy.Stats
-	Conns() []proxy.ConnEvent
 }
 
 // GetLANInfo lists the addresses other devices can use and whether the
@@ -141,10 +140,10 @@ func (s *Service) GetProxyStats() proxy.Stats {
 // GetProxyConns returns the RAM-only recent connections (only while the
 // query view is on).
 func (s *Service) GetProxyConns() []proxy.ConnEvent {
-	if s.x.Proxy == nil || !s.x.Bus.queryLog.Load() {
+	if !s.x.Bus.queryLog.Load() {
 		return []proxy.ConnEvent{}
 	}
-	return s.x.Proxy.Conns()
+	return s.x.Bus.ProxyConns()
 }
 
 // AnswerSysProxyOverride is the user's reply to SYSPROXY_EXISTING.

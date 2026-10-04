@@ -26,3 +26,10 @@ func TestTrayText_UpdateLabel(t *testing.T) {
 	require.Equal(t, "Có bản mới v0.1.1 ↗", trayText("vi").updateLabel("v0.1.1"))
 	require.Equal(t, "New version v0.1.1 ↗", trayText("en").updateLabel("v0.1.1"))
 }
+
+func TestTrayText_ProxyItem(t *testing.T) {
+	require.Equal(t, "Proxy: bật", trayText("vi").proxyLabel(true))
+	require.Equal(t, "Proxy: tắt", trayText("vi").proxyLabel(false))
+	require.Equal(t, "Proxy: on", trayText("en").proxyLabel(true))
+	require.Equal(t, "Proxy: off", trayText("en").proxyLabel(false))
+}
