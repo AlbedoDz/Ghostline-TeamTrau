@@ -83,7 +83,7 @@ Get-FileHash .\Ghostline-0.1.0-portable.zip -Algorithm SHA256
 
 ## Usage
 
-> 📖 A detailed user guide (Vietnamese) covering every screen, unblocking sites and troubleshooting: **[docs/huong-dan-su-dung.md](docs/huong-dan-su-dung.md)**
+> 📖 A detailed user guide covering every screen, unblocking sites and troubleshooting: **[docs/user-guide.md](docs/user-guide.md)** ([Tiếng Việt](docs/huong-dan-su-dung.md))
 
 1. Start Ghostline and press **Connect**. It picks a server, redirects DNS and verifies there is no leak.
 2. If some sites are still blocked, open **Advanced → DPI**, turn on **GoodbyeDPI**, or press **auto-tune** to find a preset that works on your network.

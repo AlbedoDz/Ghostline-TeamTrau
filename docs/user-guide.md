@@ -1,0 +1,260 @@
+# Ghostline user guide
+
+This guide is for anyone running Windows 10/11; no technical background is needed. Sections 1–3 are enough to get started. The rest covers fine-tuning and troubleshooting.
+
+[Tiếng Việt](huong-dan-su-dung.md)
+
+## Contents
+
+1. [What Ghostline does](#1-what-ghostline-does)
+2. [Installing](#2-installing)
+3. [Quick start: one button](#3-quick-start-one-button)
+4. [Advanced mode](#4-advanced-mode)
+   - [Overview](#41-overview)
+   - [Servers](#42-servers)
+   - [DPI bypass](#43-dpi-bypass)
+   - [Logs](#44-logs)
+   - [Settings](#45-settings)
+5. [The tray icon](#5-the-tray-icon)
+6. [When a site is still blocked](#6-when-a-site-is-still-blocked)
+7. [Troubleshooting](#7-troubleshooting)
+8. [Uninstalling](#8-uninstalling)
+9. [FAQ](#9-faq)
+
+---
+
+## 1. What Ghostline does
+
+Every time you open a website, your computer asks **DNS**: "what is the IP address of this site?" Normally that question travels **unencrypted**, so your ISP can read it, log it, or answer with a wrong address to block the site.
+
+Ghostline runs a small DNS server on your own machine (`127.0.0.1`), points every network adapter at it, and sends your DNS questions over an **encrypted** channel (DoH, DoT, DoQ or DNSCrypt) to the fastest server available. If your ISP also blocks sites by inspecting packets (DPI), Ghostline can run **GoodbyeDPI** to get around it.
+
+Most importantly, **Ghostline always gives your original DNS back** when you disconnect, even if the app crashes or the machine loses power.
+
+## 2. Installing
+
+Download from [Releases](https://github.com/hashcott/ghostline/releases). There are two options:
+
+| Build | When to use it |
+| --- | --- |
+| `ghostline-amd64-installer.exe` | For everyday use on your own PC. Adds a Start Menu shortcut and can be removed from Settings → Apps. |
+| `Ghostline-<version>-portable.zip` | When you don't want to install anything, or to run from a USB drive. Unzip it into a folder and run `ghostline.exe`. All data stays in the `data\` folder next to it. |
+
+**Verify the download (recommended).** Open PowerShell in the folder with the downloaded file:
+
+```powershell
+Get-FileHash .\ghostline-amd64-installer.exe -Algorithm SHA256
+```
+
+Compare the result with the matching line in `SHA256SUMS` on the Releases page. If they differ, **do not run the file**.
+
+**SmartScreen warning.** Releases are not code-signed yet, so Windows shows "Windows protected your PC". After checking the SHA-256, click **More info → Run anyway**.
+
+**Administrator rights.** Ghostline needs admin rights to change DNS and run GoodbyeDPI, so Windows shows a UAC prompt each time you open it. Choose **Yes**. If you turn on *start with windows*, the app is launched through Task Scheduler and no longer asks.
+
+**Antivirus.** GoodbyeDPI uses the **WinDivert** driver, which some antivirus products flag by mistake. Ghostline checks GoodbyeDPI's hash before every start. If your antivirus blocks it, add the Ghostline folder to its exclusions.
+
+## 3. Quick start: one button
+
+<p align="center"><img src="screenshots/simple-en.png" width="320" alt="Simple mode"></p>
+
+Ghostline opens in **SIMPLE** mode.
+
+1. Click the **round power button** in the middle.
+2. Ghostline goes through: checking the system → choosing servers → starting the engine → saving original DNS → arming safety net → setting DNS → verifying no leaks. The first time takes about 10–25 seconds because it scans servers; after that it takes a few seconds.
+3. When the ring glows green and shows **[ PROTECTED ]**, you're done: every DNS query on the machine is encrypted.
+
+To cancel while connecting, click the power button again. To turn protection off, click the power button while protected; your DNS goes back to what it was.
+
+**The info panel below:**
+
+| Row | Meaning |
+| --- | --- |
+| server | The DNS server in use; `+4` means four more servers run alongside it as backup |
+| latency | Average time to get a DNS answer |
+| dpi bypass | The GoodbyeDPI preset in use, or *off* |
+| uptime | How long you've been protected |
+
+**Statuses you may see:**
+
+| Status | Meaning |
+| --- | --- |
+| UNPROTECTED | Your machine is using its original DNS |
+| CONNECTING | Running the steps above |
+| PROTECTED | Everything is working |
+| DEGRADED | Servers are slow or not answering; Ghostline is finding new ones by itself. Browsing still works |
+| ERROR | Connecting failed. **Your DNS was not changed.** Read the message below it for what to do (see [section 7](#7-troubleshooting)) |
+
+## 4. Advanced mode
+
+Click **ADVANCED** at the top left for the full interface, and **SIMPLE** to go back. The left sidebar always shows the current status and a **⏻ CONNECT / DISCONNECT** button.
+
+### 4.1. Overview
+
+![Overview](screenshots/overview-en.png)
+
+- **Top panel:** status, uptime, and the DNS route: `127.0.0.1 → the servers in use`.
+- **latency · 60 seconds:** a latency chart for the last minute. Lower is better.
+- **queries:** the number of DNS queries answered since you connected.
+- **servers in use:** the servers Ghostline queries in parallel; the fastest answer wins.
+
+### 4.2. Servers
+
+![Servers](screenshots/servers-en.png)
+
+Every encrypted DNS server Ghostline knows about (several hundred), refreshed daily from a signed list.
+
+- **⟳ scan all:** re-measures every server's latency and drops servers that return wrong (poisoned) answers. Ghostline scans by itself when needed; click it after switching networks or when things feel slow.
+- **filter:** pick protocols (`doh`, `dot`, `doq`, `dnscrypt`) or server types:
+  - `no-filter`: blocks nothing.
+  - `adblock`: blocks ads and trackers.
+  - `family`: blocks adult content, good for children's computers.
+  - **only ok:** show only servers that are currently working.
+- **Click a column header** (name, latency…) to sort.
+- **☆ Pin:** click the star to pin servers you like. Turn on **use pinned servers only** at the bottom so Ghostline picks only from those.
+- **+ add:** add your own servers. Paste URLs (`https://…`, `tls://…`, `quic://…`) or `sdns://…` stamps, one per line, or import them from a file. Servers you added have an **✕** button to remove them.
+- **state:** *in use* (receiving queries), *ok* (working), *not checked*.
+
+### 4.3. DPI bypass
+
+![DPI bypass](screenshots/dpi-en.png)
+
+Use this when DNS is encrypted but a site is **still blocked**, because your ISP reads the site name inside your traffic (SNI) to block it.
+
+**GoodbyeDPI**
+
+- **GOODBYEDPI switch:** turns it on or off. GoodbyeDPI only runs while Ghostline is **connected**:
+  - `● GoodbyeDPI running (preset …)`: working.
+  - `○ GoodbyeDPI is starting…`: waiting a few seconds for the WinDivert driver.
+  - `○ On — GoodbyeDPI starts when you connect`: switched on, but you're not connected yet.
+- **preset:** how aggressively packets are modified.
+  - **Light → Medium → High → Extreme:** higher levels get past more blocks but may slow down or break some sites. Start with **Light**.
+  - **Mode 1–6:** GoodbyeDPI's built-in modes; try them when the levels above don't help.
+  - **Custom:** enter your own GoodbyeDPI arguments (for people who know GoodbyeDPI; Ghostline rejects dangerous flags).
+- **⚡ auto-tune:** Ghostline tries each preset from lightest to strongest and keeps the lightest one that opens every *test site*. You must **connect first**. Click again to cancel.
+- **scope:**
+  - **all connections:** applies to every site.
+  - **blacklist:** applies only to domains on the list. Click **edit ›**, enter one domain per line, then **save**. This affects other sites the least.
+- **command line:** shows exactly what GoodbyeDPI will run.
+
+**DNS fragment**
+
+Splits the packets sent to DoH servers into pieces so the ISP has a harder time recognising them. You only need it when **no servers can be found** (your ISP blocks encrypted DNS itself). It is redundant while GoodbyeDPI is on.
+
+- **chunks:** how many pieces (2–20).
+- **delay (ms):** the pause between pieces.
+
+**Test sites**
+
+The sites used to check whether blocking is bypassed (default: youtube.com, discord.com, telegram.org, x.com). Click **⟳ test again** to check; each site shows:
+
+| Result | Meaning |
+| --- | --- |
+| ✓ | Opens fine |
+| ✕ DNS | The name could not be resolved |
+| ✕ TCP | Could not connect to the site's server |
+| ✕ TLS | Blocked during the encrypted handshake, usually DPI → turn on GoodbyeDPI or auto-tune |
+| ✕ HTTP | Connected, but the site returned an error |
+
+You can edit the list in the box below, one site per line.
+
+### 4.4. Logs
+
+![Logs](screenshots/logs-en.png)
+
+Records events: connecting, switching servers, GoodbyeDPI on/off, errors.
+
+- **Filters:** all, engine, dpi, system.
+- **pause / resume:** stop scrolling so you can read.
+- **copy / save file:** copy the log or save it as `ghostline-log.txt` to attach to a bug report.
+- **show queries:** watch DNS queries live. Kept in RAM only, at most 500 lines, **never written to disk**.
+
+### 4.5. Settings
+
+![Settings](screenshots/settings-en.png)
+
+| Setting | Meaning |
+| --- | --- |
+| language | VI or EN (also switchable with the VI/EN button at the top) |
+| start with windows | Open Ghostline when you sign in, without a UAC prompt |
+| connect on launch | Connect as soon as the app opens |
+| close → minimise to tray | Clicking ✕ hides the window to the tray instead of quitting. Ghostline keeps protecting you in the background |
+| adapters | **auto**: protect every adapter in use (recommended). **manual**: protect only the adapters you pick |
+| test domain | The domain used to check that servers answer correctly |
+| bootstrap | Plain DNS servers used only to look up the addresses of DoH servers at startup (default `1.1.1.1:53`, `8.8.8.8:53`). This is the only unencrypted DNS traffic, and it is only used to look up DoH server names |
+| max servers | How many servers to use in parallel (default 5). More is steadier but uses slightly more bandwidth |
+| update server list | Download a fresh server list daily (signature-checked) |
+| notify about new versions | Show a notice when a new version is out. Ghostline **never updates itself** |
+| ⚠ RESTORE DNS NOW | Put every adapter's DNS back to its saved state. Use it if DNS ever looks wrong |
+
+## 5. The tray icon
+
+Ghostline puts a ring icon in the system tray (bottom right, next to the clock). Its colour shows the current status. **Right-click** it for the menu:
+
+- **Connect / Disconnect**
+- **DPI bypass:** quickly turn GoodbyeDPI on or off
+- **Open Ghostline:** show the window again
+- **Quit:** disconnect, restore your DNS, then close the app
+
+## 6. When a site is still blocked
+
+Work through these in order and stop as soon as the site opens:
+
+1. **Connect Ghostline.** Many sites are blocked only through DNS, so connecting is enough.
+2. **Clear your browser cache**, or try a private window (the browser may still remember old DNS answers).
+3. Open **DPI bypass** and turn on **GoodbyeDPI** with the **Light** preset.
+4. Click **⚡ auto-tune** to let Ghostline find a preset that works. Add the site you need to **Test sites** first so auto-tune checks that exact site.
+5. Still blocked: try **Mode 1–6**.
+6. If only a few sites are blocked, switch **scope** to **blacklist** and add just those sites, so GoodbyeDPI doesn't affect anything else.
+
+> **Browser note:** Chrome, Edge and Firefox have their own *Secure DNS / DNS over HTTPS* option. When it's on, the browser bypasses Ghostline. Turn it off, or set it to use the system's DNS.
+
+## 7. Troubleshooting
+
+| Message | Cause and fix |
+| --- | --- |
+| **Ghostline needs administrator rights to change DNS** | The app was opened without admin rights. Close it, then right-click → **Run as administrator** |
+| **Port 53 is held by …** | Another program is running DNS on this machine (usually Mobile Hotspot/ICS, WSL, Hyper-V or another DNS tool). Close it, or use the **Stop service …** button Ghostline offers. Ghostline always asks before stopping any service |
+| **No working servers found** | Your network is down, or your ISP blocks encrypted DNS too. Check your connection, then try turning on **DNS fragment** |
+| **DNS queries are not going through Ghostline** | A VPN or another tool owns DNS. Turn it off and connect again |
+| **Could not set DNS on …** | That adapter doesn't allow DNS changes (often a virtual adapter from a VPN or VM). Go to **Settings → adapters → manual** and leave it out |
+| **Could not restore the original DNS on …** | Click **⚠ RESTORE DNS NOW**. The message stays until the restore succeeds |
+| **GoodbyeDPI failed to start** | Try another preset. The details in brackets say more |
+| **GoodbyeDPI was blocked by antivirus** | Add the Ghostline folder to your antivirus exclusions |
+| **GoodbyeDPI files were modified** | The GoodbyeDPI files no longer match their original hash (an antivirus may have changed them, or they were tampered with). Reinstall Ghostline |
+| **No working DPI bypass configuration found** | Auto-tune found no preset that opens every test site. Try Mode 1–6 or custom arguments |
+| **Connect first to auto-tune DPI bypass** | Click Connect, then run auto-tune again |
+
+**Lost internet after using Ghostline?** This is very unlikely because there are four recovery layers, but if it happens:
+
+1. Open Ghostline → **Settings → ⚠ RESTORE DNS NOW**.
+2. Or open PowerShell as administrator and run:
+   ```powershell
+   & "C:\Program Files\Ghostline\Ghostline\ghostline.exe" --restore
+   ```
+   (for the portable build, use the path to your own `ghostline.exe`).
+3. Last resort: **Settings → Network & internet → your adapter → DNS server assignment → Edit → Automatic (DHCP)**.
+
+**Reporting a bug:** go to **Logs → save file**, then open an issue on [GitHub](https://github.com/hashcott/ghostline/issues) with that file attached. Logs never contain the sites you visited.
+
+## 8. Uninstalling
+
+- **Installer build:** Settings → Apps → Ghostline → Uninstall. The uninstaller restores your DNS and removes the startup tasks and the WinDivert driver.
+- **Portable build:** in the app click **Disconnect**, turn off **start with windows**, quit from the tray, then delete the folder.
+
+## 9. FAQ
+
+**Is Ghostline a VPN?**
+No. Ghostline encrypts only **DNS** (the "where is this site?" question). It doesn't change your IP address or encrypt the content you browse. If you need to hide your IP, use a VPN; note that a VPN and Ghostline usually can't run at the same time.
+
+**Does Ghostline slow down my internet?**
+Usually not. Ghostline queries several servers at once, uses the fastest answer, and caches results. GoodbyeDPI on a high preset may make some sites slightly slower.
+
+**Does Ghostline collect my data?**
+No. No telemetry, no accounts, and visited sites are never written to disk. The code is open source, so you can check for yourself.
+
+**What if I shut down while connected?**
+That's fine. Ghostline restores DNS before Windows shuts down. If the power is cut, the *Ghostline Recovery* task restores DNS at your next sign-in, even if you don't open Ghostline.
+
+**Can I use it with Mobile Hotspot?**
+Windows Mobile Hotspot holds port 53, so the two can't run at the same time. Ghostline reports *Port 53 is held by …* and offers to stop the service (only if you agree).

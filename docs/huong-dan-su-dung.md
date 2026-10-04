@@ -1,5 +1,7 @@
 # Hướng dẫn sử dụng Ghostline
 
+[English](user-guide.md)
+
 Hướng dẫn này dành cho người dùng Windows 10/11, không cần biết về kỹ thuật. Bạn chỉ cần đọc phần 1–3 là dùng được ngay; các phần sau dành cho khi bạn muốn tinh chỉnh hoặc gặp sự cố.
 
 ## Mục lục
