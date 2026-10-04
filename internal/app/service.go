@@ -382,8 +382,9 @@ func (s *Service) GetQueries() []engine.QueryEvent { return s.x.Bus.queries.All(
 // GetLogs returns the in-memory log.
 func (s *Service) GetLogs() []LogEvent { return s.x.Bus.logs.All() }
 
-// RunStats emits StatsEvent on every tick while connected.
-func (s *Service) RunStats(ctx context.Context, ticks <-chan time.Time) {
+// RunStats emits StatsEvent on every tick while connected. It is a
+// function, not a method, so Wails does not bind it.
+func RunStats(s *Service, ctx context.Context, ticks <-chan time.Time) {
 	for {
 		select {
 		case <-ctx.Done():

@@ -225,7 +225,7 @@ func Run(o Options) error {
 	defer cancel()
 	statTick := time.NewTicker(time.Second)
 	defer statTick.Stop()
-	go svc.RunStats(ctx, statTick.C)
+	go app.RunStats(svc, ctx, statTick.C)
 	go runUpdates(ctx, paths, box, cat, update, bus, log)
 
 	if o.Mode.Kind == cli.KindAutostart && box.Get().AutoConnect {

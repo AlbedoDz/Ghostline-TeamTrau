@@ -169,7 +169,7 @@ func TestService_EmitsStatsEverySecondWhileProtected(t *testing.T) {
 	ticks := make(chan time.Time)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	go s.svc.RunStats(ctx, ticks)
+	go RunStats(s.svc, ctx, ticks)
 	ticks <- time.Now()
 	require.Never(t, func() bool { return s.em.count(EventStats) > 0 }, 50*time.Millisecond, 5*time.Millisecond)
 	require.NoError(t, s.svc.Connect())
