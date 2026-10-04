@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Service } from "../app/api";
 import { useGhost } from "../app/store";
@@ -8,7 +9,14 @@ import { Banner } from "./neon/Banner";
 export function Warnings() {
   const { t } = useTranslation();
   const warnings = useGhost((s) => s.snapshot.warnings) ?? [];
+  const [failure, setFailure] = useState<string | null>(null);
   if (warnings.length === 0) return null;
+
+  const restore = () => {
+    setFailure(null);
+    Service.RestoreDNSNow().catch((e) => setFailure(String(e?.message ?? e)));
+  };
+
   return (
     <div style={{ display: "grid", gap: 6, padding: "0 14px 8px" }}>
       {warnings.map((w, i) => (
@@ -17,11 +25,12 @@ export function Warnings() {
           tone={w.code === "RESTORE_FAILED" ? "err" : "warn"}
           actions={
             w.code === "RESTORE_FAILED"
-              ? [{ label: t("settings.restoreNow"), onClick: () => void Service.RestoreDNSNow(), primary: true }]
+              ? [{ label: t("settings.restoreNow"), onClick: restore, primary: true }]
               : [{ label: t("common.understood"), onClick: () => void Service.DismissWarning(w.code) }]
           }
         >
           {tCode(`errors.${w.code}.message`, w.params ?? undefined)}
+          {w.code === "RESTORE_FAILED" && failure && <div>✕ {failure}</div>}
         </Banner>
       ))}
     </div>

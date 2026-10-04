@@ -161,3 +161,14 @@ func (failingLoopback) Restore(s []model.AdapterSnapshot) []sysdns.RestoreError 
 func (failingLoopback) LoopbackAdapters() ([]sysdns.Adapter, error) {
 	return []sysdns.Adapter{{GUID: "{B}"}}, nil
 }
+
+func TestRunWatchdog_KeepsWaitingWhileParentAlive(t *testing.T) { // review minor
+	d, fd, _ := setup(t, false, dirty())
+	alive := 2
+	d.Alive = func(uint32, time.Time) bool { alive--; return alive >= 0 }
+	d.Sleep = func(time.Duration) {}
+	waits := 0
+	require.NoError(t, watchdog.RunWatchdog(42, time.Unix(100, 0), func(uint32) error { waits++; return nil }, d))
+	require.Equal(t, 3, waits, "a spurious wakeup must not end the watch")
+	require.Len(t, fd.restored, 1)
+}

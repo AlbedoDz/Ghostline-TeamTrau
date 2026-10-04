@@ -118,7 +118,14 @@ export function Settings() {
       </div>
 
       <div className={css.row}>
-        <button className={css.danger} onClick={() => void Service.RestoreDNSNow().then(() => setNote(t("settings.restored")))}>
+        <button
+          className={css.danger}
+          onClick={() =>
+            void Service.RestoreDNSNow()
+              .then(() => (setError(null), setNote(t("settings.restored"))))
+              .catch((e) => setError(String(e?.message ?? e)))
+          }
+        >
           {t("settings.restoreNow")}
         </button>
         {busyService && (
@@ -136,7 +143,7 @@ export function Settings() {
               <button
                 className={css.danger}
                 onClick={() => {
-                  void Service.StopConflictingService(confirmService);
+                  void Service.StopConflictingService(confirmService).catch((e) => setError(String(e?.message ?? e)));
                   setConfirmService(null);
                 }}
               >

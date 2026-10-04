@@ -86,6 +86,7 @@ func (e *fEngine) SawVerify(string) bool {
 func (e *fEngine) Stats() engine.Stats { e.mu.Lock(); defer e.mu.Unlock(); return e.stats }
 
 type fDNS struct {
+	lastV6     bool
 	r          *rec
 	adapters   []sysdns.Adapter
 	restoreErr bool
@@ -101,7 +102,8 @@ func (d *fDNS) Snapshot(ads []sysdns.Adapter) ([]model.AdapterSnapshot, error) {
 	}
 	return out, d.r.add("dns.snapshot")
 }
-func (d *fDNS) ApplyLoopback(snaps []model.AdapterSnapshot, _ bool) error {
+func (d *fDNS) ApplyLoopback(snaps []model.AdapterSnapshot, v6 bool) error {
+	d.lastV6 = v6
 	name := "dns.apply"
 	if len(snaps) == 1 && snaps[0].GUID != "{A}" {
 		name = "dns.apply:" + snaps[0].GUID
@@ -151,6 +153,7 @@ type fSystem struct {
 	r      *rec
 	admin  bool
 	owners []winutil.PortOwner
+	noV6   bool
 }
 
 func (s *fSystem) IsAdmin() bool { _ = s.r.add("sys.admin"); return s.admin }
@@ -158,7 +161,7 @@ func (s *fSystem) PortOwners(uint16) ([]winutil.PortOwner, error) {
 	return s.owners, s.r.add("sys.ports")
 }
 func (s *fSystem) SelfPID() (uint32, time.Time) { return 1234, time.Unix(100, 0) }
-func (s *fSystem) IPv6Available() bool          { return true }
+func (s *fSystem) IPv6Available() bool          { return !s.noV6 }
 
 type fPicker struct {
 	r     *rec
@@ -243,12 +246,17 @@ func (s *fSink) Log(e LogEvent)    { s.mu.Lock(); s.logs = append(s.logs, e); s.
 
 type fProber struct {
 	r     *rec
+	block bool // wait for ctx cancellation
 	stage func(site string, call int) probe.Stage
 	calls int
 	mu    sync.Mutex
 }
 
-func (p *fProber) ProbeAll(_ context.Context, sites []string) []probe.Result {
+func (p *fProber) ProbeAll(ctx context.Context, sites []string) []probe.Result {
+	if p.block {
+		<-ctx.Done()
+		return nil
+	}
 	p.mu.Lock()
 	p.calls++
 	call := p.calls

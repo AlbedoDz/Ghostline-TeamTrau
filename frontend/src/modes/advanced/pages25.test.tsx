@@ -107,3 +107,27 @@ test("stopping a conflicting service requires in-page confirmation", () => {
   fireEvent.click(screen.getByRole("button", { name: "xác nhận" }));
   expect(svc.StopConflictingService).toHaveBeenCalledWith("SharedAccess");
 });
+
+test("settings: a failed restore is shown, not swallowed", async () => { // review minor
+  svc.RestoreDNSNow.mockRejectedValueOnce(new Error("netsh failed"));
+  render(<Settings />);
+  fireEvent.click(screen.getByRole("button", { name: /KHÔI PHỤC DNS NGAY/ }));
+  expect(await screen.findByText(/netsh failed/)).toBeInTheDocument();
+});
+
+test("settings: a failed service stop is shown", async () => {
+  svc.StopConflictingService.mockRejectedValueOnce(new Error("access denied"));
+  useGhost.getState().setSnapshot({ status: "error", error: { code: "PORT53_BUSY", params: { pid: 4, name: "svchost.exe", service: "SharedAccess" } }, warnings: [], dpi: {} } as any);
+  render(<Settings />);
+  fireEvent.click(screen.getByRole("button", { name: "Tạm dừng dịch vụ SharedAccess" }));
+  fireEvent.click(screen.getByRole("button", { name: "xác nhận" }));
+  expect(await screen.findByText(/access denied/)).toBeInTheDocument();
+});
+
+test("query view toggle survives leaving the logs page", () => { // review minor
+  const first = render(<Logs />);
+  fireEvent.click(screen.getByRole("switch", { name: "hiện truy vấn" }));
+  first.unmount();
+  render(<Logs />);
+  expect(screen.getByRole("switch", { name: "hiện truy vấn" })).toHaveAttribute("aria-checked", "true");
+});

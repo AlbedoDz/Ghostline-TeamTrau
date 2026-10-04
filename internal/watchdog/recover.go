@@ -27,6 +27,7 @@ type Deps struct {
 	StopDPI func() error
 	Alive   func(pid uint32, start time.Time) bool
 	Log     *slog.Logger
+	Sleep   func(time.Duration) // default time.Sleep
 }
 
 // Outcome says what RestoreIfOrphaned did.
@@ -113,8 +114,20 @@ func joinRestore(errs []sysdns.RestoreError) error {
 // RunWatchdog waits for the parent to exit, then restores if it died without
 // cleaning up.
 func RunWatchdog(parentPID uint32, parentStart time.Time, wait func(pid uint32) error, d Deps) error {
-	if err := wait(parentPID); err != nil {
-		d.log().Warn("waiting for parent failed", "err", err)
+	sleep := d.Sleep
+	if sleep == nil {
+		sleep = time.Sleep
+	}
+	for {
+		if err := wait(parentPID); err != nil {
+			d.log().Warn("waiting for parent failed", "err", err)
+		}
+		// A wait that returns while the parent (same pid and start time)
+		// is still alive was spurious: keep watching.
+		if !d.Alive(parentPID, parentStart) {
+			break
+		}
+		sleep(time.Second)
 	}
 	_, err := RestoreIfOrphaned(d)
 	return err

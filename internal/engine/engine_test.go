@@ -138,3 +138,15 @@ func TestEngine_NeverLogsToDefaultLogger(t *testing.T) { // review I11: domains 
 	require.NotContains(t, buf.String(), "secret")
 	require.NotContains(t, buf.String(), "c2VjcmV0")
 }
+
+func TestEngine_StatsResetOnStartAndSwap(t *testing.T) { // review minor: stale stats
+	up := &fakeUp{ip: net.IPv4(192, 0, 2, 80), name: "fake1"}
+	e := start(t, nil, up)
+	query(t, e, "a.example.")
+	require.NoError(t, e.Swap(context.Background(), []upstream.Upstream{&fakeUp{ip: net.IPv4(192, 0, 2, 81), name: "fake2"}}))
+	require.Empty(t, e.Stats().PerUpstream, "old upstreams must not count after a swap")
+	query(t, e, "b.example.")
+	require.NoError(t, e.Stop(context.Background()))
+	require.NoError(t, e.Start(context.Background(), engine.Config{ListenV4: netip.MustParseAddrPort("127.0.0.1:0"), Upstreams: []upstream.Upstream{up}}))
+	require.Zero(t, e.Stats().Queries, "a new session starts from zero")
+}

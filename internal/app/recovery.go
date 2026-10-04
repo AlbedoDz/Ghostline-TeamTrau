@@ -51,6 +51,7 @@ func (o *Orchestrator) RestoreNow(ctx context.Context, fallback func() error) er
 		if err := fallback(); err != nil {
 			return err
 		}
+		_ = o.d.Safety.DeleteRecoveryTask()
 	}
 	o.ClearWarning(CodeRestoreFailed)
 	o.ClearWarning(CodeStateReset)

@@ -39,6 +39,8 @@ type State = {
   update: UpdateInfo | null;
   page: Page;
   bannerDismissed: boolean;
+  queryLog: boolean;
+  setQueryLog: (on: boolean) => void;
   setSnapshot: (s: Snapshot) => void;
   setSettings: (s: Settings) => void;
   setInfo: (i: AppInfo) => void;
@@ -68,6 +70,7 @@ const initial = {
   update: null,
   page: "overview" as Page,
   bannerDismissed: false,
+  queryLog: false,
 };
 
 const tail = <T,>(arr: T[], v: T, n: number) => {
@@ -97,5 +100,6 @@ export const useGhost = create<State>((set) => ({
   setUpdate: (update) => set({ update }),
   setPage: (page) => set({ page }),
   dismissBanner: (bannerDismissed) => set({ bannerDismissed }),
+  setQueryLog: (queryLog) => set({ queryLog }),
   reset: () => set({ ...initial }),
 }));

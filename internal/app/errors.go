@@ -22,6 +22,7 @@ const (
 	CodeAutotuneNoPreset  = "AUTOTUNE_NO_PRESET"
 	CodeInternal          = "INTERNAL"
 	CodeSettingsReset     = "SETTINGS_RESET"
+	CodeNotConnected      = "NOT_CONNECTED"
 )
 
 // AppError is a coded error the UI can translate.

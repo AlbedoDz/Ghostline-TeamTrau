@@ -73,6 +73,13 @@ func (o *Orchestrator) healthLoop(ctx context.Context, ticks <-chan time.Time) {
 		failing := o.d.Engine.SelfTest(ctx) != nil || o.upstreamsFailing(o.d.Engine.Stats())
 		if !failing {
 			failingSince = time.Time{}
+			if o.Snapshot().Status == StatusDegraded {
+				o.update(func(s *Snapshot) {
+					if s.Status == StatusDegraded {
+						s.Status = StatusProtected
+					}
+				})
+			}
 			continue
 		}
 		if failingSince.IsZero() {
@@ -89,6 +96,8 @@ func (o *Orchestrator) healthLoop(ctx context.Context, ticks <-chan time.Time) {
 // heal marks the connection degraded, picks fresh servers and hot-swaps
 // them. DNS keeps pointing at loopback throughout, so nothing leaks.
 func (o *Orchestrator) heal(ctx context.Context) {
+	ctx, cancel := o.background(ctx)
+	defer cancel()
 	o.opMu.Lock()
 	defer o.opMu.Unlock()
 	if st := o.Snapshot().Status; st != StatusProtected && st != StatusDegraded {
@@ -177,7 +186,10 @@ func (o *Orchestrator) OnNetworkChange(ctx context.Context) {
 		o.mu.Lock()
 		o.snaps = append(o.snaps, snaps...)
 		o.mu.Unlock()
-		if err := o.d.DNS.ApplyLoopback(snaps, o.d.System.IPv6Available()); err != nil {
+		o.mu.Lock()
+		v6 := o.v6
+		o.mu.Unlock()
+		if err := o.d.DNS.ApplyLoopback(snaps, v6); err != nil {
 			o.log("system", CodeSetDNSFailed, "adapter", a.Alias)
 			continue
 		}

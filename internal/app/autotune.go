@@ -30,9 +30,11 @@ func (o *Orchestrator) startDPI(ctx context.Context, s store.Settings) error {
 	if err != nil {
 		return appErr(CodeDPIStartFailed, err)
 	}
-	if _, err := o.d.DPI.Start(ctx, args); err != nil {
+	pid, err := o.d.DPI.Start(ctx, args)
+	if err != nil {
 		return dpiErr(err)
 	}
+	o.recordDPI(true, pid)
 	o.update(func(sn *Snapshot) { sn.DPI = DPIStatus{Enabled: true, Running: true, Preset: s.DPI.Preset} })
 	o.log("dpi", "DPI_STARTED", "preset", s.DPI.Preset)
 	return nil
@@ -56,6 +58,7 @@ func (o *Orchestrator) SetDPIEnabled(ctx context.Context, on bool) error {
 	}
 	if !on && o.d.DPI.Running() {
 		_ = o.d.DPI.Stop()
+		o.recordDPI(false, 0)
 		o.log("dpi", "DPI_STOPPED")
 	}
 	s.DPI.Enabled = on
@@ -72,6 +75,13 @@ func (o *Orchestrator) SetDPIEnabled(ctx context.Context, on bool) error {
 // Autotune tries presets lightest first and keeps the first one under
 // which every blocked site passes the TLS stage (spec §7.2).
 func (o *Orchestrator) Autotune(ctx context.Context, onProgress func(preset string, i, n int)) error {
+	// Probing goes through Ghostline's DNS, so it only means something
+	// while connected.
+	if !o.connected() {
+		return appErr(CodeNotConnected, nil)
+	}
+	ctx, cancel := o.background(ctx)
+	defer cancel()
 	o.opMu.Lock()
 	defer o.opMu.Unlock()
 	s := o.d.Settings()
@@ -96,16 +106,24 @@ func (o *Orchestrator) Autotune(ctx context.Context, onProgress func(preset stri
 		if err != nil {
 			return appErr(CodeDPIStartFailed, err)
 		}
-		if _, err := o.d.DPI.Start(ctx, args); err != nil {
+		pid, err := o.d.DPI.Start(ctx, args)
+		if err != nil {
 			ae := dpiErr(err)
 			if ae.Code != CodeDPIStartFailed {
 				return ae // hash mismatch / AV: further presets will fail the same way
 			}
 			continue
 		}
+		o.recordDPI(true, pid)
 		o.d.Sleep(dpiSettleDelay)
+		results := o.d.Prober.ProbeAll(ctx, sites)
+		if err := ctx.Err(); err != nil {
+			_ = o.d.DPI.Stop()
+			o.recordDPI(false, 0)
+			return err
+		}
 		ok := true
-		for _, r := range o.d.Prober.ProbeAll(ctx, sites) {
+		for _, r := range results {
 			if r.Stage == probe.StageTLS {
 				ok = false
 			}
@@ -124,6 +142,7 @@ func (o *Orchestrator) Autotune(ctx context.Context, onProgress func(preset stri
 		}
 	}
 	_ = o.d.DPI.Stop()
+	o.recordDPI(false, 0)
 	o.update(func(sn *Snapshot) { sn.DPI.Running = false })
 	return appErr(CodeAutotuneNoPreset, nil)
 }

@@ -26,7 +26,7 @@ export function Logs() {
   const queries = useGhost((s) => s.queries500);
   const [source, setSource] = useState<(typeof SOURCES)[number]>("all");
   const [paused, setPaused] = useState<LogEvent[] | null>(null);
-  const [showQueries, setShowQueries] = useState(false);
+  const showQueries = useGhost((s) => s.queryLog);
 
   const shown = useMemo(() => {
     const base = paused ?? logs;
@@ -45,7 +45,7 @@ export function Logs() {
   };
 
   const toggleQueries = (on: boolean) => {
-    setShowQueries(on);
+    useGhost.getState().setQueryLog(on);
     void Service.SetQueryLog(on);
     if (!on) useGhost.getState().clearQueries();
   };

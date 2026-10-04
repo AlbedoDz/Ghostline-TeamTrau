@@ -212,3 +212,25 @@ func TestCache_FreshTTLAndPerNetwork(t *testing.T) {
 	require.NoError(t, err)
 	require.Empty(t, empty.Entries)
 }
+
+func TestDNSChecker_BootstrapFailureReason(t *testing.T) { // review minor
+	r := checker(func(context.Context, *dns.Msg) (*dns.Msg, error) {
+		return nil, errors.New("fragdoh: bootstrap dns.example: no such host")
+	}).Check(context.Background(), model.Server{ID: "x"})
+	require.Equal(t, "bootstrap", r.Reason)
+}
+
+func TestDNSChecker_TimeoutCoversWholeCheck(t *testing.T) { // review minor: was 2×timeout
+	c := checker(func(ctx context.Context, req *dns.Msg) (*dns.Msg, error) {
+		select {
+		case <-time.After(150 * time.Millisecond):
+			return withA("142.250.1.1")(ctx, req)
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		}
+	})
+	start := time.Now()
+	r := c.Check(context.Background(), model.Server{ID: "x"}) // two 150ms queries vs a 200ms budget
+	require.Equal(t, "timeout", r.Reason)
+	require.Less(t, time.Since(start), 300*time.Millisecond)
+}

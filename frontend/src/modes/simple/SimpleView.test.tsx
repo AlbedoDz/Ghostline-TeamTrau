@@ -111,3 +111,11 @@ test("RESTORE_FAILED error never claims DNS is unchanged", () => { // review C1
   render(<SimpleView onOpenLogs={() => {}} />);
   expect(screen.queryByText("DNS của máy vẫn như cũ, không có gì bị thay đổi")).toBeNull();
 });
+
+test("a failed restore from the warning banner is shown", async () => { // review minor
+  svc.RestoreDNSNow.mockRejectedValueOnce(new Error("netsh failed"));
+  useGhost.getState().setSnapshot(snap({ warnings: [{ code: "RESTORE_FAILED", params: { adapter: "Wi-Fi" } }] }));
+  render(<SimpleView onOpenLogs={() => {}} />);
+  fireEvent.click(screen.getByRole("button", { name: /KHÔI PHỤC DNS NGAY/ }));
+  expect(await screen.findByText(/netsh failed/)).toBeInTheDocument();
+});

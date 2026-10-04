@@ -92,6 +92,7 @@ func (e *Engine) Start(ctx context.Context, cfg Config) error {
 		return errors.New("engine: already running")
 	}
 	e.cfg = cfg
+	e.queries, e.latSum, e.latN, e.per = 0, 0, 0, map[string]UpstreamStat{}
 	return e.startLocked(ctx, cfg.ListenV4, cfg.ListenV6, cfg.Upstreams)
 }
 
@@ -146,6 +147,7 @@ func (e *Engine) Swap(ctx context.Context, ups []upstream.Upstream) error {
 		return fmt.Errorf("engine: shutdown: %w", err)
 	}
 	e.p = nil
+	e.per = map[string]UpstreamStat{} // old upstreams must not count
 	return e.startLocked(ctx, v4, e.addr6, ups)
 }
 

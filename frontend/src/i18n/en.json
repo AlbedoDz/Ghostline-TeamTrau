@@ -247,6 +247,10 @@
     "STATE_RESET": {
       "message": "the state file was corrupt; adapters still pointing at Ghostline were reset to DHCP",
       "action": "Re-check adapter DNS if you used static DNS before"
+    },
+    "NOT_CONNECTED": {
+      "message": "connect first to auto-tune DPI bypass",
+      "action": "Connect, then try again"
     }
   },
   "tray": {

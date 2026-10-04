@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 	"time"
 
@@ -146,8 +147,13 @@ func TestAutotune_NoneWork(t *testing.T) {
 	var ae *AppError
 	require.True(t, errors.As(err, &ae))
 	require.Equal(t, CodeAutotuneNoPreset, ae.Code)
-	calls := h.r.list()
-	require.Equal(t, "dpi.stop", calls[len(calls)-1])
+	var lastDPI string
+	for _, c := range h.r.list() {
+		if strings.HasPrefix(c, "dpi.") {
+			lastDPI = c
+		}
+	}
+	require.Equal(t, "dpi.stop", lastDPI)
 	require.False(t, h.dpi.running)
 }
 

@@ -56,6 +56,10 @@ go test ./... && (cd frontend && npm test)
 
 Test cần quyền admin: `go test -tags integration ./internal/sysdns/... ./internal/startup/...` trong terminal admin.
 
+### Danh sách máy chủ có chữ ký
+
+`lists/servers.json` được sinh lại và ký (ed25519) bởi workflow **servers** (chạy hằng tuần hoặc bấm tay), dùng secret `SERVERLIST_SIGNING_KEY`, rồi commit lên `main`. App tải bản này mỗi ngày. Workflow **release** không sinh lại danh sách: bản phát hành nhúng đúng file đang có trong repo lúc gắn tag.
+
 ## License
 
 MIT — xem [LICENSE](LICENSE) và [NOTICE](NOTICE).

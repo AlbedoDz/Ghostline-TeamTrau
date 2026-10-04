@@ -247,6 +247,10 @@
     "STATE_RESET": {
       "message": "file trạng thái bị hỏng; các card mạng đang trỏ về Ghostline đã được đưa về DHCP",
       "action": "Kiểm tra lại DNS của card mạng nếu trước đó bạn đặt DNS tĩnh"
+    },
+    "NOT_CONNECTED": {
+      "message": "cần kết nối trước khi tự dò vượt DPI",
+      "action": "Bấm Connect rồi thử lại"
     }
   },
   "tray": {

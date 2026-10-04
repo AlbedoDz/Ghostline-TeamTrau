@@ -33,6 +33,11 @@ type Orchestrator struct {
 	// engine, watchdog, recovery task and snapshot are kept until a restore
 	// succeeds.
 	dirty bool
+	// v6 is whether the engine listens on [::1] for this connection.
+	v6 bool
+	// bgCtx is cancelled by Disconnect to stop autotune and healing.
+	bgCtx    context.Context
+	bgCancel context.CancelFunc
 }
 
 // New creates an orchestrator in the disconnected state.
@@ -305,6 +310,7 @@ func (o *Orchestrator) connectSteps() []step {
 			}
 			o.mu.Lock()
 			o.servers = picked
+			o.v6 = v6
 			o.mu.Unlock()
 			return nil
 		}, undo: func(ctx context.Context) error { return o.d.Engine.Stop(ctx) }},
@@ -459,6 +465,7 @@ func (o *Orchestrator) disconnectLocked(ctx context.Context) []sysdns.RestoreErr
 // retries.
 func (o *Orchestrator) Disconnect(ctx context.Context) error {
 	o.Cancel()
+	o.cancelBackground() // stop autotune/heal so we do not wait for them
 	o.opMu.Lock()
 	defer o.opMu.Unlock()
 
@@ -485,3 +492,41 @@ func (o *Orchestrator) Disconnect(ctx context.Context) error {
 	o.log("system", "DISCONNECTED")
 	return nil
 }
+
+// background returns a context that Disconnect cancels, merged with ctx.
+func (o *Orchestrator) background(ctx context.Context) (context.Context, context.CancelFunc) {
+	ctx, cancel := context.WithCancel(ctx)
+	o.mu.Lock()
+	if o.bgCtx == nil {
+		o.bgCtx, o.bgCancel = context.WithCancel(context.Background())
+	}
+	bg := o.bgCtx
+	o.mu.Unlock()
+	stop := context.AfterFunc(bg, cancel)
+	return ctx, func() { stop(); cancel() }
+}
+
+// cancelBackground stops long-running background work and arms a fresh
+// background context for later operations.
+func (o *Orchestrator) cancelBackground() {
+	o.mu.Lock()
+	if o.bgCancel != nil {
+		o.bgCancel()
+	}
+	o.bgCtx, o.bgCancel = context.WithCancel(context.Background())
+	o.mu.Unlock()
+}
+
+// recordDPI persists GoodbyeDPI's state while DNS is redirected, so the
+// watchdog and --restore also remove the WinDivert driver after a crash.
+func (o *Orchestrator) recordDPI(running bool, pid int) {
+	_ = o.d.States.Update(func(st *store.State) error {
+		if st.Phase != store.PhaseDNSSet {
+			return errNoChange
+		}
+		st.DPI = store.DPIState{Running: running, PID: pid}
+		return nil
+	})
+}
+
+var errNoChange = errors.New("no change")
