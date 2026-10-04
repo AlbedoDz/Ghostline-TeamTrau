@@ -156,3 +156,9 @@ test("dpi shows that it waits for a connection", () => {
   render(<Dpi />);
   expect(screen.getByText(/chạy khi kết nối/)).toBeInTheDocument();
 });
+
+test("dpi shows it is starting while connected", () => {
+  useGhost.getState().setSnapshot({ status: "protected", warnings: [], servers: [], blockedSites: [], dpi: { enabled: true, running: false, preset: "light" } } as any);
+  render(<Dpi />);
+  expect(screen.getByText(/đang khởi động/)).toBeInTheDocument();
+});

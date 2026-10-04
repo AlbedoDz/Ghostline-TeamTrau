@@ -126,6 +126,7 @@
     "delay": "độ trễ (ms)",
     "redundant": "ⓘ thừa khi GoodbyeDPI đang bật",
     "waiting": "Đã bật — GoodbyeDPI sẽ chạy khi kết nối",
+    "starting": "GoodbyeDPI đang khởi động…",
     "probeSites": "TRANG MẪU",
     "probeAgain": "⟳ thử lại",
     "stage": {

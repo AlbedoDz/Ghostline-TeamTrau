@@ -87,3 +87,23 @@ func TestAppErrorString_IsReadable(t *testing.T) {
 	require.Equal(t, "DPI_START_FAILED: boom", appErr(CodeDPIStartFailed, errors.New("boom")).Error())
 	require.Equal(t, "PORT53_BUSY", appErr(CodePort53Busy, nil, "pid", 4).Error())
 }
+
+// GoodbyeDPI takes seconds to start; snapshots emitted meanwhile must
+// already say "enabled" or the UI switch flips back.
+func TestSetDPIEnabled_SnapshotEnabledWhileStarting(t *testing.T) {
+	h := newHarness(t)
+	require.NoError(t, h.o.Connect(context.Background()))
+	var during DPIStatus
+	h.dpi.onStart = func() { during = h.o.Snapshot().DPI }
+	require.NoError(t, h.o.SetDPIEnabled(context.Background(), true))
+	require.True(t, during.Enabled)
+	require.False(t, during.Running)
+}
+
+func TestSetDPIEnabled_FailedStartClearsEnabled(t *testing.T) {
+	h := newHarness(t)
+	require.NoError(t, h.o.Connect(context.Background()))
+	h.dpi.startE = errors.New("boom")
+	require.Error(t, h.o.SetDPIEnabled(context.Background(), true))
+	require.False(t, h.o.Snapshot().DPI.Enabled)
+}

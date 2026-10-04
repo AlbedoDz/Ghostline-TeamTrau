@@ -124,10 +124,14 @@ type fDPI struct {
 	running bool
 	startE  error
 	started []string
+	onStart func()
 }
 
 func (p *fDPI) Start(_ context.Context, args []string) (int, error) {
 	_ = p.r.add("dpi.start")
+	if p.onStart != nil {
+		p.onStart()
+	}
 	if p.startE != nil {
 		return 0, p.startE
 	}

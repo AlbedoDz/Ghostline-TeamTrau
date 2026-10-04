@@ -104,7 +104,7 @@ export function Dpi() {
         {running ? (
           <div className={css.ok}>● {t("log.DPI_STARTED", { preset: snap.dpi.preset })}</div>
         ) : dpi.enabled ? (
-          <div className={css.dim}>○ {t("dpi.waiting")}</div>
+          <div className={css.dim}>○ {t(snap.status === "protected" || snap.status === "degraded" ? "dpi.starting" : "dpi.waiting")}</div>
         ) : null}
       </div>
 

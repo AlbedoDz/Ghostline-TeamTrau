@@ -52,7 +52,11 @@ func (o *Orchestrator) SetDPIEnabled(ctx context.Context, on bool) error {
 	defer o.opMu.Unlock()
 	s := o.d.Settings()
 	if on && o.connected() && !o.d.DPI.Running() {
+		// Starting takes seconds; say "enabled" now so snapshots emitted
+		// meanwhile don't flip the UI switch back.
+		o.update(func(sn *Snapshot) { sn.DPI.Enabled = true })
 		if err := o.startDPI(ctx, s); err != nil {
+			o.update(func(sn *Snapshot) { sn.DPI.Enabled = s.DPI.Enabled })
 			return err
 		}
 	}
