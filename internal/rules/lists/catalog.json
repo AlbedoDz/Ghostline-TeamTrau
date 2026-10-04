@@ -1,0 +1,62 @@
+[
+  {
+    "id": "hagezi-light",
+    "name": "HaGeZi Multi LIGHT",
+    "description": "Basic protection: ads, trackers, metrics, telemetry. Small and safe.",
+    "repo": "https://github.com/hagezi/dns-blocklists",
+    "license": "GPL-3.0",
+    "url": "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/light-onlydomains.txt",
+    "format": "domains",
+    "action": "block"
+  },
+  {
+    "id": "hagezi-pro",
+    "name": "HaGeZi Multi PRO",
+    "description": "Extended protection: also phishing, malware, scams. Recommended by its author.",
+    "repo": "https://github.com/hagezi/dns-blocklists",
+    "license": "GPL-3.0",
+    "url": "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/pro-onlydomains.txt",
+    "format": "domains",
+    "action": "block"
+  },
+  {
+    "id": "stevenblack-unified",
+    "name": "StevenBlack Unified hosts",
+    "description": "Classic unified hosts file: adware and malware.",
+    "repo": "https://github.com/StevenBlack/hosts",
+    "license": "MIT",
+    "url": "https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts",
+    "format": "hosts",
+    "action": "block"
+  },
+  {
+    "id": "oisd-small",
+    "name": "OISD Small",
+    "description": "Block. Don't break. Small edition.",
+    "repo": "https://github.com/sjhgvr/oisd",
+    "license": "GPL-3.0",
+    "url": "https://small.oisd.nl/domainswild",
+    "format": "domains",
+    "action": "block"
+  },
+  {
+    "id": "adguard-dns",
+    "name": "AdGuard DNS filter",
+    "description": "AdGuard's DNS-level filter (AdBlock syntax).",
+    "repo": "https://github.com/AdguardTeam/AdGuardSDNSFilter",
+    "license": "GPL-3.0",
+    "url": "https://adguardteam.github.io/AdGuardSDNSFilter/Filters/filter.txt",
+    "format": "adblock",
+    "action": "block"
+  },
+  {
+    "id": "hostsvn",
+    "name": "hostsVN",
+    "description": "Ads and trackers common on Vietnamese sites.",
+    "repo": "https://github.com/bigdargon/hostsVN",
+    "license": "MIT",
+    "url": "https://raw.githubusercontent.com/bigdargon/hostsVN/master/hosts",
+    "format": "hosts",
+    "action": "block"
+  }
+]
