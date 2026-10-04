@@ -136,7 +136,7 @@ README.md, README.vi.md, docs/{user-guide,huong-dan-su-dung,release-checklist}.m
   - `TestParseText_Errors`: `block allow` cùng dòng; `block fragment=on`; `ip=abc`; `fragment=maybe`; `upstream=nope` (không có trong `upstreamIDs`); regexp không biên dịch được; CIDR sai; dòng thứ 10.001 → mỗi lỗi có `Line` đúng (1-based).
   - `TestParseText_DisabledRoundTrip`: `#! youtube.com fragment=on` → `Enabled=false`; `ParseText(FormatText(rs))` == `rs` cho một bộ rule hỗn hợp.
   - `TestParseText_SNIAccepted`: `x.com sni=y.com` parse đạt, `SNI="y.com"`.
-  - `TestNormalizeHost`: `"Bánh.VN."` → `"xn--bnh-hoa.vn"`; `"EXAMPLE.com"` → `"example.com"`.
+  - `TestNormalizeHost`: `"Bánh.VN."` → `"xn--bnh-ela.vn"`; `"EXAMPLE.com"` → `"example.com"`.
 - [ ] **Step 2: Chạy** `go test ./internal/rules/` — Expected: FAIL.
 - [ ] **Step 3: Cài đặt** theo Interfaces. Một dòng = mẫu + các token `key=value` hoặc `block`/`allow`, tách bằng khoảng trắng; `#` không nằm trong `/regexp/` bắt đầu chú thích; dòng `#!` là rule bị tắt.
 - [ ] **Step 4: Chạy** `go test ./internal/rules/` — Expected: PASS.
@@ -174,7 +174,7 @@ README.md, README.vi.md, docs/{user-guide,huong-dan-su-dung,release-checklist}.m
   - `TestMatch_Order`: rule 2 và rule 5 cùng khớp → `Source.Index==2`; rule thắng danh sách; danh sách 1 thắng danh sách 2; `bank.vn allow` thắng danh sách chặn `bank.vn`.
   - `TestMatch_ListException`: danh sách có `||x.com^` và `@@||ok.x.com^` → `ok.x.com` không khớp danh sách đó nhưng vẫn khớp danh sách sau.
   - `TestMatch_CIDRFillsUnset`: rule `youtube.com fragment=on` + `142.250.0.0/15 upstream=corp` → `Match("youtube.com", 142.250.1.1)` có `Fragment=on` **và** `Upstream=corp`; rule domain `block` thì CIDR không được xét.
-  - `TestMatch_IDNAndCaseAndTrailingDot` (Trọng tâm review 3): rule `Bánh.VN.` khớp host `xn--bnh-hoa.vn` và `WWW.xn--bnh-hoa.vn`.
+  - `TestMatch_IDNAndCaseAndTrailingDot` (Trọng tâm review 3): rule `Bánh.VN.` khớp host `xn--bnh-ela.vn` và `WWW.xn--bnh-ela.vn`.
   - `TestHolder_ConcurrentSwap`: 8 goroutine `Load().Match` trong khi một goroutine `Store` 1.000 lần; chạy với `-race`.
   - `BenchmarkMatch2M`: 2.000.000 domain ngẫu nhiên trong một danh sách; mục tiêu < 5 µs/op (ghi kết quả vào báo cáo task, không assert cứng); `testing.AllocsPerRun` của `Match` không có regexp == 0.
 - [ ] **Step 2: Chạy** `go test ./internal/rules/` — Expected: FAIL.
