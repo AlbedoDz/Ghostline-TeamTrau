@@ -1,11 +1,11 @@
 {
 	"fixed": {
-		"file_version": "0.2.3",
-		"product_version": "0.2.3"
+		"file_version": "0.2.4",
+		"product_version": "0.2.4"
 	},
 	"info": {
 		"0409": {
-			"ProductVersion": "0.2.3",
+			"ProductVersion": "0.2.4",
 			"CompanyName": "Ghostline",
 			"FileDescription": "Ghostline - Secure DNS client",
 			"LegalCopyright": "© 2026 Harry Nguyen. GPL-3.0-only.",
