@@ -1,7 +1,8 @@
 import { useTranslation } from "react-i18next";
 import { Service } from "../../app/api";
 import { useGhost } from "../../app/store";
-import { isConnected, powerState, serverSummary, useUptime } from "../../app/format";
+import { Browser } from "@wailsio/runtime";
+import { isConnected, powerState, serverSummary, useUptime, useUpdate } from "../../app/format";
 import { tCode } from "../../i18n";
 import { PowerButton } from "../../components/neon/PowerButton";
 import { TerminalPanel } from "../../components/neon/TerminalPanel";
@@ -18,6 +19,7 @@ export function SimpleView({ onOpenLogs }: { onOpenLogs: () => void }) {
   const bannerDismissed = useGhost((s) => s.bannerDismissed);
   const dismissBanner = useGhost((s) => s.dismissBanner);
   const uptime = useUptime(snap.since);
+  const update = useUpdate();
   const status = String(snap.status);
   const label = `[ ${t(`status.${status}`)} ]`;
 
@@ -125,6 +127,11 @@ export function SimpleView({ onOpenLogs }: { onOpenLogs: () => void }) {
           </Banner>
         )}
         {below}
+        {update && (
+          <button className={css.update} onClick={() => void Browser.OpenURL(update.url)}>
+            {t("settings.update", { tag: update.tag })}
+          </button>
+        )}
       </div>
     </section>
   );

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import type { PowerState } from "../components/neon/PowerButton";
+import { useGhost } from "./store";
 
 export function powerState(status: string): PowerState {
   switch (status) {
@@ -58,4 +59,16 @@ export function serverDetail(s: ServerLike): string {
   const m = /^(?:https|tls|quic):\/\/([^/:]+)/.exec(s.address);
   if (m) return m[1];
   return s.ips?.[0] ?? "";
+}
+
+/**
+ * useUpdate returns the newer release, either announced in this session or
+ * remembered by Go from an earlier check (AppInfo), or null.
+ */
+export function useUpdate(): { tag: string; url: string } | null {
+  const update = useGhost((s) => s.update);
+  const info = useGhost((s) => s.info);
+  const tag = update?.tag || info?.updateTag;
+  const url = update?.url || info?.updateUrl;
+  return tag && url ? { tag, url } : null;
 }

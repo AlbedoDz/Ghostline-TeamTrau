@@ -231,7 +231,7 @@ func Run(o Options) error {
 	statTick := time.NewTicker(time.Second)
 	defer statTick.Stop()
 	go app.RunStats(svc, ctx, statTick.C)
-	go runUpdates(ctx, paths, box, cat, update, bus, log)
+	go runUpdates(ctx, paths, box, cat, update, bus, log, ui.onUpdate)
 
 	if o.Mode.Kind == cli.KindAutostart && box.Get().AutoConnect {
 		go func() { _ = orch.Connect(context.Background()) }()

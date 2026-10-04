@@ -1,5 +1,5 @@
 import { beforeAll, beforeEach, expect, test, vi } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { SimpleView } from "./SimpleView";
 import { useGhost } from "../../app/store";
 import { initI18n } from "../../i18n";
@@ -14,6 +14,8 @@ const svc = vi.hoisted(() => ({
   SaveSettings: vi.fn(() => Promise.resolve()),
 }));
 vi.mock("../../app/api", () => ({ Service: svc }));
+const browser = vi.hoisted(() => ({ OpenURL: vi.fn(() => Promise.resolve()) }));
+vi.mock("@wailsio/runtime", () => ({ Browser: browser }));
 
 const settings = {
   probeSites: ["youtube.com", "discord.com", "telegram.org", "x.com"],
@@ -118,4 +120,20 @@ test("a failed restore from the warning banner is shown", async () => { // revie
   render(<SimpleView onOpenLogs={() => {}} />);
   fireEvent.click(screen.getByRole("button", { name: /KHÔI PHỤC DNS NGAY/ }));
   expect(await screen.findByText(/netsh failed/)).toBeInTheDocument();
+});
+
+test("shows a newer release and opens it", () => {
+  useGhost.getState().setSnapshot(snap({}));
+  render(<SimpleView onOpenLogs={() => {}} />);
+  expect(screen.queryByText(/có bản mới/)).toBeNull();
+  act(() => useGhost.getState().setUpdate({ tag: "v0.1.1", url: "https://example/v0.1.1" }));
+  fireEvent.click(screen.getByRole("button", { name: /có bản mới v0\.1\.1/ }));
+  expect(browser.OpenURL).toHaveBeenCalledWith("https://example/v0.1.1");
+});
+
+test("a release remembered from an earlier check shows after restart", () => {
+  useGhost.getState().setSnapshot(snap({}));
+  useGhost.getState().setInfo({ version: "0.1.0", portable: false, updateTag: "v0.1.1", updateUrl: "https://example/v0.1.1" } as any);
+  render(<SimpleView onOpenLogs={() => {}} />);
+  expect(screen.getByRole("button", { name: /có bản mới v0\.1\.1/ })).toBeInTheDocument();
 });

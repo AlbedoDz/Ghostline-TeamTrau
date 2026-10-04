@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Browser } from "@wailsio/runtime";
 import { Service, type Adapter } from "../../../app/api";
 import { useGhost } from "../../../app/store";
+import { useUpdate } from "../../../app/format";
 import { saveSettings } from "../../../app/settings";
 import { describeError, initI18n } from "../../../i18n";
 import { Toggle } from "../../../components/neon/Toggle";
@@ -14,7 +15,6 @@ export function Settings() {
   const settings = useGhost((s) => s.settings);
   const snap = useGhost((s) => s.snapshot);
   const info = useGhost((s) => s.info);
-  const update = useGhost((s) => s.update);
   const [error, setError] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
   const [adapters, setAdapters] = useState<Adapter[]>([]);
@@ -36,8 +36,9 @@ export function Settings() {
   const busyService = snap.error?.code === "PORT53_BUSY" ? String(snap.error.params?.service ?? "") : "";
   const manual = settings.adapters === "manual";
   const guids = settings.adapterGuids ?? [];
-  const tag = update?.tag || info?.updateTag;
-  const url = update?.url || info?.updateUrl;
+  const upd = useUpdate();
+  const tag = upd?.tag;
+  const url = upd?.url;
 
   const toggleRow = (label: string, checked: boolean, patch: (v: boolean) => Parameters<typeof saveSettings>[0]) => (
     <div className={css.setting}>

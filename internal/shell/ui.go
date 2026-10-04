@@ -70,7 +70,10 @@ type ui struct {
 	dpiItem   *application.MenuItem
 	openItem  *application.MenuItem
 	quitItem  *application.MenuItem
+	updItem   *application.MenuItem
 	lastState app.Status
+	updTag    string // newer release, "" if none
+	updURL    string
 }
 
 func (u *ui) createWindow(hidden bool) {
@@ -144,6 +147,14 @@ func (u *ui) createTray() {
 	tt := trayText(u.box.Get().Language)
 	u.tray.SetTooltip(brand.AppName + " · " + tt.status[app.StatusDisconnected])
 	menu := application.NewMenu()
+	u.updItem = menu.Add("").SetHidden(true).OnClick(func(*application.Context) {
+		u.mu.Lock()
+		url := u.updURL
+		u.mu.Unlock()
+		if url != "" {
+			_ = u.app.Browser.OpenURL(url)
+		}
+	})
 	u.connItem = menu.Add(tt.connect).OnClick(func(*application.Context) {
 		go func() {
 			if st := u.orch.Snapshot().Status; st == app.StatusProtected || st == app.StatusDegraded {
@@ -192,7 +203,15 @@ func (u *ui) relabel(status app.Status) {
 		return
 	}
 	tt := trayText(u.box.Get().Language)
-	u.tray.SetTooltip(brand.AppName + " · " + tt.status[status])
+	u.mu.Lock()
+	tag := u.updTag
+	u.mu.Unlock()
+	tip := brand.AppName + " · " + tt.status[status]
+	if tag != "" {
+		tip += " · " + tt.updateLabel(tag)
+		u.updItem.SetLabel(tt.updateLabel(tag)).SetHidden(false)
+	}
+	u.tray.SetTooltip(tip)
 	if status == app.StatusProtected || status == app.StatusDegraded {
 		u.connItem.SetLabel(tt.disconnect)
 	} else {
@@ -206,6 +225,18 @@ func (u *ui) relabel(status app.Status) {
 // onLanguage re-labels the tray after a language change.
 func (u *ui) onLanguage() {
 	u.mu.Lock()
+	st := u.lastState
+	u.mu.Unlock()
+	if st == "" {
+		st = app.StatusDisconnected
+	}
+	u.relabel(st)
+}
+
+// onUpdate shows a newer release in the tray menu and tooltip.
+func (u *ui) onUpdate(tag, url string) {
+	u.mu.Lock()
+	u.updTag, u.updURL = tag, url
 	st := u.lastState
 	u.mu.Unlock()
 	if st == "" {
