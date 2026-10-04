@@ -414,6 +414,3 @@ func (o *Orchestrator) Disconnect(ctx context.Context) error {
 	o.log("system", "DISCONNECTED")
 	return nil
 }
-
-// afterConnect is extended by health/probing (Task 18).
-func (o *Orchestrator) afterConnect() {}

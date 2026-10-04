@@ -100,6 +100,7 @@ type Deps struct {
 	Builder      Builder
 	Resolver     Resolver
 	Prober       Prober
+	Scans        Scans
 	Recover      func() (watchdog.Outcome, error)
 	Sink         Sink
 	States       States

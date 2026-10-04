@@ -253,7 +253,6 @@ func (p *fProber) ProbeAll(_ context.Context, sites []string) []probe.Result {
 	p.calls++
 	call := p.calls
 	p.mu.Unlock()
-	_ = p.r.add("probe")
 	var out []probe.Result
 	for _, s := range sites {
 		st := probe.StageOK
