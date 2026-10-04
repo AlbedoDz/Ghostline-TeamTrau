@@ -1,6 +1,7 @@
 package app
 
 import (
+	"log/slog"
 	"sync/atomic"
 
 	"github.com/hashcott/ghostline/internal/engine"
@@ -82,6 +83,8 @@ func (b *Bus) State(s Snapshot) { b.em.Emit(EventState, s) }
 
 // Log implements Sink.
 func (b *Bus) Log(e LogEvent) {
+	// File log: codes and params only (params never carry domain names).
+	slog.Info("event", "source", e.Source, "code", e.Code, "params", e.Params)
 	b.logs.Add(e)
 	b.em.Emit(EventLog, e)
 }

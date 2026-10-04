@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"log/slog"
 	"net/netip"
 	"os"
 	"slices"
@@ -102,7 +103,10 @@ func NewService(o *Orchestrator, x ServiceDeps) *Service { return &Service{o: o,
 func (s *Service) GetSnapshot() Snapshot { return s.o.Snapshot() }
 
 // Connect starts protection. Errors are also reported in the snapshot.
-func (s *Service) Connect() error { return s.o.Connect(context.Background()) }
+func (s *Service) Connect() error {
+	slog.Info("ui: connect requested")
+	return s.o.Connect(context.Background())
+}
 
 // Disconnect stops protection.
 func (s *Service) Disconnect() error { return s.o.Disconnect(context.Background()) }
