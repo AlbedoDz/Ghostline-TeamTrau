@@ -253,7 +253,11 @@ func Run(o Options) error {
 	})
 	em.app = wapp
 	ui.app = wapp
-	ui.createWindow(o.Mode.Kind == cli.KindAutostart)
+	if o.Mode.Kind != cli.KindAutostart {
+		// Started with Windows: stay in the tray without a window, so no
+		// WebView2 runs until the user opens Ghostline.
+		ui.createWindow()
+	}
 	ui.createTray()
 	em.onState = ui.onState
 

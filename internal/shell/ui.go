@@ -64,7 +64,9 @@ type ui struct {
 	box  *app.SettingsBox
 	log  *slog.Logger
 
-	mu        sync.Mutex
+	mu sync.Mutex
+	// win is the open window, nil while Ghostline sits in the tray. Only
+	// touched on the main thread (or before the app runs).
 	win       *application.WebviewWindow
 	tray      *application.SystemTray
 	connItem  *application.MenuItem
@@ -81,7 +83,10 @@ type ui struct {
 	updURL    string
 }
 
-func (u *ui) createWindow(hidden bool) {
+// createWindow opens the main window. Closing it to the tray destroys it
+// (and its WebView2 processes, ~150 MB) rather than hiding it; show()
+// creates a new one.
+func (u *ui) createWindow() {
 	// The initial size must match the saved mode: resizing a window that
 	// has not been shown yet is ignored.
 	s := u.box.Get()
@@ -95,33 +100,42 @@ func (u *ui) createWindow(hidden bool) {
 		MaximiseButtonState: application.ButtonDisabled,
 		BackgroundColour:    application.NewRGB(5, 7, 10),
 		URL:                 "/",
-		Hidden:              hidden,
 	}
 	if s.Mode == "advanced" {
 		opts.Width, opts.Height = max(s.AdvancedWindow.Width, minAdvW), max(s.AdvancedWindow.Height, minAdvH)
 		opts.MinWidth, opts.MinHeight = minAdvW, minAdvH
 		opts.DisableResize = false
 	}
-	u.win = u.app.Window.NewWithOptions(opts)
-	u.win.RegisterHook(events.Common.WindowClosing, func(e *application.WindowEvent) {
+	w := u.app.Window.NewWithOptions(opts)
+	u.win = w
+	w.RegisterHook(events.Common.WindowClosing, func(*application.WindowEvent) {
 		if u.box.Get().CloseToTray {
-			u.win.Hide()
-			e.Cancel()
+			if u.win == w {
+				u.win = nil // let it close; the tray stays
+			}
 			return
 		}
 		u.app.Quit()
 	})
 }
 
+// show brings the window up, creating it if it was closed to the tray.
 func (u *ui) show() {
-	if u.win != nil {
+	application.InvokeSync(func() {
+		if u.win == nil {
+			u.createWindow()
+		}
 		u.win.Show()
 		u.win.Focus()
-	}
+	})
 }
 
 // setMode resizes the window while keeping its centre in place.
 func (u *ui) setMode(mode string) {
+	application.InvokeSync(func() { u.resize(mode) })
+}
+
+func (u *ui) resize(mode string) {
 	if u.win == nil {
 		return
 	}
