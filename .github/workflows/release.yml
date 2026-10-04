@@ -1,0 +1,54 @@
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version: "1.27"
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+      - name: Install wails3 and NSIS
+        shell: pwsh
+        run: |
+          go install github.com/wailsapp/wails/v3/cmd/wails3@v3.0.0-beta.27
+          if (-not (Get-Command makensis -ErrorAction SilentlyContinue)) { choco install nsis -y --no-progress }
+          "C:\Program Files (x86)\NSIS" | Out-File -FilePath $env:GITHUB_PATH -Append
+      - name: Frontend deps
+        working-directory: frontend
+        run: npm ci
+      - name: Test
+        shell: pwsh
+        run: |
+          wails3 generate bindings -clean=true -ts -i
+          go test ./...
+          cd frontend; npm test
+      - name: Package
+        shell: pwsh
+        run: |
+          $v = "${{ github.ref_name }}".TrimStart("v")
+          wails3 package VERSION=$v
+          wails3 task windows:portable VERSION=$v
+      - name: Checksums
+        shell: pwsh
+        run: |
+          $files = Get-ChildItem bin -File | Where-Object { $_.Name -like "*installer.exe" -or $_.Name -like "*portable.zip" }
+          $files | ForEach-Object { "{0}  {1}" -f (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower(), $_.Name } | Set-Content -Encoding ascii bin/SHA256SUMS
+          Get-Content bin/SHA256SUMS
+      - name: GitHub release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $assets = Get-ChildItem bin -File | Where-Object { $_.Name -like "*installer.exe" -or $_.Name -like "*portable.zip" -or $_.Name -eq "SHA256SUMS" } | ForEach-Object { $_.FullName }
+          gh release create "${{ github.ref_name }}" @assets --generate-notes

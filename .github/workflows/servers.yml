@@ -1,0 +1,35 @@
+name: servers
+
+# Regenerates and signs lists/servers.json weekly (or on demand). The app
+# fetches this file and verifies it with the public key in internal/brand.
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 3 * * 1"
+
+permissions:
+  contents: write
+
+jobs:
+  generate:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+      - uses: actions/setup-go@v7
+        with:
+          go-version: "1.27"
+      - name: Generate and sign
+        env:
+          SERVERLIST_SIGNING_KEY: ${{ secrets.SERVERLIST_SIGNING_KEY }}
+        run: go run ./tools/genservers -seed lists/seed.json -out lists/servers.json -sign-env SERVERLIST_SIGNING_KEY
+      - name: Commit if changed
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add lists/servers.json lists/servers.json.sig
+          if git diff --cached --quiet; then echo "no changes"; exit 0; fi
+          git commit -m "chore(lists): regenerate signed server list"
+          git push origin HEAD:main
