@@ -18,6 +18,8 @@ const svc = vi.hoisted(() => ({
   TestUpstreamProxy: vi.fn(() => Promise.resolve()),
   RetryProxy: vi.fn(() => Promise.resolve()),
   AnswerSysProxyOverride: vi.fn(() => Promise.resolve()),
+  RestoreSystemProxy: vi.fn(() => Promise.resolve()),
+  GetSettings: vi.fn(),
   DismissWarning: vi.fn(() => Promise.resolve()),
   RestoreDNSNow: vi.fn(() => Promise.resolve()),
   Connect: vi.fn(() => Promise.resolve()),
@@ -115,4 +117,23 @@ test("SYSPROXY_EXISTING asks before replacing", async () => {
 test("simple mode shows the proxy address while it runs", () => {
   render(<SimpleView onOpenLogs={() => {}} />);
   expect(screen.getByText("127.0.0.1:8080")).toBeInTheDocument();
+});
+
+test("SYSPROXY_RESTORE_FAILED offers a restore button and the manual steps", async () => {
+  useGhost.getState().setSnapshot({ ...useGhost.getState().snapshot, warnings: [{ code: "SYSPROXY_RESTORE_FAILED" }] } as any);
+  render(<Warnings />);
+  expect(screen.getByText(/Cài đặt Windows → Proxy/)).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "khôi phục system proxy" }));
+  expect(svc.RestoreSystemProxy).toHaveBeenCalled();
+});
+
+test("saving an upstream reloads settings from Go instead of faking passEnc", async () => {
+  const stored = { ...structuredClone(settings), proxy: { ...settings.proxy, upstreams: [{ id: "tor", type: "socks5", addr: "127.0.0.1:9050", user: "", passEnc: "enc" }] } };
+  svc.GetSettings.mockResolvedValue(stored as any);
+  render(<Proxy />);
+  fireEvent.click(screen.getByRole("button", { name: "sửa" }));
+  fireEvent.change(screen.getByLabelText("mật khẩu"), { target: { value: "pw" } });
+  fireEvent.click(screen.getByRole("button", { name: "lưu" }));
+  await waitFor(() => expect(svc.GetSettings).toHaveBeenCalled());
+  await waitFor(() => expect((useGhost.getState().settings as any).proxy.upstreams[0].passEnc).toBe("enc"));
 });

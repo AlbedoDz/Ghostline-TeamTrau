@@ -105,7 +105,7 @@ func newProxyHarness(t *testing.T, confirm bool) *proxyHarness {
 		fw:    &fFirewall{r: h.r, states: h.states, t: t},
 	}
 	h.o.d.Proxy, h.o.d.SysProxy, h.o.d.Firewall = ph.proxy, ph.sp, ph.fw
-	h.o.d.ConfirmOverride = func(server, pac string) bool { ph.asked++; return confirm }
+	h.o.d.ConfirmOverride = func(_ context.Context, server, pac string) bool { ph.asked++; return confirm }
 	h.settings.Proxy.Enabled = true
 	h.settings.Proxy.SystemProxy = true
 	h.settings.Proxy.ShareLAN = true

@@ -43,6 +43,10 @@ func (s *Service) SetProxyEnabled(on bool) error {
 	return s.SaveSettings(st)
 }
 
+// RestoreSystemProxy retries a failed system proxy restore
+// (SYSPROXY_RESTORE_FAILED).
+func (s *Service) RestoreSystemProxy() error { return s.o.RestoreProxyNow() }
+
 // RetryProxy re-runs the proxy phase after an error.
 func (s *Service) RetryProxy() error { return s.o.ReapplyProxy(context.Background()) }
 
@@ -161,7 +165,7 @@ func (s *Service) AnswerSysProxyOverride(replace bool) {
 
 // AskOverride shows SYSPROXY_EXISTING and waits for the user's answer
 // (false on timeout). It is a function so Wails does not bind it.
-func AskOverride(s *Service, server, pac string, timeout time.Duration) bool {
+func AskOverride(ctx context.Context, s *Service, server, pac string, timeout time.Duration) bool {
 	ch := make(chan bool, 1)
 	s.mu.Lock()
 	s.overrideCh = ch
@@ -177,6 +181,8 @@ func AskOverride(s *Service, server, pac string, timeout time.Duration) bool {
 	case ans := <-ch:
 		return ans
 	case <-time.After(timeout):
+		return false
+	case <-ctx.Done():
 		return false
 	}
 }

@@ -68,16 +68,18 @@ func TestRestore_TakenOverSkipsSysProxy(t *testing.T) {
 	require.Equal(t, []string{"firewall", "dns"}, log)
 }
 
-func TestRestore_NotSetSkipsSysProxy(t *testing.T) {
+// Final review I7: a crash between Apply and recording Set=true must still
+// restore; RestoreIfOurs itself checks the value is still Ghostline's.
+func TestRestore_NotSetStillRestoresIfOurs(t *testing.T) {
 	var log []string
 	st := dirtyWithProxy()
-	st.SysProxy.Set = false // snapshot taken, never applied
+	st.SysProxy.Set = false
 	st.Firewall = nil
 	d, _, _ := setup(t, false, st)
 	d = withProxyHooks(d, &log, nil)
 	_, err := watchdog.RestoreIfOrphaned(d)
 	require.NoError(t, err)
-	require.Equal(t, []string{"dns"}, log)
+	require.Equal(t, []string{"sysproxy:127.0.0.1:8080", "dns"}, log)
 }
 
 func TestRestore_SysProxyFailureKeepsState(t *testing.T) {

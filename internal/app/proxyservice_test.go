@@ -121,7 +121,10 @@ func TestAskOverride_AnswerAndTimeout(t *testing.T) {
 		}, 2*time.Second, 10*time.Millisecond)
 		rh.svc.AnswerSysProxyOverride(true)
 	}()
-	require.True(t, AskOverride(rh.svc, "10.0.0.1:3128", "", 2*time.Second))
+	require.True(t, AskOverride(context.Background(), rh.svc, "10.0.0.1:3128", "", 2*time.Second))
 	require.NotContains(t, warningCodes(rh.o.Snapshot()), CodeSysProxyExisting)
-	require.False(t, AskOverride(rh.svc, "10.0.0.1:3128", "", 50*time.Millisecond))
+	require.False(t, AskOverride(context.Background(), rh.svc, "10.0.0.1:3128", "", 50*time.Millisecond))
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	require.False(t, AskOverride(ctx, rh.svc, "10.0.0.1:3128", "", time.Minute))
 }

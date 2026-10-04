@@ -26,6 +26,13 @@ type proxyState struct {
 	fwSet     bool
 }
 
+// pendingRestore keeps a system proxy snapshot whose restore failed, for
+// the "Restore system proxy" action (SYSPROXY_RESTORE_FAILED).
+type pendingRestore struct {
+	addr string
+	snap store.SysProxySnapshot
+}
+
 // addReason marks the connection degraded for reason r.
 func (o *Orchestrator) addReason(r string) {
 	o.update(func(s *Snapshot) {
@@ -103,6 +110,10 @@ func (o *Orchestrator) startProxyPhase(ctx context.Context) error {
 	wantFW := s.Proxy.ShareLAN && o.d.Firewall != nil
 	var snap store.SysProxySnapshot
 	skipSys := false
+	// Disconnect cancels the background context before taking opMu, so an
+	// unanswered SYSPROXY_EXISTING prompt never blocks it.
+	askCtx, cancelAsk := o.background(ctx)
+	defer cancelAsk()
 
 	steps := []step{
 		{name: "proxy", do: func(ctx context.Context) error {
@@ -130,8 +141,13 @@ func (o *Orchestrator) startProxyPhase(ctx context.Context) error {
 			if snap, err = o.d.SysProxy.Snapshot(); err != nil {
 				return appErr(CodeSysProxyFailed, err)
 			}
+			if snap.Server == addr {
+				// Our own leftover value (crash before Set was recorded):
+				// what was there before is unknown, so restore to direct.
+				snap = store.SysProxySnapshot{Flags: 1}
+			}
 			if server, pac, has := o.d.SysProxy.Existing(snap); has {
-				if o.d.ConfirmOverride == nil || !o.d.ConfirmOverride(server, pac) {
+				if o.d.ConfirmOverride == nil || !o.d.ConfirmOverride(askCtx, server, pac) {
 					skipSys = true
 					return nil
 				}
@@ -217,6 +233,9 @@ func (o *Orchestrator) stopProxyPhase(ctx context.Context) {
 	px := o.px
 	if px.sysSet && !px.takenOver && px.snap != nil {
 		if _, err := o.d.SysProxy.RestoreIfOurs(px.addr, *px.snap); err != nil {
+			o.mu.Lock()
+			o.pending = &pendingRestore{addr: px.addr, snap: *px.snap}
+			o.mu.Unlock()
 			o.AddWarning(AppError{Code: CodeSysProxyRestore})
 			o.log("proxy", CodeSysProxyRestore)
 		}
@@ -286,14 +305,20 @@ func (o *Orchestrator) OnSysProxyChanged() {
 }
 
 // RestoreProxyNow retries restoring the system proxy after
-// SYSPROXY_RESTORE_FAILED, using the snapshot taken at connect.
-func (o *Orchestrator) RestoreProxyNow(snap *store.SysProxySnapshot, addr string) error {
-	if o.d.SysProxy == nil || snap == nil {
-		return errors.New("no system proxy snapshot")
+// SYSPROXY_RESTORE_FAILED, using the snapshot kept from that failure.
+func (o *Orchestrator) RestoreProxyNow() error {
+	o.mu.Lock()
+	p := o.pending
+	o.mu.Unlock()
+	if o.d.SysProxy == nil || p == nil {
+		return errors.New("no system proxy snapshot to restore")
 	}
-	if _, err := o.d.SysProxy.RestoreIfOurs(addr, *snap); err != nil {
+	if _, err := o.d.SysProxy.RestoreIfOurs(p.addr, p.snap); err != nil {
 		return err
 	}
+	o.mu.Lock()
+	o.pending = nil
+	o.mu.Unlock()
 	o.ClearWarning(CodeSysProxyRestore)
 	return nil
 }

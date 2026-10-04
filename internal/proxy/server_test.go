@@ -379,3 +379,70 @@ func TestOnConnEvent(t *testing.T) {
 	require.Equal(t, "ads.test:443", evs[0].Target)
 	require.Equal(t, "blocked", evs[0].Outcome)
 }
+
+// Final review I3: Stop must not hang on an HTTP-forward request whose
+// origin never answers.
+func TestStop_ForwardToSilentOriginDoesNotHang(t *testing.T) {
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+	defer ln.Close()
+	go func() {
+		for {
+			c, err := ln.Accept()
+			if err != nil {
+				return
+			}
+			go func() { _, _ = io.Copy(io.Discard, c) }() // reads, never answers
+		}
+	}()
+	lo := netip.MustParseAddr("127.0.0.1")
+	d, _ := realDialer(t, mapResolver{"silent.test": {lo}}, "")
+	s := proxy.New(proxy.Config{Dialer: d, Listen: []netip.AddrPort{netip.MustParseAddrPort("127.0.0.1:0")},
+		Limits: proxy.Limits{Drain: 200 * time.Millisecond}})
+	require.NoError(t, s.Start(context.Background()))
+	c, err := net.Dial("tcp", s.Addrs()[0].String())
+	require.NoError(t, err)
+	defer c.Close()
+	p := ln.Addr().(*net.TCPAddr).Port
+	_, _ = fmt.Fprintf(c, "GET http://silent.test:%d/ HTTP/1.1\r\nHost: silent.test:%d\r\n\r\n", p, p)
+	time.Sleep(200 * time.Millisecond)
+	done := make(chan struct{})
+	go func() { _ = s.Stop(context.Background()); close(done) }()
+	select {
+	case <-done:
+	case <-time.After(3 * time.Second):
+		t.Fatal("Stop hung on a forward request")
+	}
+}
+
+// Final review I4: a 100 Continue interim response must not be taken as
+// the final response of a forwarded upload.
+func TestHTTPForward_ExpectContinue(t *testing.T) {
+	origin := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		b, _ := io.ReadAll(r.Body) // reading the body makes net/http send 100 Continue
+		_, _ = io.WriteString(w, "got "+string(b))
+	}))
+	defer origin.Close()
+	lo := netip.MustParseAddr("127.0.0.1")
+	d, _ := realDialer(t, mapResolver{"up.test": {lo}}, "")
+	_, addr := startServer(t, proxy.Config{Dialer: d})
+	c, err := net.Dial("tcp", addr)
+	require.NoError(t, err)
+	defer c.Close()
+	p := port(t, origin.URL)
+	_, _ = fmt.Fprintf(c, "POST http://up.test:%d/u HTTP/1.1\r\nHost: up.test:%d\r\nContent-Length: 5\r\nExpect: 100-continue\r\n\r\n", p, p)
+	// Like curl: send the body after a short wait even without 100 Continue.
+	time.Sleep(300 * time.Millisecond)
+	_, _ = io.WriteString(c, "hello")
+	br := bufio.NewReader(c)
+	_ = c.SetReadDeadline(time.Now().Add(3 * time.Second))
+	resp, err := http.ReadResponse(br, nil)
+	require.NoError(t, err)
+	for resp.StatusCode == http.StatusContinue {
+		resp, err = http.ReadResponse(br, nil)
+		require.NoError(t, err)
+	}
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	body, _ := io.ReadAll(resp.Body)
+	require.Equal(t, "got hello", string(body))
+}

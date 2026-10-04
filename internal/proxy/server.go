@@ -100,7 +100,7 @@ func New(c Config) *Server {
 func (s *Server) Start(ctx context.Context) error {
 	var lns []net.Listener
 	for _, a := range s.cfg.Listen {
-		ln, err := net.Listen("tcp", a.String())
+		ln, err := net.Listen(listenNetwork(a), a.String())
 		if err != nil {
 			for _, l := range lns {
 				l.Close()
@@ -118,6 +118,16 @@ func (s *Server) Start(ctx context.Context) error {
 		go s.accept(ln)
 	}
 	return nil
+}
+
+// listenNetwork picks tcp4/tcp6 by address family: on Windows a wildcard
+// address on "tcp" opens a dual-stack socket, so 0.0.0.0:p and [::]:p
+// would collide.
+func listenNetwork(a netip.AddrPort) string {
+	if a.Addr().Unmap().Is4() {
+		return "tcp4"
+	}
+	return "tcp6"
 }
 
 // Addrs returns the bound addresses.
@@ -171,6 +181,16 @@ func (s *Server) Stop(ctx context.Context) error {
 
 func (s *Server) accept(ln net.Listener) {
 	defer s.wg.Done()
+	defer func() {
+		if r := recover(); r != nil {
+			slog.Error("proxy: accept loop panicked", "panic", fmt.Sprint(r))
+		}
+		// A listener that ends without Stop leaves the proxy dead: report it
+		// so the health check restarts the proxy phase.
+		s.mu.Lock()
+		s.running = false
+		s.mu.Unlock()
+	}()
 	for {
 		c, err := ln.Accept()
 		if err != nil {
@@ -192,6 +212,18 @@ func (s *Server) track(c net.Conn, ip netip.Addr) bool {
 	s.perIP[ip]++
 	s.stats.open(ip)
 	return true
+}
+
+func (s *Server) trackConn(c net.Conn) {
+	s.mu.Lock()
+	s.conns[c] = struct{}{}
+	s.mu.Unlock()
+}
+
+func (s *Server) untrackConn(c net.Conn) {
+	s.mu.Lock()
+	delete(s.conns, c)
+	s.mu.Unlock()
 }
 
 func (s *Server) untrack(c net.Conn, ip netip.Addr) {
@@ -273,10 +305,8 @@ func (s *Server) tunnel(c net.Conn, br *bufio.Reader, ip netip.Addr, req wire.Re
 		return
 	}
 	defer res.Conn.Close()
-	s.mu.Lock()
-	s.conns[res.Conn] = struct{}{}
-	s.mu.Unlock()
-	defer func() { s.mu.Lock(); delete(s.conns, res.Conn); s.mu.Unlock() }()
+	s.trackConn(res.Conn)
+	defer s.untrackConn(res.Conn)
 	if len(res.FirstServerBytes) > 0 {
 		if _, err := c.Write(res.FirstServerBytes); err != nil {
 			return
@@ -298,18 +328,18 @@ func (s *Server) forward(c net.Conn, br *bufio.Reader, ip netip.Addr, req wire.R
 	var up net.Conn
 	var upBR *bufio.Reader
 	var cur wire.Target
-	defer func() {
+	closeUp := func() {
 		if up != nil {
+			s.untrackConn(up)
 			up.Close()
+			up = nil
 		}
-	}()
+	}
+	defer closeUp()
 	r, t := req.HTTP, req.Target
 	for {
 		if up == nil || t != cur {
-			if up != nil {
-				up.Close()
-				up = nil
-			}
+			closeUp()
 			if err := s.cfg.Dialer.Decide(t); err != nil {
 				_ = wire.WriteReply(c, wire.ProtoHTTPForward, replyFor(err))
 				s.event(ip, t, dialer.OutcomeBlocked, rules.Source{})
@@ -322,17 +352,26 @@ func (s *Server) forward(c net.Conn, br *bufio.Reader, ip netip.Addr, req wire.R
 				return
 			}
 			up, upBR, cur = res.Conn, bufio.NewReader(res.Conn), t
+			s.trackConn(up) // Stop must be able to close it
 		}
 		cw := &countWriter{w: up}
 		if err := r.Write(cw); err != nil {
 			return
 		}
+		cc := &countWriter{w: c}
 		resp, err := http.ReadResponse(upBR, r)
+		// Pass interim 1xx responses (100 Continue…) through and wait for
+		// the final one; 101 is final for HTTP/1.1 upgrades.
+		for err == nil && resp.StatusCode >= 100 && resp.StatusCode < 200 && resp.StatusCode != http.StatusSwitchingProtocols {
+			if _, werr := fmt.Fprintf(cc, "HTTP/%d.%d %s\r\n\r\n", resp.ProtoMajor, resp.ProtoMinor, resp.Status); werr != nil {
+				return
+			}
+			resp, err = http.ReadResponse(upBR, r)
+		}
 		if err != nil {
 			_ = wire.WriteReply(c, wire.ProtoHTTPForward, wire.ReplyUnreachable)
 			return
 		}
-		cc := &countWriter{w: c}
 		err = resp.Write(cc)
 		resp.Body.Close()
 		s.addBytes(cw.n, cc.n)

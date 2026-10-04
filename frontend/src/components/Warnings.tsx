@@ -12,6 +12,11 @@ export function Warnings() {
   const [failure, setFailure] = useState<string | null>(null);
   if (warnings.length === 0) return null;
 
+  const restoreProxy = () => {
+    setFailure(null);
+    Service.RestoreSystemProxy().catch((e) => setFailure(describeError(e)));
+  };
+
   const restore = () => {
     setFailure(null);
     Service.RestoreDNSNow().catch((e) => setFailure(describeError(e)));
@@ -26,6 +31,8 @@ export function Warnings() {
           actions={
             w.code === "RESTORE_FAILED"
               ? [{ label: t("settings.restoreNow"), onClick: restore, primary: true }]
+              : w.code === "SYSPROXY_RESTORE_FAILED"
+                ? [{ label: t("errors.SYSPROXY_RESTORE_FAILED.button"), onClick: restoreProxy, primary: true }]
               : w.code === "SYSPROXY_EXISTING"
                 ? [
                     { label: t("errors.SYSPROXY_EXISTING.override"), onClick: () => void Service.AnswerSysProxyOverride(true), primary: true },
@@ -35,7 +42,8 @@ export function Warnings() {
           }
         >
           {tCode(`errors.${w.code}.message`, w.params ?? undefined)}
-          {w.code === "RESTORE_FAILED" && failure && <div>✕ {failure}</div>}
+          {w.code === "SYSPROXY_RESTORE_FAILED" && <div>{tCode("errors.SYSPROXY_RESTORE_FAILED.action")}</div>}
+          {(w.code === "RESTORE_FAILED" || w.code === "SYSPROXY_RESTORE_FAILED") && failure && <div>✕ {failure}</div>}
         </Banner>
       ))}
     </div>

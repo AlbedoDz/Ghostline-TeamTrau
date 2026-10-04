@@ -45,6 +45,40 @@ func LANAddrs(ifaces []net.Interface, addrs func(net.Interface) ([]net.Addr, err
 	return out
 }
 
+// UnicastAddrs lists every unicast address (any scope) of interfaces that
+// are up — what the proxy's SSRF guard treats as "this machine".
+func UnicastAddrs(ifaces []net.Interface, addrs func(net.Interface) ([]net.Addr, error)) []netip.Addr {
+	var out []netip.Addr
+	for _, i := range ifaces {
+		if i.Flags&net.FlagUp == 0 {
+			continue
+		}
+		as, err := addrs(i)
+		if err != nil {
+			continue
+		}
+		for _, a := range as {
+			n, ok := a.(*net.IPNet)
+			if !ok {
+				continue
+			}
+			if ip, ok := netip.AddrFromSlice(n.IP); ok && !ip.IsMulticast() && !ip.IsUnspecified() {
+				out = append(out, ip.Unmap())
+			}
+		}
+	}
+	return out
+}
+
+// LocalUnicastAddrs is UnicastAddrs for this machine.
+func LocalUnicastAddrs() []netip.Addr {
+	ifs, err := net.Interfaces()
+	if err != nil {
+		return nil
+	}
+	return UnicastAddrs(ifs, func(i net.Interface) ([]net.Addr, error) { return i.Addrs() })
+}
+
 // LocalLANAddrs is LANAddrs for this machine.
 func LocalLANAddrs() []netip.Addr {
 	ifs, err := net.Interfaces()

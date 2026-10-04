@@ -164,6 +164,10 @@ func (s *Service) SaveSettings(n store.Settings) error {
 		}
 	}
 	old := s.x.Settings.Get()
+	// Upstream proxies change only through SaveUpstreamProxy/
+	// DeleteUpstreamProxy: the UI's copy may be stale or carry masked
+	// passwords, so it never overwrites them.
+	n.Proxy.Upstreams = old.Proxy.Upstreams
 	if err := s.x.Settings.Save(n); err != nil {
 		return err
 	}

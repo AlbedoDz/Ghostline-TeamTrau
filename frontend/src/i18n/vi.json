@@ -291,7 +291,8 @@
     },
     "SYSPROXY_RESTORE_FAILED": {
       "message": "không khôi phục được system proxy của Windows",
-      "action": "Mở Cài đặt Windows → Proxy và tắt proxy thủ công"
+      "action": "Mở Cài đặt Windows → Proxy và tắt proxy thủ công",
+      "button": "khôi phục system proxy"
     },
     "RULES_PARSE": {
       "message": "rules không hợp lệ ở dòng {{line}}",

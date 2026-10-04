@@ -40,6 +40,8 @@ type Orchestrator struct {
 	bgCancel context.CancelFunc
 	// px is the proxy phase state; guarded by opMu.
 	px proxyState
+	// pending is a system proxy restore that failed; guarded by mu.
+	pending *pendingRestore
 }
 
 // New creates an orchestrator in the disconnected state.

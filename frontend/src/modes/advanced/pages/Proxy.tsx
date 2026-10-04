@@ -84,9 +84,10 @@ export function Proxy() {
   const saveDraft = () => {
     if (!draft) return;
     Service.SaveUpstreamProxy(draft, password)
-      .then(() => {
-        const ups = [...(proxy.upstreams ?? []).filter((u) => u.id !== draft.id), { ...draft, passEnc: password ? "•" : draft.passEnc }];
-        useGhost.getState().setSettings({ ...settings, proxy: { ...proxy, upstreams: ups } });
+      .then(() => Service.GetSettings())
+      .then((fresh) => {
+        // Go is the source of truth for upstreams (passwords stay encrypted there).
+        if (fresh) useGhost.getState().setSettings(fresh);
         setDraft(null);
         setPassword("");
         setError(null);

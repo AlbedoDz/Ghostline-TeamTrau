@@ -36,8 +36,10 @@ type proxyWiring struct {
 	frag   *store.FragCache
 	log    *slog.Logger
 
-	mu  sync.Mutex
-	srv *proxy.Server
+	mu     sync.Mutex
+	srv    *proxy.Server
+	self   []netip.Addr
+	selfAt time.Time
 }
 
 func newProxyWiring(box *app.SettingsBox, eng *engine.Engine, paths store.Paths, exe string, bus *app.Bus, log *slog.Logger) *proxyWiring {
@@ -90,8 +92,16 @@ func (w *proxyWiring) upstream(id string) (dialer.Upstream, bool) {
 	return dialer.Upstream{}, false
 }
 
+// selfAddrs is every address of this machine (cached briefly: the dialer
+// asks once per resolved address).
 func (w *proxyWiring) selfAddrs() []netip.Addr {
-	return append(winutil.LocalLANAddrs(), netip.MustParseAddr("127.0.0.1"), netip.IPv6Loopback())
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	if time.Since(w.selfAt) > 30*time.Second {
+		w.self = append(winutil.LocalUnicastAddrs(), netip.MustParseAddr("127.0.0.1"), netip.IPv6Loopback())
+		w.selfAt = time.Now()
+	}
+	return w.self
 }
 
 func (w *proxyWiring) newDialer(port int, matcher func() dialer.Matcher) *dialer.Dialer {

@@ -291,7 +291,8 @@
     },
     "SYSPROXY_RESTORE_FAILED": {
       "message": "could not restore the Windows system proxy",
-      "action": "Open Windows Settings → Proxy and turn the manual proxy off"
+      "action": "Open Windows Settings → Proxy and turn the manual proxy off",
+      "button": "restore system proxy"
     },
     "RULES_PARSE": {
       "message": "invalid rules on line {{line}}",

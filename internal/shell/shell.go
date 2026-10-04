@@ -149,8 +149,8 @@ func Run(o Options) error {
 		Proxy:         pw,
 		SysProxy:      sysproxy.Manager{API: sysproxy.NewWindowsAPI()},
 		Firewall:      firewall{exe: o.Executable},
-		ConfirmOverride: func(server, pac string) bool {
-			return svc != nil && app.AskOverride(svc, server, pac, 60*time.Second)
+		ConfirmOverride: func(ctx context.Context, server, pac string) bool {
+			return svc != nil && app.AskOverride(ctx, svc, server, pac, 60*time.Second)
 		},
 		Rules: pw.holder.Load,
 	})

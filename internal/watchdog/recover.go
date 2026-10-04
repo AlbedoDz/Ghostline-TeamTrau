@@ -115,7 +115,9 @@ func RestoreIfOrphaned(d Deps) (Outcome, error) {
 // applied or taken over by another app) and the firewall rule.
 func restoreProxy(d Deps, st store.State) error {
 	var errs []error
-	if sp := st.SysProxy; sp != nil && sp.Set && !sp.TakenOver && sp.Snapshot != nil && d.RestoreSysProxy != nil {
+	// No Set gate: a crash between Apply and recording Set would otherwise
+	// leave the proxy behind; RestoreIfOurs checks the value is ours.
+	if sp := st.SysProxy; sp != nil && !sp.TakenOver && sp.Snapshot != nil && d.RestoreSysProxy != nil {
 		if _, err := d.RestoreSysProxy(sp.Ours, *sp.Snapshot); err != nil {
 			errs = append(errs, fmt.Errorf("watchdog: restore system proxy: %w", err))
 		}
