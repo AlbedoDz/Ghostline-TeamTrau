@@ -145,7 +145,7 @@ Test tích hợp thay đổi cài đặt thật của hệ thống, nên cần c
 go test -tags integration ./internal/sysdns/... ./internal/startup/...
 ```
 
-Trước khi phát hành, đi qua [`docs/release-checklist.md`](docs/release-checklist.md). Đẩy một tag `v*` lên GitHub sẽ tự build và tạo trang Release qua GitHub Actions.
+Trước khi phát hành, đi qua [`docs/release-checklist.md`](docs/release-checklist.md). Đẩy một tag `v*` lên GitHub sẽ tự build và tạo trang Release qua GitHub Actions. Quy trình phát hành chi tiết: [`docs/releasing.md`](docs/releasing.md).
 
 ### Danh sách máy chủ có chữ ký
 

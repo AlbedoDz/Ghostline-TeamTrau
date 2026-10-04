@@ -17,8 +17,8 @@ Chạy trên Windows 11 x64, terminal **admin**. Đánh dấu từng mục; mụ
 - [ ] **Đổi Wi-Fi sang dây mạng** khi đang kết nối: card mới được chụp DNS và đặt về loopback; Disconnect khôi phục cả hai card.
 - [ ] **Máy ngủ rồi thức** khi đang kết nối: DNS vẫn hoạt động; nếu engine hỏng, nhật ký có "đang tìm máy chủ khác".
 - [ ] **Wireshark** với filter `udp.port==53 || tcp.port==53` trên card mạng thật: khi đã bảo vệ, không có truy vấn DNS plain ra ngoài, trừ bootstrap tới 1.1.1.1/8.8.8.8 để phân giải hostname máy chủ DoH.
-- [ ] **Vượt DPI**: bật GoodbyeDPI preset Nhẹ → chạy; tắt → service `WinDivert` biến mất (`sc query WinDivert`).
-- [ ] **Installer**: cài, chạy, kết nối; gỡ cài đặt khi đang kết nối → DNS khôi phục, tác vụ `Ghostline` và `Ghostline Recovery` bị xoá, service `WinDivert` bị xoá.
+- [ ] **Vượt DPI**: bật GoodbyeDPI preset Nhẹ → chạy; tắt → service `WinDivert1.4` biến mất (`sc query WinDivert1.4`).
+- [ ] **Installer**: cài, chạy, kết nối; gỡ cài đặt khi đang kết nối → DNS khôi phục, tác vụ `Ghostline` và `Ghostline Recovery` bị xoá, service `WinDivert1.4` bị xoá.
 - [ ] **Ngôn ngữ**: chuyển VI ↔ EN, không còn chuỗi nào chưa dịch.
 
 ## Cần xác minh trên máy thật (reviewer không kiểm chứng được)
