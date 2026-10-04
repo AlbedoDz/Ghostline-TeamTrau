@@ -202,7 +202,7 @@ func TestDisconnect_Order(t *testing.T) {
 	h := newProxyHarness(t, true)
 	h.settings.DPI.Enabled = true
 	require.NoError(t, h.o.Connect(context.Background()))
-	h.dpi.running = true
+	h.dpi.setRunning(true)
 	n := len(h.r.list())
 	require.NoError(t, h.o.Disconnect(context.Background()))
 	requireOrder(t, h.r.list()[n:], "sysproxy.restore", "firewall.delete", "proxy.stop", "dns.restore", "dpi.stop", "engine.stop", "state.clean")
@@ -273,8 +273,7 @@ func TestProxyPhase_ReapplyRacesDisconnect(t *testing.T) {
 func TestReapplyProxy_PortChange(t *testing.T) {
 	h := newProxyHarness(t, true)
 	require.NoError(t, h.o.Connect(context.Background()))
-	h.settings.Proxy.Port = 9090
-	h.settings.Proxy.ShareLAN = false
+	h.setSettings(func(s *store.Settings) { s.Proxy.Port, s.Proxy.ShareLAN = 9090, false })
 	require.NoError(t, h.o.ReapplyProxy(context.Background()))
 	require.Equal(t, "127.0.0.1:9090", h.o.Snapshot().Proxy.Addr)
 	require.Equal(t, listenFor(9090, false, true), h.proxy.runs[len(h.proxy.runs)-1].Listen)
@@ -286,7 +285,7 @@ func TestReapplyProxy_PortChange(t *testing.T) {
 func TestReapplyProxy_DisabledStopsPhase(t *testing.T) {
 	h := newProxyHarness(t, true)
 	require.NoError(t, h.o.Connect(context.Background()))
-	h.settings.Proxy.Enabled = false
+	h.setSettings(func(s *store.Settings) { s.Proxy.Enabled = false })
 	require.NoError(t, h.o.ReapplyProxy(context.Background()))
 	require.Equal(t, ProxyStatus{}, h.o.Snapshot().Proxy)
 	require.False(t, h.proxy.Alive())

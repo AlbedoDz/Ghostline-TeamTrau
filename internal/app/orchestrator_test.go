@@ -88,7 +88,7 @@ func TestDisconnect_RestoresBeforeEngineStop(t *testing.T) {
 func TestDisconnect_StopsRunningDPI(t *testing.T) {
 	h := newHarness(t)
 	require.NoError(t, h.o.Connect(context.Background()))
-	h.dpi.running = true
+	h.dpi.setRunning(true)
 	n := len(h.r.list())
 	require.NoError(t, h.o.Disconnect(context.Background()))
 	require.Equal(t, []string{"dns.restore", "dns.flush", "dpi.stop", "engine.stop"}, h.r.list()[n:n+4])

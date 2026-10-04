@@ -53,10 +53,10 @@ func TestDPIStateIsPersisted(t *testing.T) {
 func TestDisconnect_CancelsAutotune(t *testing.T) {
 	h := newHarness(t)
 	require.NoError(t, h.o.Connect(context.Background()))
-	h.prober.block = true
+	h.prober.setBlock(true)
 	done := make(chan error, 1)
 	go func() { done <- h.o.Autotune(context.Background(), nil) }()
-	require.Eventually(t, func() bool { return h.dpi.running }, time.Second, 5*time.Millisecond)
+	require.Eventually(t, func() bool { return h.dpi.Running() }, time.Second, 5*time.Millisecond)
 	start := time.Now()
 	require.NoError(t, h.o.Disconnect(context.Background()))
 	require.Less(t, time.Since(start), time.Second)

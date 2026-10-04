@@ -124,6 +124,7 @@ func (d *fDNS) Restore(s []model.AdapterSnapshot) []sysdns.RestoreError {
 func (d *fDNS) Flush() error { return d.r.add("dns.flush") }
 
 type fDPI struct {
+	mu      sync.Mutex
 	r       *rec
 	running bool
 	startE  error
@@ -139,12 +140,23 @@ func (p *fDPI) Start(_ context.Context, args []string) (int, error) {
 	if p.startE != nil {
 		return 0, p.startE
 	}
+	p.mu.Lock()
 	p.running = true
 	p.started = args
+	p.mu.Unlock()
 	return 99, nil
 }
-func (p *fDPI) Stop() error   { p.running = false; return p.r.add("dpi.stop") }
-func (p *fDPI) Running() bool { return p.running }
+func (p *fDPI) Stop() error {
+	p.setRunning(false)
+	return p.r.add("dpi.stop")
+}
+func (p *fDPI) Running() bool { p.mu.Lock(); defer p.mu.Unlock(); return p.running }
+func (p *fDPI) setRunning(v bool) {
+	p.mu.Lock()
+	p.running = v
+	p.mu.Unlock()
+}
+func (p *fDPI) startedArgs() []string { p.mu.Lock(); defer p.mu.Unlock(); return p.started }
 
 type fSafety struct{ r *rec }
 
@@ -265,7 +277,10 @@ type fProber struct {
 }
 
 func (p *fProber) ProbeAll(ctx context.Context, sites []string) []probe.Result {
-	if p.block {
+	p.mu.Lock()
+	block := p.block
+	p.mu.Unlock()
+	if block {
 		<-ctx.Done()
 		return nil
 	}
@@ -295,8 +310,28 @@ type harness struct {
 	states   *fStates
 	sink     *fSink
 	prober   *fProber
+	smu      sync.Mutex // guards settings against background readers
 	settings store.Settings
 	recovers int
+}
+
+func (h *harness) getSettings() store.Settings {
+	h.smu.Lock()
+	defer h.smu.Unlock()
+	return h.settings
+}
+
+// setSettings changes settings safely while background work may read them.
+func (h *harness) setSettings(fn func(s *store.Settings)) {
+	h.smu.Lock()
+	fn(&h.settings)
+	h.smu.Unlock()
+}
+
+func (p *fProber) setBlock(v bool) {
+	p.mu.Lock()
+	p.block = v
+	p.mu.Unlock()
 }
 
 func newHarness(t *testing.T) *harness {
@@ -318,8 +353,8 @@ func newHarness(t *testing.T) *harness {
 		Builder: &fBuilder{r: r}, Resolver: &fResolver{r: r},
 		Recover: func() (watchdog.Outcome, error) { h.recovers++; _ = r.add("recover"); return watchdog.Restored, nil },
 		Sink:    h.sink, States: h.states,
-		Settings:     func() store.Settings { return h.settings },
-		SaveSettings: func(s store.Settings) error { h.settings = s; return nil },
+		Settings:     h.getSettings,
+		SaveSettings: func(s store.Settings) error { h.smu.Lock(); h.settings = s; h.smu.Unlock(); return nil },
 		Now:          time.Now,
 		Prober:       h.prober,
 		Sleep:        func(time.Duration) {},

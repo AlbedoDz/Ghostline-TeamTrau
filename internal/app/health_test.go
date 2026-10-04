@@ -117,7 +117,7 @@ func TestPostConnectProbe_SetsBlockedSitesOnlyForTLS(t *testing.T) {
 func TestAutotune_StopsAtFirstWorkingPreset(t *testing.T) {
 	h := newHarness(t)
 	h.prober.stage = func(site string, call int) probe.Stage {
-		if h.dpi.running && len(h.dpi.started) > 8 { // medium has more args than light
+		if h.dpi.Running() && len(h.dpi.startedArgs()) > 8 { // medium has more args than light
 			return probe.StageOK
 		}
 		return probe.StageTLS
@@ -130,9 +130,9 @@ func TestAutotune_StopsAtFirstWorkingPreset(t *testing.T) {
 		require.Equal(t, 4, n)
 	}))
 	require.Equal(t, []string{"light", "medium"}, progress)
-	require.Equal(t, "medium", h.settings.DPI.Preset)
-	require.True(t, h.settings.DPI.Enabled)
-	require.True(t, h.dpi.running)
+	require.Equal(t, "medium", h.getSettings().DPI.Preset)
+	require.True(t, h.getSettings().DPI.Enabled)
+	require.True(t, h.dpi.Running())
 	sn := h.o.Snapshot()
 	require.Empty(t, sn.BlockedSites)
 	require.True(t, sn.DPI.Running)
@@ -154,7 +154,7 @@ func TestAutotune_NoneWork(t *testing.T) {
 		}
 	}
 	require.Equal(t, "dpi.stop", lastDPI)
-	require.False(t, h.dpi.running)
+	require.False(t, h.dpi.Running())
 }
 
 func TestAutotune_BlockedByAVStopsImmediately(t *testing.T) {
@@ -182,25 +182,25 @@ func TestSetDPIEnabled_MapsHashMismatch(t *testing.T) {
 	var ae *AppError
 	require.True(t, errors.As(err, &ae))
 	require.Equal(t, CodeDPIHashMismatch, ae.Code)
-	require.False(t, h.settings.DPI.Enabled)
+	require.False(t, h.getSettings().DPI.Enabled)
 }
 
 func TestSetDPIEnabled_OnAndOff(t *testing.T) {
 	h := newHarness(t)
 	require.NoError(t, h.o.Connect(context.Background()))
 	require.NoError(t, h.o.SetDPIEnabled(context.Background(), true))
-	require.True(t, h.settings.DPI.Enabled)
+	require.True(t, h.getSettings().DPI.Enabled)
 	require.True(t, h.o.Snapshot().DPI.Running)
-	require.Equal(t, []string{"-p", "-r", "-s", "-m", "-e", "40", "-w", "--native-frag"}, h.dpi.started)
+	require.Equal(t, []string{"-p", "-r", "-s", "-m", "-e", "40", "-w", "--native-frag"}, h.dpi.startedArgs())
 	require.NoError(t, h.o.SetDPIEnabled(context.Background(), false))
-	require.False(t, h.settings.DPI.Enabled)
+	require.False(t, h.getSettings().DPI.Enabled)
 	require.False(t, h.o.Snapshot().DPI.Running)
 }
 
 func TestSetDPIEnabled_WhileDisconnectedOnlySaves(t *testing.T) {
 	h := newHarness(t)
 	require.NoError(t, h.o.SetDPIEnabled(context.Background(), true))
-	require.True(t, h.settings.DPI.Enabled)
+	require.True(t, h.getSettings().DPI.Enabled)
 	require.NotContains(t, h.r.list(), "dpi.start")
 	require.NoError(t, h.o.Connect(context.Background()))
 	require.Contains(t, h.r.list(), "dpi.start", "enabled DPI starts on connect")
