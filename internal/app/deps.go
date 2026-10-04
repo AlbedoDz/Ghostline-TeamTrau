@@ -89,6 +89,35 @@ type Sink interface {
 	Log(LogEvent)
 }
 
+// ProxyRun describes one start of the local proxy.
+type ProxyRun struct {
+	Listen   []netip.AddrPort
+	ShareLAN bool
+}
+
+// Proxy is the local HTTP/SOCKS proxy.
+type Proxy interface {
+	Start(ctx context.Context, run ProxyRun) error
+	Stop(ctx context.Context) error
+	SelfTest(ctx context.Context) error
+	Alive() bool
+}
+
+// SysProxy changes the Windows system proxy.
+type SysProxy interface {
+	Snapshot() (store.SysProxySnapshot, error)
+	Existing(store.SysProxySnapshot) (server, pac string, has bool)
+	Apply(addr string) error
+	IsOurs(addr string) (bool, error)
+	RestoreIfOurs(addr string, snap store.SysProxySnapshot) (bool, error)
+}
+
+// Firewall manages the LAN-sharing inbound rule.
+type Firewall interface {
+	Add(port int) error
+	Delete() error
+}
+
 // Deps wires the orchestrator.
 type Deps struct {
 	Engine       Engine
@@ -111,6 +140,13 @@ type Deps struct {
 	// Ticker returns a tick channel and a stop func (health checks).
 	Ticker        func(time.Duration) (<-chan time.Time, func())
 	BlacklistPath string
-	ListenV4      netip.AddrPort // default 127.0.0.1:53
-	ListenV6      netip.AddrPort // default [::1]:53
+	// Proxy phase (phase 2A). A nil Proxy disables the phase.
+	Proxy    Proxy
+	SysProxy SysProxy
+	Firewall Firewall
+	// ConfirmOverride asks the user before replacing another app's system
+	// proxy or PAC (SYSPROXY_EXISTING); nil means "do not replace".
+	ConfirmOverride func(server, pac string) bool
+	ListenV4        netip.AddrPort // default 127.0.0.1:53
+	ListenV6        netip.AddrPort // default [::1]:53
 }

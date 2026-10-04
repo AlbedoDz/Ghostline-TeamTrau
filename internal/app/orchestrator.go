@@ -38,6 +38,8 @@ type Orchestrator struct {
 	// bgCtx is cancelled by Disconnect to stop autotune and healing.
 	bgCtx    context.Context
 	bgCancel context.CancelFunc
+	// px is the proxy phase state; guarded by opMu.
+	px proxyState
 }
 
 // New creates an orchestrator in the disconnected state.
@@ -203,6 +205,7 @@ func (o *Orchestrator) Connect(ctx context.Context) error {
 		s.Servers = serverNames(o.servers)
 	})
 	o.log("ok", "CONNECTED", "servers", len(o.servers))
+	_ = o.startProxyPhase(context.WithoutCancel(ctx))
 	o.afterConnect()
 	return nil
 }
@@ -426,6 +429,8 @@ func (o *Orchestrator) disconnectLocked(ctx context.Context) []sysdns.RestoreErr
 	snaps, stopWD, healthStop := o.snaps, o.stopWatchdog, o.healthStop
 	o.mu.Unlock()
 
+	// System proxy first, then firewall and proxy, then DNS (spec 2A 6.2).
+	o.stopProxyPhase(ctx)
 	errs := o.d.DNS.Restore(snaps)
 	_ = o.d.DNS.Flush()
 	if len(errs) > 0 {
@@ -488,6 +493,7 @@ func (o *Orchestrator) Disconnect(ctx context.Context) error {
 	o.update(func(s *Snapshot) {
 		s.Status, s.Error, s.Since, s.Servers, s.BlockedSites, s.LatencyMs, s.Queries = StatusDisconnected, nil, time.Time{}, nil, nil, 0, 0
 		s.DPI.Running = false
+		s.Reasons = nil
 	})
 	o.log("system", "DISCONNECTED")
 	return nil

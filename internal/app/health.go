@@ -70,16 +70,11 @@ func (o *Orchestrator) healthLoop(ctx context.Context, ticks <-chan time.Time) {
 			return
 		case now = <-ticks:
 		}
+		o.checkProxyHealth(ctx)
 		failing := o.d.Engine.SelfTest(ctx) != nil || o.upstreamsFailing(o.d.Engine.Stats())
 		if !failing {
 			failingSince = time.Time{}
-			if o.Snapshot().Status == StatusDegraded {
-				o.update(func(s *Snapshot) {
-					if s.Status == StatusDegraded {
-						s.Status = StatusProtected
-					}
-				})
-			}
+			o.clearReason(reasonUpstreams)
 			continue
 		}
 		if failingSince.IsZero() {
@@ -103,7 +98,7 @@ func (o *Orchestrator) heal(ctx context.Context) {
 	if st := o.Snapshot().Status; st != StatusProtected && st != StatusDegraded {
 		return
 	}
-	o.update(func(s *Snapshot) { s.Status = StatusDegraded })
+	o.addReason(reasonUpstreams)
 	o.log("engine", "DEGRADED")
 	var picked []model.Server
 	var err error
@@ -146,7 +141,8 @@ func (o *Orchestrator) heal(ctx context.Context) {
 	o.mu.Lock()
 	o.servers = picked
 	o.mu.Unlock()
-	o.update(func(s *Snapshot) { s.Status, s.Servers = StatusProtected, serverNames(picked) })
+	o.update(func(s *Snapshot) { s.Servers = serverNames(picked) })
+	o.clearReason(reasonUpstreams)
 	o.log("ok", "SWAPPED", "servers", len(picked))
 }
 

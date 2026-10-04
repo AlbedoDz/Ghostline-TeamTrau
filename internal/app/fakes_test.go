@@ -154,14 +154,18 @@ func (s *fSafety) CreateRecoveryTask() error { return s.r.add("safety.task.creat
 func (s *fSafety) DeleteRecoveryTask() error { return s.r.add("safety.task.delete") }
 
 type fSystem struct {
-	r      *rec
-	admin  bool
-	owners []winutil.PortOwner
-	noV6   bool
+	r           *rec
+	admin       bool
+	owners      []winutil.PortOwner // port 53
+	proxyOwners []winutil.PortOwner // any other port
+	noV6        bool
 }
 
 func (s *fSystem) IsAdmin() bool { _ = s.r.add("sys.admin"); return s.admin }
-func (s *fSystem) PortOwners(uint16) ([]winutil.PortOwner, error) {
+func (s *fSystem) PortOwners(port uint16) ([]winutil.PortOwner, error) {
+	if port != 53 {
+		return s.proxyOwners, nil
+	}
 	return s.owners, s.r.add("sys.ports")
 }
 func (s *fSystem) SelfPID() (uint32, time.Time) { return 1234, time.Unix(100, 0) }

@@ -23,6 +23,20 @@ const (
 	CodeInternal          = "INTERNAL"
 	CodeSettingsReset     = "SETTINGS_RESET"
 	CodeNotConnected      = "NOT_CONNECTED"
+
+	// Phase 2A (spec 2A section 10).
+	CodeProxyPortBusy     = "PROXY_PORT_BUSY"
+	CodeProxySelfTest     = "PROXY_SELFTEST_FAILED"
+	CodeProxyFirewall     = "PROXY_FIREWALL"
+	CodeSysProxyExisting  = "SYSPROXY_EXISTING"
+	CodeSysProxyFailed    = "SYSPROXY_FAILED"
+	CodeSysProxyTakenOver = "SYSPROXY_TAKEN_OVER"
+	CodeSysProxyRestore   = "SYSPROXY_RESTORE_FAILED"
+	CodeRulesParse        = "RULES_PARSE"
+	CodeListFetch         = "LIST_FETCH_FAILED"
+	CodeListUnsupported   = "LIST_UNSUPPORTED_FORMAT"
+	CodeListTooLarge      = "LIST_TOO_LARGE"
+	CodeUpstreamProxy     = "UPSTREAM_PROXY_FAILED"
 )
 
 // AppError is a coded error the UI can translate.

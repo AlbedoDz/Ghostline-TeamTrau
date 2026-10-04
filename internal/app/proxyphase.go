@@ -1,0 +1,299 @@
+package app
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"net/netip"
+	"slices"
+
+	"github.com/hashcott/ghostline/internal/store"
+	"github.com/hashcott/ghostline/internal/winutil"
+)
+
+const (
+	reasonUpstreams = "upstreams"
+	reasonProxy     = "proxy"
+)
+
+// proxyState is what the proxy phase changed; guarded by opMu.
+type proxyState struct {
+	running   bool
+	addr      string // the system proxy value Ghostline sets
+	sysSet    bool
+	takenOver bool
+	snap      *store.SysProxySnapshot
+	fwSet     bool
+}
+
+// addReason marks the connection degraded for reason r.
+func (o *Orchestrator) addReason(r string) {
+	o.update(func(s *Snapshot) {
+		if s.Status != StatusProtected && s.Status != StatusDegraded {
+			return
+		}
+		if !slices.Contains(s.Reasons, r) {
+			s.Reasons = append(s.Reasons, r)
+		}
+		s.Status = StatusDegraded
+	})
+}
+
+// clearReason removes r; with no reason left the connection is protected.
+func (o *Orchestrator) clearReason(r string) {
+	o.update(func(s *Snapshot) {
+		s.Reasons = slices.DeleteFunc(s.Reasons, func(x string) bool { return x == r })
+		if len(s.Reasons) == 0 && s.Status == StatusDegraded {
+			s.Status = StatusProtected
+		}
+	})
+}
+
+// listenFor is where the proxy listens: loopback, or every address when
+// sharing on the LAN.
+func listenFor(port int, shareLAN, v6 bool) []netip.AddrPort {
+	p := uint16(port)
+	if shareLAN {
+		out := []netip.AddrPort{netip.AddrPortFrom(netip.IPv4Unspecified(), p)}
+		if v6 {
+			out = append(out, netip.AddrPortFrom(netip.IPv6Unspecified(), p))
+		}
+		return out
+	}
+	out := []netip.AddrPort{netip.AddrPortFrom(netip.MustParseAddr("127.0.0.1"), p)}
+	if v6 {
+		out = append(out, netip.AddrPortFrom(netip.IPv6Loopback(), p))
+	}
+	return out
+}
+
+func (o *Orchestrator) setSysProxyState(fn func(st *store.State)) error {
+	return o.d.States.Update(func(st *store.State) error {
+		if st.Phase != store.PhaseDNSSet {
+			return errNoChange
+		}
+		fn(st)
+		return nil
+	})
+}
+
+func ignoreNoChange(err error) error {
+	if errors.Is(err, errNoChange) {
+		return nil
+	}
+	return err
+}
+
+// startProxyPhase runs P1–P4 (spec 2A 6.1) after DNS is protected. A
+// failure undoes the proxy steps and marks the connection degraded; DNS is
+// never touched. Callers hold opMu.
+func (o *Orchestrator) startProxyPhase(ctx context.Context) error {
+	s := o.d.Settings()
+	if o.d.Proxy == nil || !s.Proxy.Enabled {
+		o.update(func(sn *Snapshot) { sn.Proxy = ProxyStatus{} })
+		o.clearReason(reasonProxy)
+		return nil
+	}
+	port := s.Proxy.Port
+	addr := fmt.Sprintf("127.0.0.1:%d", port)
+	o.mu.Lock()
+	v6 := o.v6
+	o.mu.Unlock()
+	wantSys := s.Proxy.SystemProxy && o.d.SysProxy != nil
+	wantFW := s.Proxy.ShareLAN && o.d.Firewall != nil
+	var snap store.SysProxySnapshot
+	skipSys := false
+
+	steps := []step{
+		{name: "proxy", do: func(ctx context.Context) error {
+			if err := o.d.Proxy.Start(ctx, ProxyRun{Listen: listenFor(port, s.Proxy.ShareLAN, v6), ShareLAN: s.Proxy.ShareLAN}); err != nil {
+				if owners, _ := o.d.System.PortOwners(uint16(port)); len(owners) > 0 {
+					return appErr(CodeProxyPortBusy, err, "port", port, "pid", owners[0].PID, "name", owners[0].Name)
+				}
+				return appErr(CodeProxySelfTest, err)
+			}
+			if err := o.d.Proxy.SelfTest(ctx); err != nil {
+				_ = o.d.Proxy.Stop(context.WithoutCancel(ctx))
+				return appErr(CodeProxySelfTest, err)
+			}
+			o.px.running = true
+			return nil
+		}, undo: func(ctx context.Context) error {
+			o.px.running = false
+			return o.d.Proxy.Stop(ctx)
+		}},
+		{name: "sysproxy.snapshot", do: func(context.Context) error {
+			if !wantSys {
+				return nil
+			}
+			var err error
+			if snap, err = o.d.SysProxy.Snapshot(); err != nil {
+				return appErr(CodeSysProxyFailed, err)
+			}
+			if server, pac, has := o.d.SysProxy.Existing(snap); has {
+				if o.d.ConfirmOverride == nil || !o.d.ConfirmOverride(server, pac) {
+					skipSys = true
+					return nil
+				}
+			}
+			if err := ignoreNoChange(o.setSysProxyState(func(st *store.State) {
+				st.SysProxy = &store.SysProxyState{Ours: addr, Snapshot: &snap}
+			})); err != nil {
+				return appErr(CodeSysProxyFailed, err)
+			}
+			o.px.snap, o.px.addr = &snap, addr
+			return nil
+		}, undo: func(context.Context) error {
+			o.px.snap = nil
+			return ignoreNoChange(o.setSysProxyState(func(st *store.State) { st.SysProxy = nil }))
+		}},
+		{name: "firewall", do: func(context.Context) error {
+			if !wantFW {
+				return nil
+			}
+			if err := ignoreNoChange(o.setSysProxyState(func(st *store.State) {
+				st.Firewall = &store.FirewallState{Rule: winutil.FirewallRuleName}
+			})); err != nil {
+				return appErr(CodeProxyFirewall, err, "detail", err.Error())
+			}
+			if err := o.d.Firewall.Add(port); err != nil {
+				_ = ignoreNoChange(o.setSysProxyState(func(st *store.State) { st.Firewall = nil }))
+				return appErr(CodeProxyFirewall, err, "detail", err.Error())
+			}
+			o.px.fwSet = true
+			return nil
+		}, undo: func(context.Context) error {
+			if !o.px.fwSet {
+				return nil
+			}
+			o.px.fwSet = false
+			err := o.d.Firewall.Delete()
+			return errors.Join(err, ignoreNoChange(o.setSysProxyState(func(st *store.State) { st.Firewall = nil })))
+		}},
+		{name: "sysproxy.apply", do: func(context.Context) error {
+			if !wantSys || skipSys {
+				return nil
+			}
+			if err := o.d.SysProxy.Apply(addr); err != nil {
+				// Apply may have written before failing to read back.
+				_, _ = o.d.SysProxy.RestoreIfOurs(addr, snap)
+				return appErr(CodeSysProxyFailed, err)
+			}
+			o.px.sysSet, o.px.takenOver = true, false
+			if err := ignoreNoChange(o.setSysProxyState(func(st *store.State) {
+				if st.SysProxy != nil {
+					st.SysProxy.Set = true
+				}
+			})); err != nil {
+				_, _ = o.d.SysProxy.RestoreIfOurs(addr, snap)
+				o.px.sysSet = false
+				return appErr(CodeSysProxyFailed, err)
+			}
+			return nil
+		}},
+	}
+	if err := runSteps(ctx, steps, func(int) {}); err != nil {
+		var ae *AppError
+		if !errors.As(err, &ae) {
+			ae = appErr(CodeProxySelfTest, err)
+		}
+		o.px = proxyState{}
+		o.update(func(sn *Snapshot) { sn.Proxy = ProxyStatus{Error: &AppError{Code: ae.Code, Params: ae.Params}} })
+		o.addReason(reasonProxy)
+		o.log("proxy", ae.Code, flatten(ae.Params)...)
+		return err
+	}
+	o.update(func(sn *Snapshot) {
+		sn.Proxy = ProxyStatus{Running: true, Addr: addr, SystemProxy: o.px.sysSet, ShareLAN: s.Proxy.ShareLAN}
+	})
+	o.clearReason(reasonProxy)
+	o.log("proxy", "PROXY_STARTED", "addr", addr)
+	return nil
+}
+
+// stopProxyPhase undoes the proxy phase: system proxy (unless another app
+// took it over), firewall rule, then the proxy itself. Callers hold opMu.
+func (o *Orchestrator) stopProxyPhase(ctx context.Context) {
+	px := o.px
+	if px.sysSet && !px.takenOver && px.snap != nil {
+		if _, err := o.d.SysProxy.RestoreIfOurs(px.addr, *px.snap); err != nil {
+			o.AddWarning(AppError{Code: CodeSysProxyRestore})
+			o.log("proxy", CodeSysProxyRestore)
+		}
+	}
+	if px.fwSet {
+		if err := o.d.Firewall.Delete(); err != nil {
+			o.log("proxy", CodeProxyFirewall, "detail", err.Error())
+		}
+	}
+	if px.running {
+		_ = o.d.Proxy.Stop(ctx)
+	}
+	if px.running || px.sysSet || px.fwSet || px.snap != nil {
+		_ = o.setSysProxyState(func(st *store.State) { st.SysProxy, st.Firewall = nil, nil })
+	}
+	o.px = proxyState{}
+	o.update(func(sn *Snapshot) { sn.Proxy = ProxyStatus{} })
+	o.clearReason(reasonProxy)
+}
+
+// ReapplyProxy restarts the proxy phase after its settings changed. It does
+// nothing while not connected.
+func (o *Orchestrator) ReapplyProxy(ctx context.Context) error {
+	o.opMu.Lock()
+	defer o.opMu.Unlock()
+	if st := o.Snapshot().Status; st != StatusProtected && st != StatusDegraded {
+		return nil
+	}
+	o.stopProxyPhase(ctx)
+	return o.startProxyPhase(ctx)
+}
+
+// checkProxyHealth restarts a proxy whose listener died, once per check; a
+// failed restart leaves the connection degraded.
+func (o *Orchestrator) checkProxyHealth(ctx context.Context) {
+	o.opMu.Lock()
+	defer o.opMu.Unlock()
+	if !o.px.running || o.d.Proxy.Alive() {
+		return
+	}
+	o.log("proxy", "PROXY_RESTART")
+	o.stopProxyPhase(ctx)
+	_ = o.startProxyPhase(ctx)
+}
+
+// OnSysProxyChanged reacts to a change of the Windows proxy settings: if
+// Ghostline's value was replaced, it is never fought over or restored.
+func (o *Orchestrator) OnSysProxyChanged() {
+	o.opMu.Lock()
+	defer o.opMu.Unlock()
+	if !o.px.sysSet || o.px.takenOver {
+		return
+	}
+	ours, err := o.d.SysProxy.IsOurs(o.px.addr)
+	if err != nil || ours {
+		return
+	}
+	o.px.takenOver = true
+	_ = o.setSysProxyState(func(st *store.State) {
+		if st.SysProxy != nil {
+			st.SysProxy.TakenOver = true
+		}
+	})
+	o.update(func(sn *Snapshot) { sn.Proxy.SystemProxy = false })
+	o.AddWarning(AppError{Code: CodeSysProxyTakenOver})
+	o.log("proxy", CodeSysProxyTakenOver)
+}
+
+// RestoreProxyNow retries restoring the system proxy after
+// SYSPROXY_RESTORE_FAILED, using the snapshot taken at connect.
+func (o *Orchestrator) RestoreProxyNow(snap *store.SysProxySnapshot, addr string) error {
+	if o.d.SysProxy == nil || snap == nil {
+		return errors.New("no system proxy snapshot")
+	}
+	if _, err := o.d.SysProxy.RestoreIfOurs(addr, *snap); err != nil {
+		return err
+	}
+	o.ClearWarning(CodeSysProxyRestore)
+	return nil
+}

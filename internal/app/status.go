@@ -23,6 +23,15 @@ type DPIStatus struct {
 	Preset  string `json:"preset"`
 }
 
+// ProxyStatus summarises the local proxy for the UI.
+type ProxyStatus struct {
+	Running     bool      `json:"running"`
+	Addr        string    `json:"addr"`
+	SystemProxy bool      `json:"systemProxy"`
+	ShareLAN    bool      `json:"shareLan"`
+	Error       *AppError `json:"error,omitempty"`
+}
+
 // Snapshot is the UI-facing state, emitted on every change.
 type Snapshot struct {
 	Status       Status     `json:"status"`
@@ -35,6 +44,9 @@ type Snapshot struct {
 	Queries      uint64     `json:"queries"`
 	DPI          DPIStatus  `json:"dpi"`
 	BlockedSites []string   `json:"blockedSites"`
+	// Reasons lists why the connection is degraded: "upstreams", "proxy".
+	Reasons []string    `json:"reasons"`
+	Proxy   ProxyStatus `json:"proxy"`
 }
 
 func (s Snapshot) clone() Snapshot {
@@ -42,6 +54,11 @@ func (s Snapshot) clone() Snapshot {
 	c.Warnings = append([]AppError(nil), s.Warnings...)
 	c.Servers = append([]string(nil), s.Servers...)
 	c.BlockedSites = append([]string(nil), s.BlockedSites...)
+	c.Reasons = append([]string(nil), s.Reasons...)
+	if s.Proxy.Error != nil {
+		e := *s.Proxy.Error
+		c.Proxy.Error = &e
+	}
 	if s.Error != nil {
 		e := *s.Error
 		c.Error = &e
