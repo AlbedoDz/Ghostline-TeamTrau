@@ -89,6 +89,10 @@ Section
 
     !insertmacro wails.webview2runtime
 
+    ; Stop a running Ghostline so its files can be replaced. A killed
+    ; instance leaves state.json dirty; the next start restores DNS.
+    nsExec::Exec 'taskkill /IM ${PRODUCT_EXECUTABLE} /F'
+
     SetOutPath $INSTDIR
     
     !insertmacro wails.files
@@ -104,6 +108,15 @@ SectionEnd
 
 Section "uninstall" 
     !insertmacro wails.setShellContext
+
+    ; Ghostline cleanup, in order: stop the app, restore DNS from its
+    ; snapshot, remove the logon tasks, remove the WinDivert driver service.
+    nsExec::Exec 'taskkill /IM ${PRODUCT_EXECUTABLE} /F'
+    ExecWait '"$INSTDIR\${PRODUCT_EXECUTABLE}" --restore'
+    nsExec::Exec 'schtasks /Delete /TN "Ghostline" /F'
+    nsExec::Exec 'schtasks /Delete /TN "Ghostline Recovery" /F'
+    nsExec::Exec 'sc stop WinDivert'
+    nsExec::Exec 'sc delete WinDivert'
 
     RMDir /r "$AppData\${PRODUCT_EXECUTABLE}" # Remove the WebView2 DataPath
 

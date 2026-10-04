@@ -194,3 +194,12 @@ tasks:
       INSTALL_SCOPE: '{{.INSTALL_SCOPE | default "machine"}}'
     cmds:
       - wails3 tool sign --input "build/windows/nsis/{{.APP_NAME}}-installer.exe" {{if .SIGN_CERTIFICATE}}--certificate "{{.SIGN_CERTIFICATE}}"{{end}} {{if .SIGN_THUMBPRINT}}--thumbprint "{{.SIGN_THUMBPRINT}}"{{end}} {{if .TIMESTAMP_SERVER}}--timestamp "{{.TIMESTAMP_SERVER}}"{{end}}
+
+  portable:
+    summary: Builds Ghostline-<version>-portable.zip (exe + "portable" marker)
+    deps:
+      - task: build
+    vars:
+      VERSION: '{{.VERSION | default "0.1.0"}}'
+    cmds:
+      - powershell -NoProfile -Command "New-Item -ItemType Directory -Force -Path bin/portable | Out-Null; Copy-Item -Force bin/{{.APP_NAME}}.exe bin/portable/; New-Item -ItemType File -Force -Path bin/portable/portable | Out-Null; Compress-Archive -Force -Path bin/portable/* -DestinationPath bin/Ghostline-{{.VERSION}}-portable.zip"

@@ -1,0 +1,24 @@
+Ghostline
+Copyright (c) 2026 Harry Nguyen
+Licensed under the MIT License (see LICENSE).
+
+Ghostline includes or depends on the following third-party software:
+
+- dnsproxy (github.com/AdguardTeam/dnsproxy) — Apache License 2.0
+  Copyright AdGuard Software Ltd.
+
+- GoodbyeDPI 0.2.2 (github.com/ValdikSS/GoodbyeDPI) — Apache License 2.0
+  Copyright ValdikSS. Bundled unmodified; license in assets/goodbyedpi/LICENSE-goodbyedpi.txt
+
+- WinDivert (github.com/basil00/WinDivert), shipped with GoodbyeDPI — GNU LGPL v3
+  Copyright basil00. Bundled unmodified; license in assets/goodbyedpi/LICENSE-windivert.txt
+
+- JetBrains Mono (github.com/JetBrains/JetBrainsMono) — SIL Open Font License 1.1
+  License in frontend/src/assets/fonts/OFL-JetBrainsMono.txt
+
+- Wails (github.com/wailsapp/wails) — MIT License
+- miekg/dns, ameshkov/dnsstamps, jedisct1/go-minisign — see their repositories
+- React, i18next, react-i18next, zustand — MIT License
+
+The DNSCrypt public resolver list is downloaded at runtime from its official
+source and verified with its minisign key; it is not distributed with Ghostline.
