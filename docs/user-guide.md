@@ -15,6 +15,8 @@ This guide is for anyone running Windows 10/11; no technical background is neede
    - [DPI bypass](#43-dpi-bypass)
    - [Logs](#44-logs)
    - [Settings](#45-settings)
+   - [Proxy](#46-proxy)
+   - [Rules and lists](#47-rules-and-lists)
 5. [The tray icon](#5-the-tray-icon)
 6. [When a site is still blocked](#6-when-a-site-is-still-blocked)
 7. [Troubleshooting](#7-troubleshooting)
@@ -187,12 +189,64 @@ Records events: connecting, switching servers, GoodbyeDPI on/off, errors.
 | notify about new versions | Show a notice when a new version is out. Ghostline **never updates itself** |
 | ⚠ RESTORE DNS NOW | Put every adapter's DNS back to its saved state. Use it if DNS ever looks wrong |
 
+### 4.6. Proxy
+
+Ghostline can run a local proxy on one port (default `8080`) that speaks **HTTP, HTTPS (CONNECT) and SOCKS4/4a/5**. It starts and stops with **Connect**, and it always resolves names through Ghostline's encrypted DNS, so it never leaks plain DNS.
+
+| Setting | Meaning |
+| --- | --- |
+| enable proxy | Run the proxy while connected |
+| use for this PC | Point the Windows system proxy at Ghostline. The old setting is saved first and put back on Disconnect, crash or power loss. If another app (a VPN, a company proxy) already set one, Ghostline asks before replacing it, and never fights an app that changes it later |
+| share on LAN | Let phones and other devices on the same Wi-Fi use the proxy. Only private addresses are accepted, and the firewall rule `Ghostline Proxy` is limited to *Private* networks |
+| port | 1024–65535 |
+
+**On a phone:** turn on *share on LAN*, then on the phone open Wi-Fi → this network → Proxy → Manual, and enter the address shown (or scan the QR code). If the page says the network is *Public*, switch it to *Private* in Windows Settings → Network.
+
+**Web fragmentation** splits the TLS ClientHello so DPI cannot read the site name:
+
+- **auto when blocked** (default): connect normally; if the connection is reset or stalls before the server answers, retry once with fragmentation and remember the site for this network (7 days). The first visit to a blocked site can take up to 3 seconds longer.
+- **always** / **off**.
+- **method:** TCP (split around the SNI), TLS record (split into several TLS records), or combined (default).
+- The **remembered domains** list shows what was learned on this network; remove entries if a site starts working without help.
+
+If the statistics show connections *blocked even fragmented*, that network needs GoodbyeDPI.
+
+**Upstream proxies** (SOCKS5 or HTTP, with optional user/password) let rules send some sites through another proxy such as Tor. Passwords are encrypted with Windows DPAPI. Use **test** to check one.
+
+### 4.7. Rules and lists
+
+Rules decide what happens to a domain, both for DNS and for the proxy. The first matching rule wins; if none matches, lists are checked in order.
+
+| Pattern | Matches |
+| --- | --- |
+| `example.com` | example.com and every subdomain |
+| `=example.com` | only example.com |
+| `*.example.com` | only subdomains |
+| `~ads` | any name containing "ads" |
+| `/^ad[0-9]+\./` | a regular expression (RE2) |
+| `10.0.0.0/8` | an IP range (proxy only) |
+
+| Action | Effect |
+| --- | --- |
+| `block` | DNS answers 0.0.0.0 (or NXDOMAIN, see *DNS block answer*); the proxy refuses |
+| `allow` | go direct and skip the lists, to fix a false positive |
+| `ip=1.2.3.4` | fake DNS answer (repeat for IPv6) |
+| `fragment=auto\|on\|off` | override web fragmentation for this site |
+| `upstream=<id>` | send through an upstream proxy |
+
+Edit rules in the **table** or switch to **text** (one rule per line, `#` comments, `#!` for a disabled rule). Nothing is saved until every line is valid; bad lines are marked with their number.
+
+**Lists:** paste any GitHub link (blob, raw, gist or jsDelivr) or a local file path, choose the action, and press **+ add list**. Ghostline detects the format (hosts, plain domains, AdBlock/AdGuard, dnsmasq, Unbound, RPZ, Clash/Surge, v2ray domain-list-community, sing-box JSON, CIDR), shows how many entries it read and which lines it skipped, and updates the list every 24 hours. **Quick add** offers well-known lists with their license and repository. If GitHub is blocked, Ghostline falls back to jsDelivr.
+
+**Test a domain** tells you which rule or list decides a name, for example *block — list HaGeZi Light, line 120*.
+
 ## 5. The tray icon
 
 Ghostline puts a ring icon in the system tray (bottom right, next to the clock). Its colour shows the current status. **Right-click** it for the menu:
 
 - **Connect / Disconnect**
 - **DPI bypass:** quickly turn GoodbyeDPI on or off
+- **Proxy: on/off:** turn the local proxy on or off
 - **Open Ghostline:** show the window again
 - **Quit:** disconnect, restore your DNS, then close the app
 

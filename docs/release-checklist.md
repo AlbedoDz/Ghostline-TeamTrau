@@ -5,7 +5,7 @@ Chạy trên Windows 11 x64, terminal **admin**. Đánh dấu từng mục; mụ
 ## Test tự động
 
 - [ ] `go test ./...` và `cd frontend && npm test` xanh
-- [ ] `go test -tags integration ./internal/sysdns/... ./internal/startup/...` xanh (admin)
+- [ ] `go test -tags integration ./internal/sysdns/... ./internal/startup/... ./internal/sysproxy/...` xanh (admin)
 
 ## Kiểm tra thủ công (spec §11)
 
@@ -21,7 +21,22 @@ Chạy trên Windows 11 x64, terminal **admin**. Đánh dấu từng mục; mụ
 - [ ] **Installer**: cài, chạy, kết nối; gỡ cài đặt khi đang kết nối → DNS khôi phục, tác vụ `Ghostline` và `Ghostline Recovery` bị xoá, service `WinDivert1.4` bị xoá.
 - [ ] **Ngôn ngữ**: chuyển VI ↔ EN, không còn chuỗi nào chưa dịch.
 
+## Kiểm tra thủ công giai đoạn 2A (spec 2A §11)
+
+- [ ] **Trình duyệt vào trang bị chặn theo SNI** qua system proxy (GoodbyeDPI tắt): bật proxy + "dùng cho máy này", Connect, mở trang → vào được; lần thứ hai không chậm thêm.
+- [ ] **Điện thoại trong LAN** dùng proxy qua mã QR (mạng Private) → duyệt web được; trang Proxy hiện 1 thiết bị LAN.
+- [ ] **Mạng Public** → trang Proxy hiện cảnh báo, điện thoại không vào được, Ghostline không tự đổi profile mạng.
+- [ ] **`taskkill /F /IM ghostline.exe`** khi đang dùng system proxy + chia sẻ LAN → trong ≤ 3 giây system proxy trở về như cũ và luật `Ghostline Proxy` bị xoá (`netsh advfirewall firewall show rule name="Ghostline Proxy"` báo không có).
+- [ ] **Khởi động lại máy** khi đang dùng system proxy → sau đăng nhập system proxy được khôi phục.
+- [ ] **VPN đổi system proxy giữa chừng** → Ghostline báo `SYSPROXY_TAKEN_OVER`, không giành lại; Disconnect không ghi đè cài đặt của VPN.
+- [ ] **Máy đã có proxy/PAC khác** → Connect hỏi xác nhận trước khi ghi đè; chọn "không dùng system proxy" thì proxy vẫn chạy.
+- [ ] **Wireshark** (`udp.port==53 || tcp.port==53`) khi duyệt web qua proxy: không có DNS plain do proxy gây ra.
+- [ ] **Import danh sách từ link GitHub** cho cả 6 mục "Thêm nhanh" → nhận đúng định dạng, có số mục, ô "Thử tên miền" chỉ đúng danh sách.
+- [ ] **Gỡ cài đặt** khi đang chia sẻ LAN → luật `Ghostline Proxy` bị xoá.
+
 ## Cần xác minh trên máy thật (reviewer không kiểm chứng được)
+
+- [ ] **Luật firewall với đường dẫn có dấu cách và chữ có dấu** (`C:\Program Files\…`, `C:\Users\Đức Hạnh\…` cho bản portable): `netsh` tạo đúng luật `Ghostline Proxy` cho exe đó.
 
 - [ ] **Tắt máy khi app đang ẩn ở khay**: Windows gửi `WM_QUERYENDSESSION` tới cửa sổ ẩn, và DNS được trả về trước khi tắt.
 - [ ] **Khởi động cùng Windows** (`--autostart` qua Task Scheduler) rồi Connect: watchdog vẫn sống sau khi tác vụ kết thúc (thử `taskkill /F` → DNS khôi phục).

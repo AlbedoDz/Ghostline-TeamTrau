@@ -34,6 +34,7 @@ Ghostline chạy một DNS server cục bộ trên `127.0.0.1` / `::1`, trỏ m�
 - [Sử dụng](#sử-dụng)
 - [Cách hoạt động](#cách-hoạt-động)
 - [Quyền riêng tư](#quyền-riêng-tư)
+- [Hạn chế đã biết](#hạn-chế-đã-biết)
 - [Build từ mã nguồn](#build-từ-mã-nguồn)
 - [Đóng góp](#đóng-góp)
 - [Bảo mật](#bảo-mật)
@@ -47,6 +48,9 @@ Ghostline chạy một DNS server cục bộ trên `127.0.0.1` / `::1`, trỏ m�
 - **Không bao giờ mất mạng:** chụp lại DNS gốc của từng card mạng trước khi đổi, với 4 lớp khôi phục: ngắt kết nối sạch, tiến trình watchdog, khôi phục khi mở lại app, và tác vụ chạy lúc đăng nhập.
 - **Xác minh không rò rỉ:** sau khi kết nối, Ghostline kiểm tra truy vấn thật sự đi qua nó.
 - **Vượt DPI:** đi kèm GoodbyeDPI 0.2.2 (được khoá mã băm), có preset, tự dò, danh sách đen, và chia nhỏ (fragment) truy vấn DoH.
+- **Proxy cục bộ (HTTP / HTTPS / SOCKS4/5):** chạy cùng nút Connect, có thể đặt làm System Proxy của Windows, và chia sẻ cho điện thoại hay thiết bị khác cùng Wi-Fi (có mã QR). Tên miền luôn được phân giải qua DNS mã hoá của Ghostline.
+- **Fragment web không cần driver:** lưu lượng qua proxy được tự động cắt nhỏ ClientHello khi trang bị chặn theo SNI, và Ghostline ghi nhớ cách vượt cho từng mạng.
+- **Rules và danh sách cộng đồng:** chặn, cho phép, DNS giả, fragment hoặc đi qua upstream proxy theo domain, keyword, regexp hay CIDR. Import danh sách hosts, AdBlock/AdGuard, dnsmasq, Unbound, RPZ, Clash, v2ray, sing-box hoặc CIDR thẳng từ link GitHub, tự cập nhật theo lịch.
 - **Danh sách máy chủ có chữ ký:** cập nhật mỗi ngày, xác minh bằng ed25519; danh sách DNSCrypt được kiểm tra bằng minisign.
 - **Chế độ Đơn giản và Nâng cao**, icon khay, giao diện tiếng Việt và tiếng Anh, phong cách neon-terminal.
 - **Bản cài đặt hoặc portable:** bản portable lưu mọi dữ liệu trong thư mục `data\` cạnh file exe.
@@ -89,7 +93,8 @@ Get-FileHash .\Ghostline-0.1.0-portable.zip -Algorithm SHA256
 > 📖 Hướng dẫn chi tiết từng màn hình, cách vượt chặn và xử lý sự cố: **[docs/huong-dan-su-dung.md](docs/huong-dan-su-dung.md)**
 
 1. Mở Ghostline và bấm **Kết nối**. App tự chọn máy chủ, chuyển hướng DNS và kiểm tra rò rỉ.
-2. Nếu vẫn còn trang bị chặn, vào **Nâng cao → DPI**, bật **GoodbyeDPI**, hoặc bấm **tự dò** để tìm preset hợp với mạng của bạn.
+2. Nếu vẫn còn trang bị chặn, hoặc bật **proxy** (Nâng cao → Proxy → bật proxy + dùng cho máy này) để trình duyệt được fragment tự động, hoặc vào **Nâng cao → DPI**, bật **GoodbyeDPI** / bấm **tự dò**.
+   Muốn chia sẻ cho thiết bị khác, bật **chia sẻ LAN** rồi quét mã QR bằng điện thoại (mạng phải là *Private*).
 3. Bấm **Ngắt kết nối** (hoặc thoát từ icon khay) để trả lại DNS gốc.
 
 Nếu DNS có vẻ không đúng, vào **Cài đặt → Khôi phục DNS ngay** để đưa mọi card mạng về trạng thái đã lưu. Bạn cũng có thể chạy lệnh:
@@ -120,6 +125,13 @@ Chi tiết thiết kế nằm trong [`docs/superpowers/specs`](docs/superpowers/
 - Không telemetry, không tài khoản, không thống kê.
 - Không bao giờ ghi tên miền bạn truy cập xuống đĩa. Nhật ký truy vấn (nếu bật) chỉ nằm trong RAM.
 - App chỉ kết nối mạng tới: máy chủ DNS bạn chọn, DNS bootstrap để phân giải tên các máy chủ đó, danh sách máy chủ có chữ ký, danh sách DNSCrypt, và GitHub để kiểm tra bản mới.
+- Proxy không ghi đích đến xuống đĩa; danh sách kết nối trực tiếp chỉ nằm trong RAM, giống nhật ký truy vấn.
+
+## Hạn chế đã biết
+
+- Nếu bạn duyệt UAC bằng **tài khoản admin khác**, `%APPDATA%` và System Proxy là của tài khoản đó, nên "dùng cho máy này" không áp dụng cho người dùng đang đăng nhập.
+- Fragment web chỉ giúp được ứng dụng đi qua proxy. Ứng dụng bỏ qua proxy của Windows (một số game, Firefox có cài đặt proxy riêng) cần dùng GoodbyeDPI.
+- Chia sẻ LAN chỉ hoạt động trên mạng được Windows đánh dấu **Private**; Ghostline không bao giờ tự đổi profile mạng.
 
 ## Build từ mã nguồn
 

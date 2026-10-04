@@ -34,6 +34,7 @@ Ghostline runs a local DNS server on `127.0.0.1` / `::1`, points every network a
 - [Usage](#usage)
 - [How it works](#how-it-works)
 - [Privacy](#privacy)
+- [Known limitations](#known-limitations)
 - [Building from source](#building-from-source)
 - [Project layout](#project-layout)
 - [Contributing](#contributing)
@@ -48,6 +49,9 @@ Ghostline runs a local DNS server on `127.0.0.1` / `::1`, points every network a
 - **Never lose the internet:** each adapter's original DNS is snapshotted before any change, with four recovery layers: clean disconnect, a watchdog process, restore on next launch, and a logon recovery task.
 - **Leak verification:** after connecting, Ghostline checks that queries really go through it.
 - **DPI bypass:** bundled, hash-pinned GoodbyeDPI 0.2.2 with presets, auto-tune, a site blacklist, and DoH request fragmentation.
+- **Local proxy (HTTP / HTTPS / SOCKS4/5):** runs with Connect, can become the Windows system proxy, and can be shared with phones and other devices on your Wi-Fi (QR code included). Names are always resolved through Ghostline's encrypted DNS.
+- **Web fragmentation without a driver:** traffic through the proxy gets its TLS ClientHello split automatically when a site is blocked by SNI, and the fix is remembered per network.
+- **Rules and community lists:** block, allow, fake DNS, fragment or route through an upstream proxy by domain, keyword, regexp or CIDR. Import hosts, AdBlock/AdGuard, dnsmasq, Unbound, RPZ, Clash, v2ray, sing-box or CIDR lists straight from a GitHub link, updated on a schedule.
 - **Signed server list:** updated daily and verified with ed25519; the DNSCrypt list is checked with minisign.
 - **Simple and Advanced modes**, a tray icon, Vietnamese and English UI, and a neon-terminal look.
 - **Installer or portable:** the portable build keeps all data in a `data\` folder next to the exe.
@@ -88,7 +92,8 @@ Get-FileHash .\Ghostline-0.1.0-portable.zip -Algorithm SHA256
 > 📖 A detailed user guide covering every screen, unblocking sites and troubleshooting: **[docs/user-guide.md](docs/user-guide.md)** ([Tiếng Việt](docs/huong-dan-su-dung.md))
 
 1. Start Ghostline and press **Connect**. It picks a server, redirects DNS and verifies there is no leak.
-2. If some sites are still blocked, open **Advanced → DPI**, turn on **GoodbyeDPI**, or press **auto-tune** to find a preset that works on your network.
+2. If some sites are still blocked, either turn on the **proxy** (Advanced → Proxy → enable proxy + use for this PC) so browsers get automatic fragmentation, or open **Advanced → DPI** and turn on **GoodbyeDPI** / press **auto-tune**.
+   To share with other devices, turn on **share on LAN** and scan the QR code on your phone (the network must be *Private*).
 3. Press **Disconnect** (or quit from the tray) to restore your original DNS.
 
 If DNS ever looks wrong, **Settings → Restore DNS now** puts every adapter back to its saved state. From a terminal you can also run:
@@ -118,7 +123,14 @@ Design details live in [`docs/superpowers/specs`](docs/superpowers/specs).
 
 - No telemetry, no accounts, no analytics.
 - Visited domains are never written to disk. The optional query log lives in RAM only.
-- Network access is limited to your chosen DNS resolvers, bootstrap resolution of their hostnames, the signed server list, the DNSCrypt resolver list and the GitHub release check.
+- Network access is limited to your chosen DNS resolvers, bootstrap resolution of their hostnames, the signed server list, the DNSCrypt resolver list, the GitHub release check, and the community lists you add yourself.
+- The proxy never logs destinations to disk; its live connection view is RAM-only like the query log.
+
+## Known limitations
+
+- If you approve UAC with a **different administrator account**, `%APPDATA%` and the system proxy belong to that account, so "use for this PC" does not affect the signed-in user.
+- Web fragmentation only helps apps that go through the proxy. Apps that ignore the Windows proxy (some games, Firefox with its own proxy settings) need GoodbyeDPI instead.
+- LAN sharing works only on networks marked **Private** in Windows; Ghostline never changes the network profile itself.
 
 ## Building from source
 

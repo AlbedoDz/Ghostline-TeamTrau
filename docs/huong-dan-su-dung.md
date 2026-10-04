@@ -15,6 +15,8 @@ Hướng dẫn này dành cho người dùng Windows 10/11, không cần biết 
    - [Vượt DPI](#43-vượt-dpi)
    - [Nhật ký](#44-nhật-ký)
    - [Cài đặt](#45-cài-đặt)
+   - [Proxy](#46-proxy)
+   - [Rules và danh sách](#47-rules-và-danh-sách)
 5. [Icon ở khay hệ thống](#5-icon-ở-khay-hệ-thống)
 6. [Khi một trang web vẫn bị chặn](#6-khi-một-trang-web-vẫn-bị-chặn)
 7. [Xử lý sự cố](#7-xử-lý-sự-cố)
@@ -187,12 +189,64 @@ Ghi lại các sự kiện: kết nối, đổi máy chủ, bật/tắt GoodbyeD
 | báo có bản mới | Hiện thông báo khi có phiên bản mới. Ghostline **không bao giờ tự cập nhật** |
 | ⚠ KHÔI PHỤC DNS NGAY | Đưa DNS mọi card mạng về trạng thái đã lưu. Dùng khi nghi ngờ DNS bị sai |
 
+### 4.6. Proxy
+
+Ghostline có thể chạy một proxy cục bộ trên một cổng (mặc định `8080`), hiểu được **HTTP, HTTPS (CONNECT) và SOCKS4/4a/5**. Proxy bật và tắt cùng nút **Connect**, và luôn phân giải tên miền qua DNS mã hoá của Ghostline nên không bao giờ rò DNS plain.
+
+| Cài đặt | Ý nghĩa |
+| --- | --- |
+| bật proxy | Chạy proxy khi đã kết nối |
+| dùng cho máy này | Đặt System Proxy của Windows trỏ vào Ghostline. Cài đặt cũ được lưu lại trước và trả về khi ngắt, khi app crash hay mất điện. Nếu app khác (VPN, proxy công ty) đã đặt proxy, Ghostline hỏi trước khi ghi đè, và không bao giờ giành lại khi app khác đổi nó sau đó |
+| chia sẻ LAN | Cho điện thoại và thiết bị khác cùng Wi-Fi dùng proxy. Chỉ nhận địa chỉ mạng riêng, luật tường lửa `Ghostline Proxy` chỉ áp dụng cho mạng *Private* |
+| cổng | 1024–65535 |
+
+**Trên điện thoại:** bật *chia sẻ LAN*, rồi trên điện thoại vào Wi-Fi → mạng này → Proxy → Thủ công, nhập địa chỉ hiện trên trang (hoặc quét mã QR). Nếu trang báo mạng đang là *Public*, đổi sang *Private* trong Cài đặt Windows → Mạng.
+
+**Fragment web** cắt nhỏ ClientHello của TLS để DPI không đọc được tên trang:
+
+- **tự động khi bị chặn** (mặc định): kết nối bình thường; nếu bị reset hoặc treo trước khi server trả lời thì thử lại một lần có fragment và ghi nhớ trang đó cho mạng này (7 ngày). Lần đầu vào một trang bị chặn có thể chậm thêm tối đa 3 giây.
+- **luôn bật** / **tắt**.
+- **kiểu cắt:** TCP (cắt quanh SNI), TLS record (cắt thành nhiều bản ghi TLS), hoặc kết hợp (mặc định).
+- Danh sách **domain đã ghi nhớ** cho thấy những gì đã học được ở mạng này; xoá mục nào nếu trang đó đã vào được mà không cần giúp.
+
+Nếu thống kê có kết nối *bị chặn dù đã fragment*, mạng đó cần dùng GoodbyeDPI.
+
+**Upstream proxy** (SOCKS5 hoặc HTTP, có thể kèm user/mật khẩu) cho phép rules đẩy một số trang qua proxy khác, ví dụ Tor. Mật khẩu được mã hoá bằng DPAPI của Windows. Bấm **kiểm tra** để thử.
+
+### 4.7. Rules và danh sách
+
+Rules quyết định cách xử lý một tên miền, cho cả DNS lẫn proxy. Rule đầu tiên khớp được dùng; nếu không rule nào khớp thì xét các danh sách theo thứ tự.
+
+| Mẫu | Khớp với |
+| --- | --- |
+| `example.com` | example.com và mọi subdomain |
+| `=example.com` | chỉ example.com |
+| `*.example.com` | chỉ các subdomain |
+| `~ads` | mọi tên có chứa "ads" |
+| `/^ad[0-9]+\./` | biểu thức chính quy (RE2) |
+| `10.0.0.0/8` | dải IP (chỉ áp dụng ở proxy) |
+
+| Hành động | Tác dụng |
+| --- | --- |
+| `block` | DNS trả 0.0.0.0 (hoặc NXDOMAIN, xem *chặn ở DNS trả về*); proxy từ chối |
+| `allow` | đi thẳng và bỏ qua các danh sách, dùng để chữa chặn nhầm |
+| `ip=1.2.3.4` | DNS giả (lặp lại cho IPv6) |
+| `fragment=auto\|on\|off` | ghi đè fragment web cho trang này |
+| `upstream=<id>` | đi qua upstream proxy |
+
+Sửa rules ở tab **bảng** hoặc chuyển sang **text** (mỗi dòng một rule, `#` là chú thích, `#!` là rule đang tắt). Không có gì được lưu cho tới khi mọi dòng hợp lệ; dòng sai được đánh dấu kèm số dòng.
+
+**Danh sách:** dán link GitHub bất kỳ dạng nào (blob, raw, gist, jsDelivr) hoặc đường dẫn file trên máy, chọn hành động, rồi bấm **+ thêm danh sách**. Ghostline tự nhận diện định dạng (hosts, domain, AdBlock/AdGuard, dnsmasq, Unbound, RPZ, Clash/Surge, v2ray domain-list-community, sing-box JSON, CIDR), cho biết đọc được bao nhiêu mục và bỏ qua dòng nào, và tự cập nhật mỗi 24 giờ. **Thêm nhanh** gợi ý các danh sách phổ biến kèm license và repo gốc. Nếu GitHub bị chặn, Ghostline tự chuyển sang jsDelivr.
+
+**Thử tên miền** cho biết rule hay danh sách nào quyết định một tên, ví dụ *chặn — danh sách HaGeZi Light, dòng 120*.
+
 ## 5. Icon ở khay hệ thống
 
 Ghostline có icon hình vòng tròn ở khay (góc dưới bên phải, cạnh đồng hồ). Màu icon cho biết trạng thái. **Bấm chuột phải** để mở menu:
 
 - **Kết nối / Ngắt kết nối**
 - **Vượt DPI:** bật/tắt GoodbyeDPI nhanh
+- **Proxy: bật/tắt:** bật hoặc tắt proxy cục bộ
 - **Mở Ghostline:** hiện lại cửa sổ
 - **Thoát:** ngắt kết nối, trả DNS về như cũ, rồi tắt app
 
