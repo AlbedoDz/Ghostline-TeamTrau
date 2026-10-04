@@ -1,0 +1,252 @@
+{
+  "common": {
+    "cancel": "cancel",
+    "close": "close",
+    "save": "save",
+    "retry": "retry",
+    "dismiss": "dismiss",
+    "understood": "got it",
+    "confirm": "confirm",
+    "on": "on",
+    "off": "off",
+    "auto": "auto",
+    "ms": "{{value}} ms",
+    "openLogs": "open logs ›",
+    "details": "details"
+  },
+  "title": {
+    "minimise": "minimise",
+    "close": "close",
+    "language": "language"
+  },
+  "mode": {
+    "simple": "SIMPLE",
+    "advanced": "ADVANCED"
+  },
+  "status": {
+    "disconnected": "UNPROTECTED",
+    "connecting": "CONNECTING",
+    "protected": "PROTECTED",
+    "degraded": "DEGRADED",
+    "disconnecting": "DISCONNECTING",
+    "error": "ERROR"
+  },
+  "step": {
+    "1": "checking the system",
+    "2": "choosing servers",
+    "3": "starting the engine",
+    "4": "saving original DNS",
+    "5": "arming safety net",
+    "6": "setting DNS",
+    "7": "verifying no leaks"
+  },
+  "simple": {
+    "tapToConnect": "tap to connect",
+    "tapToCancel": "tap again to cancel",
+    "encrypted": "every DNS query is encrypted",
+    "errorUnchanged": "Your DNS is unchanged, nothing was modified",
+    "server": "server",
+    "serverAuto": "auto",
+    "latency": "latency",
+    "dpi": "dpi bypass",
+    "uptime": "uptime",
+    "lastScan": "last scan",
+    "never": "never",
+    "blocked": "{{count}}/{{total}} test sites are still blocked",
+    "autotune": "AUTO-TUNE DPI BYPASS",
+    "autotuning": "tuning: {{preset}} ({{index}}/{{total}})",
+    "enableFragment": "ENABLE DNS FRAGMENT"
+  },
+  "nav": {
+    "overview": "overview",
+    "servers": "servers",
+    "dpi": "dpi bypass",
+    "logs": "logs",
+    "settings": "settings"
+  },
+  "overview": {
+    "latency60": "latency · 60 seconds",
+    "queries": "queries",
+    "inUse": "servers in use",
+    "route": "127.0.0.1 → {{servers}}"
+  },
+  "servers": {
+    "title": "SERVERS",
+    "ok": "{{count}} ok",
+    "scanAll": "⟳ scan all",
+    "scanning": "scanning {{done}}/{{total}} · cancel",
+    "add": "+ add",
+    "name": "name",
+    "protocol": "protocol",
+    "latency": "latency",
+    "state": "state",
+    "tags": "tags",
+    "inUse": "in use",
+    "pass": "ok",
+    "notChecked": "not checked",
+    "filter": "filter",
+    "onlyOk": "only ok",
+    "pinnedOnly": "use pinned servers only",
+    "scannedAt": "scanned at {{time}}",
+    "pin": "pin",
+    "remove": "remove",
+    "addTitle": "Add servers",
+    "addHint": "Paste URLs (https://, tls://, quic://) or sdns:// stamps, one server per line.",
+    "importFile": "import from file",
+    "added": "added {{count}} servers",
+    "rejected": "rejected: {{lines}}"
+  },
+  "dpi": {
+    "title": "DPI BYPASS",
+    "goodbyedpi": "GOODBYEDPI",
+    "preset": "preset",
+    "presets": {
+      "light": "Light",
+      "medium": "Medium",
+      "high": "High",
+      "extreme": "Extreme",
+      "mode1": "Mode 1",
+      "mode2": "Mode 2",
+      "mode3": "Mode 3",
+      "mode4": "Mode 4",
+      "mode5": "Mode 5",
+      "mode6": "Mode 6",
+      "custom": "Custom"
+    },
+    "customArgs": "custom arguments",
+    "autotune": "⚡ auto-tune",
+    "scope": "scope",
+    "scopeAll": "all connections",
+    "scopeBlacklist": "blacklist",
+    "edit": "edit ›",
+    "blacklistTitle": "Blacklist (one domain per line)",
+    "preview": "command line",
+    "fragment": "DNS FRAGMENT",
+    "chunks": "chunks",
+    "delay": "delay (ms)",
+    "redundant": "ⓘ redundant while GoodbyeDPI is on",
+    "probeSites": "TEST SITES",
+    "probeAgain": "⟳ test again",
+    "stage": {
+      "ok": "✓",
+      "dns": "✕ DNS",
+      "tcp": "✕ TCP",
+      "tls": "✕ TLS",
+      "http": "✕ HTTP"
+    }
+  },
+  "logs": {
+    "title": "LOGS",
+    "all": "all",
+    "engine": "engine",
+    "dpi": "dpi",
+    "system": "system",
+    "pause": "pause",
+    "resume": "resume",
+    "copy": "copy",
+    "save": "save file",
+    "queries": "show queries",
+    "queriesNote": "kept in RAM only, at most 500 lines, never written to disk"
+  },
+  "log": {
+    "CONNECTED": "connected to {{servers}} servers",
+    "DISCONNECTED": "disconnected, DNS restored",
+    "CONNECT_CANCELLED": "connect cancelled",
+    "DEGRADED": "servers not responding, finding new ones",
+    "SWAPPED": "switched to {{servers}} new servers",
+    "SWAP_FAILED": "could not switch servers",
+    "ADAPTER_ADDED": "protected new adapter: {{adapter}}",
+    "SITES_BLOCKED": "{{count}} test sites blocked at TLS",
+    "DPI_STARTED": "GoodbyeDPI running (preset {{preset}})",
+    "DPI_STOPPED": "GoodbyeDPI stopped",
+    "AUTOTUNE_TRY": "auto-tune: trying {{preset}}",
+    "AUTOTUNE_FOUND": "auto-tune: using {{preset}}"
+  },
+  "settings": {
+    "title": "SETTINGS",
+    "language": "language",
+    "startWithWindows": "start with windows",
+    "autoConnect": "connect on launch",
+    "closeToTray": "close → minimise to tray",
+    "adapters": "adapters",
+    "adaptersManual": "manual",
+    "testDomain": "test domain",
+    "bootstrap": "bootstrap (ip:port, one per line)",
+    "maxUpstreams": "max servers",
+    "updateServerList": "update server list",
+    "checkApp": "notify about new versions",
+    "restoreNow": "⚠ RESTORE DNS NOW",
+    "restored": "DNS restored",
+    "stopService": "Stop service {{name}}",
+    "stopServiceConfirm": "The Windows service {{name}} holds port 53. Stopping it can break Mobile Hotspot, WSL or Hyper-V until you restart. Continue?",
+    "saved": "saved",
+    "version": "version {{version}}",
+    "update": "new version {{tag}} ↗"
+  },
+  "errors": {
+    "NOT_ADMIN": {
+      "message": "Ghostline needs administrator rights to change DNS",
+      "action": "Restart Ghostline as administrator"
+    },
+    "PORT53_BUSY": {
+      "message": "Port 53 is held by {{name}} (PID {{pid}})",
+      "action": "Close that program or stop the service in Settings"
+    },
+    "NO_SERVERS": {
+      "message": "no working servers found ({{checked}} tried in {{elapsed}}s)",
+      "action": "Retry or enable DNS fragmentation"
+    },
+    "ENGINE_SELFTEST_FAILED": {
+      "message": "the local DNS engine failed to start",
+      "action": "Retry; check the logs if it repeats"
+    },
+    "SET_DNS_FAILED": {
+      "message": "could not set DNS on {{adapter}}",
+      "action": "Choose another adapter in Settings"
+    },
+    "VERIFY_LEAK": {
+      "message": "DNS queries are not going through Ghostline (a VPN or another tool owns DNS)",
+      "action": "Turn off the VPN/other DNS tool and retry"
+    },
+    "RESTORE_FAILED": {
+      "message": "could not restore the original DNS on {{adapter}}",
+      "action": "Click Restore DNS now"
+    },
+    "DPI_START_FAILED": {
+      "message": "GoodbyeDPI failed to start",
+      "action": "Try another preset"
+    },
+    "DPI_BLOCKED_BY_AV": {
+      "message": "GoodbyeDPI was blocked by antivirus",
+      "action": "Exclude the Ghostline folder in your antivirus (WinDivert is often flagged falsely)"
+    },
+    "DPI_HASH_MISMATCH": {
+      "message": "GoodbyeDPI files were modified; Ghostline refuses to run them",
+      "action": "Reinstall Ghostline"
+    },
+    "SERVERLIST_BAD_SIGNATURE": {
+      "message": "the downloaded server list had a bad signature and was ignored",
+      "action": ""
+    },
+    "UPDATE_CHECK_FAILED": {
+      "message": "could not check for updates",
+      "action": ""
+    },
+    "AUTOTUNE_NO_PRESET": {
+      "message": "no working DPI bypass configuration found",
+      "action": "Try Mode 1–6 or custom arguments in Advanced mode"
+    },
+    "INTERNAL": {
+      "message": "internal error at step {{step}}",
+      "action": "Retry; check the logs"
+    },
+    "SETTINGS_RESET": {
+      "message": "the settings file was corrupt, defaults are in use",
+      "action": ""
+    }
+  },
+  "tray": {
+    "connect": "Connect",
+    "disconnect": "Disconnect"
+  }
+}

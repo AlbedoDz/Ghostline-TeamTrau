@@ -1,0 +1,32 @@
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("../assets/fonts/JetBrainsMono-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-display: block;
+}
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("../assets/fonts/JetBrainsMono-Bold.woff2") format("woff2");
+  font-weight: 700;
+  font-display: block;
+}
+
+:root {
+  --bg: #05070a;
+  --panel: rgba(0, 0, 0, 0.55);
+  --green: #00ffa3;
+  --cyan: #00d0ff;
+  --amber: #ffb020;
+  --red: #ff4d6d;
+  --text: #b8ffe4;
+  --text-strong: #e6fff6;
+  --dim: rgba(184, 255, 228, 0.45);
+  --line: rgba(0, 255, 163, 0.18);
+  --line-strong: rgba(0, 255, 163, 0.35);
+  --grid: rgba(0, 255, 163, 0.05);
+  --font: "JetBrains Mono", "Cascadia Code", Consolas, monospace;
+  --glow-green: 0 0 10px rgba(0, 255, 163, 0.6);
+  --glow-cyan: 0 0 10px rgba(0, 208, 255, 0.5);
+  --glow-red: 0 0 10px rgba(255, 77, 109, 0.5);
+  color-scheme: dark;
+}

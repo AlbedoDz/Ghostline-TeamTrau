@@ -1,0 +1,54 @@
+.bar {
+  flex-shrink: 0;
+}
+
+.top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 9px 14px;
+  border-bottom: 1px solid var(--line);
+  color: var(--green);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+}
+
+.label {
+  font-weight: 700;
+}
+
+.controls {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.controls button {
+  color: var(--dim);
+  letter-spacing: 0.1em;
+}
+
+.controls button:hover {
+  color: var(--green);
+}
+
+.lang {
+  border: 1px solid var(--line-strong);
+  padding: 0 6px;
+  color: var(--green) !important;
+}
+
+.tabs {
+  display: flex;
+  gap: 14px;
+  padding: 9px 14px;
+  font-size: 11px;
+}
+
+.tabs button {
+  color: var(--dim);
+}
+
+.tabs .on {
+  color: var(--green);
+}
