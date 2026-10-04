@@ -1,7 +1,6 @@
 package fragdoh_test
 
 import (
-	"bytes"
 	"context"
 	"crypto/tls"
 	"crypto/x509"
@@ -21,38 +20,6 @@ import (
 	"github.com/miekg/dns"
 	"github.com/stretchr/testify/require"
 )
-
-func captureClientHello(t *testing.T, host string) []byte {
-	t.Helper()
-	c1, c2 := net.Pipe()
-	defer c1.Close()
-	go func() {
-		_ = tls.Client(c1, &tls.Config{ServerName: host, InsecureSkipVerify: true}).Handshake()
-	}()
-	buf := make([]byte, 64*1024)
-	n, err := c2.Read(buf)
-	require.NoError(t, err)
-	c2.Close()
-	return buf[:n]
-}
-
-func TestSplitClientHello_SplitsHostnameIntoChunks(t *testing.T) {
-	rec := captureClientHello(t, "dns.example.test")
-	segs := fragdoh.SplitClientHello(rec, 5)
-	require.Len(t, segs, 7)
-	require.Equal(t, rec, bytes.Join(segs, nil))
-	require.Equal(t, "dns.example.test", string(bytes.Join(segs[1:6], nil)))
-}
-
-func TestSplitClientHello_NonHandshakePassthrough(t *testing.T) {
-	rec := []byte{0x17, 3, 3, 0, 1, 0}
-	require.Equal(t, [][]byte{rec}, fragdoh.SplitClientHello(rec, 5))
-}
-
-func TestSplitClientHello_TruncatedPassthrough(t *testing.T) {
-	rec := captureClientHello(t, "dns.example.test")[:40]
-	require.Equal(t, [][]byte{rec}, fragdoh.SplitClientHello(rec, 5))
-}
 
 // readCounter records the size of every Read on accepted connections.
 type readCounter struct {

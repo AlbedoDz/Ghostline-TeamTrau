@@ -1,9 +1,14 @@
+// Package fragdoh is a DNS-over-HTTPS upstream that splits the TLS
+// ClientHello into several TCP segments, so DPI that inspects the SNI in a
+// single packet cannot read it.
 package fragdoh
 
 import (
 	"net"
 	"sync"
 	"time"
+
+	"github.com/hashcott/ghostline/internal/tlsfrag"
 )
 
 // fragConn writes its first write (the ClientHello) as several segments
@@ -24,7 +29,7 @@ func (c *fragConn) Write(p []byte) (int, error) {
 	if tc, ok := c.Conn.(*net.TCPConn); ok {
 		_ = tc.SetNoDelay(true)
 	}
-	segs := SplitClientHello(p, c.chunks)
+	segs := tlsfrag.Split(p, tlsfrag.MethodTCP, c.chunks)
 	written := 0
 	for i, s := range segs {
 		if len(s) == 0 {

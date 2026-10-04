@@ -1,32 +1,32 @@
-// Package fragdoh is a DNS-over-HTTPS upstream that splits the TLS
-// ClientHello into several TCP segments, so DPI that inspects the SNI in a
-// single packet cannot read it.
-package fragdoh
+// Package tlsfrag recognises a TLS ClientHello and splits it so DPI that
+// reads the SNI from a single packet or record cannot see it.
+package tlsfrag
 
-// SplitClientHello splits a TLS record carrying a ClientHello into:
-// the bytes before the SNI hostname, the hostname cut into chunks pieces,
-// and the rest. Joining the result always gives back record. Anything that
-// is not a parseable ClientHello with an SNI is returned whole.
-func SplitClientHello(record []byte, chunks int) [][]byte {
-	start, end, ok := sniRange(record)
-	if !ok || chunks < 1 {
-		return [][]byte{record}
+// RecordLen returns the full length (header included) of the TLS record
+// whose 5-byte header is hdr.
+func RecordLen(hdr []byte) (int, bool) {
+	if len(hdr) < 5 {
+		return 0, false
 	}
-	out := [][]byte{record[:start]}
-	host := record[start:end]
-	size := len(host) / chunks
-	for i := 0; i < chunks; i++ {
-		lo := i * size
-		hi := lo + size
-		if i == chunks-1 {
-			hi = len(host)
-		}
-		out = append(out, host[lo:hi])
-	}
-	return append(out, record[end:])
+	return 5 + (int(hdr[3])<<8 | int(hdr[4])), true
 }
 
-// sniRange returns the byte range of the SNI host name inside record.
+// IsClientHello reports whether rec starts a handshake record carrying a
+// ClientHello.
+func IsClientHello(rec []byte) bool {
+	return len(rec) >= 6 && rec[0] == 0x16 && rec[5] == 0x01
+}
+
+// SNI returns the server name of the ClientHello in rec.
+func SNI(rec []byte) (string, bool) {
+	s, e, ok := sniRange(rec)
+	if !ok {
+		return "", false
+	}
+	return string(rec[s:e]), true
+}
+
+// sniRange returns the byte range of the SNI host name inside b.
 func sniRange(b []byte) (start, end int, ok bool) {
 	// TLS record header: type(1)=0x16 handshake, version(2), length(2).
 	if len(b) < 5 || b[0] != 0x16 {
