@@ -101,7 +101,7 @@ func NormalizeHost(s string) (string, error) {
 	}
 	for i := 0; i < len(s); i++ {
 		c := s[i]
-		if !(c >= 'a' && c <= 'z' || c >= '0' && c <= '9' || c == '-' || c == '_' || c == '.') {
+		if (c < 'a' || c > 'z') && (c < '0' || c > '9') && c != '-' && c != '_' && c != '.' {
 			return "", fmt.Errorf("invalid host %q", s)
 		}
 	}

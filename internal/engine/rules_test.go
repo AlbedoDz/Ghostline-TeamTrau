@@ -136,7 +136,7 @@ func TestRules_QueryEventAction(t *testing.T) {
 		ListenV4: netip.MustParseAddrPort("127.0.0.1:0"), Upstreams: []upstream.Upstream{&fakeUp{ip: net.IPv4(1, 1, 1, 1)}},
 		Rules: func() *rules.Compiled { return c },
 	}))
-	defer e.Stop(context.Background())
+	defer func() { _ = e.Stop(context.Background()) }()
 	ask(t, e, "ads.com.", dns.TypeA)
 	require.Len(t, got, 1)
 	require.Equal(t, "blocked", got[0].Action)

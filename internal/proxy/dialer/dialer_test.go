@@ -94,7 +94,7 @@ func (e *env) dialer(t *testing.T) *dialer.Dialer {
 }
 
 // openTLS runs a TLS client for host through d to sim and reports the result.
-func openTLS(t *testing.T, d *dialer.Dialer, host string, sim *dpiSim) (dialer.Result, error, <-chan error) {
+func openTLS(t *testing.T, d *dialer.Dialer, host string, sim *dpiSim) (dialer.Result, <-chan error, error) {
 	t.Helper()
 	side, br, done := clientHandshake(t, host)
 	_ = side.SetReadDeadline(time.Now().Add(5 * time.Second))
@@ -107,7 +107,7 @@ func openTLS(t *testing.T, d *dialer.Dialer, host string, sim *dpiSim) (dialer.R
 	} else {
 		side.Close()
 	}
-	return res, err, done
+	return res, done, err
 }
 
 func waitOK(t *testing.T, done <-chan error) {
@@ -133,7 +133,7 @@ func waitFail(t *testing.T, done <-chan error) {
 func TestOpen_AutoRetriesWithFragment(t *testing.T) {
 	sim := newDPISim(t, "blocked.test")
 	e := newEnv()
-	res, err, done := openTLS(t, e.dialer(t), "blocked.test", sim)
+	res, done, err := openTLS(t, e.dialer(t), "blocked.test", sim)
 	require.NoError(t, err)
 	require.Equal(t, dialer.OutcomeFragmented, res.Outcome)
 	waitOK(t, done)
@@ -144,7 +144,7 @@ func TestOpen_AutoRetriesWithFragment(t *testing.T) {
 func TestOpen_AutoDirectWhenNotBlocked(t *testing.T) {
 	sim := newDPISim(t, "blocked.test")
 	e := newEnv()
-	res, err, done := openTLS(t, e.dialer(t), "ok.test", sim)
+	res, done, err := openTLS(t, e.dialer(t), "ok.test", sim)
 	require.NoError(t, err)
 	require.Equal(t, dialer.OutcomeDirect, res.Outcome)
 	waitOK(t, done)
@@ -156,7 +156,7 @@ func TestOpen_AutoUsesCache(t *testing.T) {
 	e := newEnv()
 	e.cache.Add("blocked.test")
 	e.cache.adds = nil
-	res, err, done := openTLS(t, e.dialer(t), "blocked.test", sim)
+	res, done, err := openTLS(t, e.dialer(t), "blocked.test", sim)
 	require.NoError(t, err)
 	require.Equal(t, dialer.OutcomeFragmented, res.Outcome)
 	waitOK(t, done)
@@ -168,7 +168,7 @@ func TestOpen_SilentDPITimesOut(t *testing.T) {
 	sim.silent.Store(true)
 	e := newEnv()
 	e.frag.AutoTimeout = 200 * time.Millisecond
-	res, err, done := openTLS(t, e.dialer(t), "blocked.test", sim)
+	res, done, err := openTLS(t, e.dialer(t), "blocked.test", sim)
 	require.NoError(t, err)
 	require.Equal(t, dialer.OutcomeFragmented, res.Outcome)
 	waitOK(t, done)
@@ -178,7 +178,7 @@ func TestOpen_FragmentAlsoFails(t *testing.T) {
 	sim := newDPISim(t, "blocked.test")
 	sim.blockAll.Store(true)
 	e := newEnv()
-	res, err, _ := openTLS(t, e.dialer(t), "blocked.test", sim)
+	res, _, err := openTLS(t, e.dialer(t), "blocked.test", sim)
 	require.ErrorIs(t, err, dialer.ErrBlockedEvenFragmented)
 	require.Equal(t, dialer.OutcomeBlockedEvenFragmented, res.Outcome)
 	require.Empty(t, e.cache.adds)
@@ -190,7 +190,7 @@ func TestOpen_RecordAndBothMethods(t *testing.T) {
 		e := newEnv()
 		e.frag.Method = m
 		e.frag.Mode = "always"
-		res, err, done := openTLS(t, e.dialer(t), "blocked.test", sim)
+		res, done, err := openTLS(t, e.dialer(t), "blocked.test", sim)
 		require.NoError(t, err, m)
 		require.Equal(t, dialer.OutcomeFragmented, res.Outcome, m)
 		waitOK(t, done)
@@ -201,27 +201,27 @@ func TestOpen_ModesNeverAlways(t *testing.T) {
 	sim := newDPISim(t, "blocked.test")
 	e := newEnv()
 	e.frag.Mode = "never"
-	res, err, done := openTLS(t, e.dialer(t), "blocked.test", sim)
+	res, done, err := openTLS(t, e.dialer(t), "blocked.test", sim)
 	require.NoError(t, err) // never mode does not wait for the server
 	require.Equal(t, dialer.OutcomeDirect, res.Outcome)
 	waitFail(t, done)
 
 	e.frag.Mode = "always"
-	res, err, done = openTLS(t, e.dialer(t), "blocked.test", sim)
+	res, done, err = openTLS(t, e.dialer(t), "blocked.test", sim)
 	require.NoError(t, err)
 	require.Equal(t, dialer.OutcomeFragmented, res.Outcome)
 	waitOK(t, done)
 
 	// A rule's fragment=off beats the global "always".
 	e.rules = "blocked.test fragment=off\n"
-	res, err, done = openTLS(t, e.dialer(t), "blocked.test", sim)
+	res, done, err = openTLS(t, e.dialer(t), "blocked.test", sim)
 	require.NoError(t, err)
 	require.Equal(t, dialer.OutcomeDirect, res.Outcome)
 	waitFail(t, done)
 	// And fragment=on beats "never".
 	e.frag.Mode = "never"
 	e.rules = "blocked.test fragment=on\n"
-	res, err, done = openTLS(t, e.dialer(t), "blocked.test", sim)
+	res, done, err = openTLS(t, e.dialer(t), "blocked.test", sim)
 	require.NoError(t, err)
 	require.Equal(t, dialer.OutcomeFragmented, res.Outcome)
 	waitOK(t, done)
@@ -237,7 +237,7 @@ func TestOpen_RuleBlockAndRewrite(t *testing.T) {
 	require.ErrorIs(t, d.Decide(wire.Target{Host: "x.ads.test", Port: 443}), dialer.ErrBlocked)
 	require.NoError(t, d.Decide(wire.Target{Host: "fine.test", Port: 443}))
 
-	res, err, done := openTLS(t, d, "fake.test", sim)
+	res, done, err := openTLS(t, d, "fake.test", sim)
 	require.NoError(t, err)
 	require.Equal(t, dialer.OutcomeDirect, res.Outcome)
 	waitOK(t, done)
@@ -345,13 +345,13 @@ func TestOpen_UpstreamSOCKS5AndHTTP(t *testing.T) {
 	e.rules = "via5.test upstream=up5\nviah.test upstream=uph\n"
 	d := e.dialer(t)
 
-	res, err, done := openTLS(t, d, "via5.test", sim)
+	res, done, err := openTLS(t, d, "via5.test", sim)
 	require.NoError(t, err)
 	require.Equal(t, dialer.OutcomeUpstream, res.Outcome)
 	waitOK(t, done)
 	require.Equal(t, "via5.test", *host5)
 
-	res, err, done = openTLS(t, d, "viah.test", sim)
+	res, done, err = openTLS(t, d, "viah.test", sim)
 	require.NoError(t, err)
 	require.Equal(t, dialer.OutcomeUpstream, res.Outcome)
 	waitOK(t, done)
@@ -411,7 +411,7 @@ func TestOpen_IPv6AfterV4Fails(t *testing.T) {
 		}
 		return net.Dial("tcp", sim.addr().String())
 	}
-	res, err, done := openTLS(t, e.dialer(t), "dual.test", sim)
+	res, done, err := openTLS(t, e.dialer(t), "dual.test", sim)
 	require.NoError(t, err)
 	require.Equal(t, dialer.OutcomeDirect, res.Outcome)
 	waitOK(t, done)
@@ -433,7 +433,7 @@ func TestOpen_NeverSystemDNS(t *testing.T) {
 	t.Cleanup(func() { net.DefaultResolver = old })
 	sim := newDPISim(t, "blocked.test")
 	e := newEnv()
-	_, err, done := openTLS(t, e.dialer(t), "blocked.test", sim)
+	_, done, err := openTLS(t, e.dialer(t), "blocked.test", sim)
 	require.NoError(t, err)
 	waitOK(t, done)
 	require.Equal(t, []string{"blocked.test"}, e.res.calls)

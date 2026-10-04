@@ -1,6 +1,15 @@
 version: "2"
 
 linters:
+  enable:
+    - forbidigo
+  settings:
+    forbidigo:
+      forbid:
+        # The proxy must never use the system resolver (spec 2A: no plain
+        # DNS leaks). Names go through the engine; dials use netip.AddrPort.
+        - pattern: '^net\.(LookupHost|LookupIP|LookupNetIP|LookupAddr|LookupCNAME|LookupPort|Dial|DialTimeout)$'
+        - pattern: '^net\.DefaultResolver$'
   exclusions:
     rules:
       # Errors from releasing resources (deferred Close, handle cleanup,
@@ -9,3 +18,8 @@ linters:
         text: 'Error return value of `[^`]*\.(Close|CloseHandle|CloseServiceHandle|Disconnect)` is not checked'
       - linters: [errcheck]
         text: 'Error return value of `os\.Remove` is not checked'
+      # The resolver ban applies to the proxy's production code only.
+      - linters: [forbidigo]
+        path-except: 'internal[\/]proxy[\/]'
+      - linters: [forbidigo]
+        path: '_test\.go'
