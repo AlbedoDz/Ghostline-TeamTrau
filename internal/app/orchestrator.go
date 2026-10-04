@@ -329,7 +329,7 @@ func (o *Orchestrator) connectSteps() []step {
 			}
 			pid, start := o.d.System.SelfPID()
 			if err := o.d.States.Update(func(st *store.State) error {
-				st.Version, st.Phase, st.PID, st.PIDStartTime, st.StartedAt = 1, store.PhaseDNSSet, pid, start, o.d.Now()
+				st.Version, st.Phase, st.PID, st.PIDStartTime, st.StartedAt = 2, store.PhaseDNSSet, pid, start, o.d.Now()
 				st.Snapshot = snaps
 				return nil
 			}); err != nil {
@@ -341,7 +341,7 @@ func (o *Orchestrator) connectSteps() []step {
 			return nil
 		}, undo: func(ctx context.Context) error {
 			return o.d.States.Update(func(st *store.State) error {
-				*st = store.State{Version: 1, Phase: store.PhaseClean}
+				*st = store.CleanState()
 				return nil
 			})
 		}},
@@ -445,7 +445,7 @@ func (o *Orchestrator) disconnectLocked(ctx context.Context) []sysdns.RestoreErr
 	}
 	_ = o.d.Engine.Stop(ctx)
 	_ = o.d.States.Update(func(s *store.State) error {
-		*s = store.State{Version: 1, Phase: store.PhaseClean}
+		*s = store.CleanState()
 		return nil
 	})
 	if stopWD != nil {

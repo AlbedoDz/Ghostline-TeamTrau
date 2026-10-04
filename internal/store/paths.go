@@ -23,6 +23,9 @@ type Paths struct {
 	DPIBlacklist       string
 	LogDir             string
 	BinDir             string
+	Rules              string
+	FragCache          string
+	ListsDir           string
 	Portable           bool
 }
 
@@ -50,5 +53,8 @@ func ResolvePaths(exePath, appData string) Paths {
 	p.DPIBlacklist = j("dpi-blacklist.txt")
 	p.LogDir = j("logs")
 	p.BinDir = j("bin")
+	p.Rules = j("rules.json")
+	p.FragCache = j("frag-cache.json")
+	p.ListsDir = j("lists")
 	return p
 }

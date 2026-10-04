@@ -37,9 +37,36 @@ type State struct {
 	StartedAt    time.Time               `json:"startedAt"`
 	Snapshot     []model.AdapterSnapshot `json:"snapshot"`
 	DPI          DPIState                `json:"dpi"`
+	SysProxy     *SysProxyState          `json:"sysproxy,omitempty"`
+	Firewall     *FirewallState          `json:"firewall,omitempty"`
 }
 
-func cleanState() State { return State{Version: 1, Phase: PhaseClean} }
+// SysProxySnapshot is the WinINET per-connection proxy configuration.
+type SysProxySnapshot struct {
+	Flags         uint32 `json:"flags"`
+	Server        string `json:"server"`
+	Bypass        string `json:"bypass"`
+	AutoconfigURL string `json:"autoconfigUrl"`
+}
+
+// SysProxyState records Ghostline's change to the system proxy. Set is true
+// once Ghostline applied Ours; TakenOver once another app replaced it.
+type SysProxyState struct {
+	Set       bool              `json:"set"`
+	TakenOver bool              `json:"takenOver"`
+	Ours      string            `json:"ours"`
+	Snapshot  *SysProxySnapshot `json:"snapshot"`
+}
+
+// FirewallState records the inbound rule created for LAN sharing.
+type FirewallState struct {
+	Rule string `json:"rule"`
+}
+
+// CleanState is the state with nothing to restore.
+func CleanState() State { return State{Version: 2, Phase: PhaseClean} }
+
+func cleanState() State { return CleanState() }
 
 // Locker serialises access to state.json across processes.
 type Locker interface {

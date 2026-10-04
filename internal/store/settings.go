@@ -4,8 +4,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/fs"
+	"net"
 	"os"
+	"regexp"
+	"strconv"
 )
 
 // Settings is the user configuration (spec §9).
@@ -29,6 +33,76 @@ type Settings struct {
 	FragmentDNS      FragmentSettings `json:"fragmentDns"`
 	Updates          UpdateSettings   `json:"updates"`
 	AdvancedWindow   WindowSize       `json:"advancedWindow"`
+	Proxy            ProxySettings    `json:"proxy"`
+	DNSBlockMode     string           `json:"dnsBlockMode"` // "zero" | "nxdomain"
+}
+
+// ProxySettings configures the local proxy (phase 2A).
+type ProxySettings struct {
+	Enabled     bool            `json:"enabled"`
+	Port        int             `json:"port"`
+	SystemProxy bool            `json:"systemProxy"`
+	ShareLAN    bool            `json:"shareLan"`
+	Fragment    WebFragment     `json:"fragment"`
+	Upstreams   []UpstreamProxy `json:"upstreams"`
+}
+
+// WebFragment configures ClientHello fragmentation for proxied traffic.
+type WebFragment struct {
+	Mode          string `json:"mode"`   // auto | always | never
+	Method        string `json:"method"` // tcp | record | both
+	Chunks        int    `json:"chunks"`
+	DelayMs       int    `json:"delayMs"`
+	AutoTimeoutMs int    `json:"autoTimeoutMs"`
+	CacheDays     int    `json:"cacheDays"`
+}
+
+// UpstreamProxy is a proxy rules can send traffic through. PassEnc is the
+// DPAPI-protected password, base64.
+type UpstreamProxy struct {
+	ID      string `json:"id"`
+	Type    string `json:"type"` // socks5 | http
+	Addr    string `json:"addr"` // host:port
+	User    string `json:"user"`
+	PassEnc string `json:"passEnc"`
+}
+
+var upstreamID = regexp.MustCompile(`^[a-z0-9-]+$`)
+
+// ValidateProxy checks proxy settings against the spec section 9 ranges.
+func ValidateProxy(p ProxySettings) error {
+	f := p.Fragment
+	switch {
+	case p.Port < 1024 || p.Port > 65535:
+		return fmt.Errorf("proxy: port must be 1024..65535")
+	case f.Mode != "auto" && f.Mode != "always" && f.Mode != "never":
+		return fmt.Errorf("proxy: fragment mode must be auto, always or never")
+	case f.Method != "tcp" && f.Method != "record" && f.Method != "both":
+		return fmt.Errorf("proxy: fragment method must be tcp, record or both")
+	case f.Chunks < 2 || f.Chunks > 64:
+		return fmt.Errorf("proxy: chunks must be 2..64")
+	case f.DelayMs < 0 || f.DelayMs > 100:
+		return fmt.Errorf("proxy: delayMs must be 0..100")
+	case f.AutoTimeoutMs < 1000 || f.AutoTimeoutMs > 10000:
+		return fmt.Errorf("proxy: autoTimeoutMs must be 1000..10000")
+	case f.CacheDays < 1 || f.CacheDays > 90:
+		return fmt.Errorf("proxy: cacheDays must be 1..90")
+	}
+	seen := map[string]bool{}
+	for _, u := range p.Upstreams {
+		if !upstreamID.MatchString(u.ID) || seen[u.ID] {
+			return fmt.Errorf("proxy: upstream id %q must be unique lower-case letters, digits or '-'", u.ID)
+		}
+		seen[u.ID] = true
+		if u.Type != "socks5" && u.Type != "http" {
+			return fmt.Errorf("proxy: upstream %q type must be socks5 or http", u.ID)
+		}
+		host, port, err := net.SplitHostPort(u.Addr)
+		if n, perr := strconv.Atoi(port); err != nil || perr != nil || host == "" || n < 1 || n > 65535 {
+			return fmt.Errorf("proxy: upstream %q address must be host:port", u.ID)
+		}
+	}
+	return nil
 }
 
 type DPISettings struct {
@@ -57,7 +131,7 @@ type WindowSize struct {
 // DefaultSettings returns the spec §9 defaults.
 func DefaultSettings() Settings {
 	return Settings{
-		Version:        1,
+		Version:        2,
 		Language:       "vi",
 		Mode:           "simple",
 		CloseToTray:    true,
@@ -72,6 +146,12 @@ func DefaultSettings() Settings {
 		FragmentDNS:    FragmentSettings{Chunks: 5, DelayMs: 5},
 		Updates:        UpdateSettings{CheckApp: true, UpdateServerList: true},
 		AdvancedWindow: WindowSize{Width: 1000, Height: 660},
+		Proxy: ProxySettings{
+			Port:      8080,
+			Fragment:  WebFragment{Mode: "auto", Method: "both", Chunks: 5, DelayMs: 5, AutoTimeoutMs: 3000, CacheDays: 7},
+			Upstreams: []UpstreamProxy{},
+		},
+		DNSBlockMode: "zero",
 	}
 }
 
@@ -93,6 +173,10 @@ func LoadSettings(path string) (s Settings, recovered bool, err error) {
 			return DefaultSettings(), true, err
 		}
 		return DefaultSettings(), true, nil
+	}
+	s.Version = 2 // v1 files gain the v2 defaults through the pre-filled struct
+	if s.Proxy.Upstreams == nil {
+		s.Proxy.Upstreams = []UpstreamProxy{}
 	}
 	return s, false, nil
 }

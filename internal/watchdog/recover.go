@@ -73,7 +73,7 @@ func RestoreIfOrphaned(d Deps) (Outcome, error) {
 			if rerr != nil {
 				return rerr // leave the corrupt file: the next layer retries
 			}
-			return d.States.Write(store.State{Version: 1, Phase: store.PhaseClean})
+			return d.States.Write(store.CleanState())
 		}
 		if err != nil {
 			return err
@@ -95,7 +95,7 @@ func RestoreIfOrphaned(d Deps) (Outcome, error) {
 			// Keep the snapshot so a later layer can retry.
 			return rerr
 		}
-		return d.States.Write(store.State{Version: 1, Phase: store.PhaseClean})
+		return d.States.Write(store.CleanState())
 	})
 	return out, err
 }

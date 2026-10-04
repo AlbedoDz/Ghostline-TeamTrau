@@ -9,6 +9,15 @@ import (
 // WriteJSONAtomic writes v as indented JSON via temp file, fsync and rename,
 // so a crash never leaves a half-written file behind.
 func WriteJSONAtomic(path string, v any) error {
+	b, err := json.MarshalIndent(v, "", "  ")
+	if err != nil {
+		return err
+	}
+	return WriteFileAtomic(path, append(b, '\n'))
+}
+
+// WriteFileAtomic writes data via temp file, fsync and rename.
+func WriteFileAtomic(path string, data []byte) error {
 	dir := filepath.Dir(path)
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return err
@@ -20,9 +29,7 @@ func WriteJSONAtomic(path string, v any) error {
 	tmp := f.Name()
 	defer os.Remove(tmp) // no-op after a successful rename
 
-	enc := json.NewEncoder(f)
-	enc.SetIndent("", "  ")
-	if err := enc.Encode(v); err != nil {
+	if _, err := f.Write(data); err != nil {
 		f.Close()
 		return err
 	}
