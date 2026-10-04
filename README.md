@@ -62,6 +62,8 @@ Ghostline runs a local DNS server on `127.0.0.1` / `::1`, points every network a
 | Servers | DPI bypass |
 | --- | --- |
 | ![Servers](docs/screenshots/servers-en.png) | ![DPI bypass](docs/screenshots/dpi-en.png) |
+| **Proxy** | **Rules and lists** |
+| ![Proxy](docs/screenshots/proxy-en.png) | ![Rules](docs/screenshots/rules-en.png) |
 | **Logs** | **Settings** |
 | ![Logs](docs/screenshots/logs-en.png) | ![Settings](docs/screenshots/settings-en.png) |
 

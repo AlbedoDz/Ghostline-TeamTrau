@@ -61,6 +61,8 @@ Ghostline chạy một DNS server cục bộ trên `127.0.0.1` / `::1`, trỏ m�
 | Máy chủ | Vượt DPI |
 | --- | --- |
 | ![Máy chủ](docs/screenshots/servers-vi.png) | ![Vượt DPI](docs/screenshots/dpi-vi.png) |
+| **Proxy** | **Rules và danh sách** |
+| ![Proxy](docs/screenshots/proxy-vi.png) | ![Rules](docs/screenshots/rules-vi.png) |
 | **Nhật ký** | **Cài đặt** |
 | ![Nhật ký](docs/screenshots/logs-vi.png) | ![Cài đặt](docs/screenshots/settings-vi.png) |
 

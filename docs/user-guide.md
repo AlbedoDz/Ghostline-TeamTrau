@@ -191,6 +191,8 @@ Records events: connecting, switching servers, GoodbyeDPI on/off, errors.
 
 ### 4.6. Proxy
 
+![Proxy](screenshots/proxy-en.png)
+
 Ghostline can run a local proxy on one port (default `8080`) that speaks **HTTP, HTTPS (CONNECT) and SOCKS4/4a/5**. It starts and stops with **Connect**, and it always resolves names through Ghostline's encrypted DNS, so it never leaks plain DNS.
 
 | Setting | Meaning |
@@ -214,6 +216,8 @@ If the statistics show connections *blocked even fragmented*, that network needs
 **Upstream proxies** (SOCKS5 or HTTP, with optional user/password) let rules send some sites through another proxy such as Tor. Passwords are encrypted with Windows DPAPI. Use **test** to check one.
 
 ### 4.7. Rules and lists
+
+![Rules and lists](screenshots/rules-en.png)
 
 Rules decide what happens to a domain, both for DNS and for the proxy. The first matching rule wins; if none matches, lists are checked in order.
 

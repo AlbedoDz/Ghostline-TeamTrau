@@ -191,6 +191,8 @@ Ghi lại các sự kiện: kết nối, đổi máy chủ, bật/tắt GoodbyeD
 
 ### 4.6. Proxy
 
+![Proxy](screenshots/proxy-vi.png)
+
 Ghostline có thể chạy một proxy cục bộ trên một cổng (mặc định `8080`), hiểu được **HTTP, HTTPS (CONNECT) và SOCKS4/4a/5**. Proxy bật và tắt cùng nút **Connect**, và luôn phân giải tên miền qua DNS mã hoá của Ghostline nên không bao giờ rò DNS plain.
 
 | Cài đặt | Ý nghĩa |
@@ -214,6 +216,8 @@ Nếu thống kê có kết nối *bị chặn dù đã fragment*, mạng đó c
 **Upstream proxy** (SOCKS5 hoặc HTTP, có thể kèm user/mật khẩu) cho phép rules đẩy một số trang qua proxy khác, ví dụ Tor. Mật khẩu được mã hoá bằng DPAPI của Windows. Bấm **kiểm tra** để thử.
 
 ### 4.7. Rules và danh sách
+
+![Rules và danh sách](screenshots/rules-vi.png)
 
 Rules quyết định cách xử lý một tên miền, cho cả DNS lẫn proxy. Rule đầu tiên khớp được dùng; nếu không rule nào khớp thì xét các danh sách theo thứ tự.
 
