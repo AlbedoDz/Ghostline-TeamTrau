@@ -37,6 +37,7 @@ Ghostline chạy một DNS server cục bộ trên `127.0.0.1` / `::1`, trỏ m�
 - [Build từ mã nguồn](#build-từ-mã-nguồn)
 - [Đóng góp](#đóng-góp)
 - [Bảo mật](#bảo-mật)
+- [Tuyên bố miễn trừ trách nhiệm](#tuyên-bố-miễn-trừ-trách-nhiệm)
 - [Giấy phép và ghi công](#giấy-phép-và-ghi-công)
 
 ## Tính năng
@@ -159,6 +160,12 @@ Báo lỗi, dịch thuật và pull request đều được hoan nghênh. Vui l�
 ## Bảo mật
 
 Vui lòng **không** báo lỗ hổng bảo mật qua issue công khai. Xem [SECURITY.md](SECURITY.md).
+
+## Tuyên bố miễn trừ trách nhiệm
+
+Ghostline được phát triển với mục đích nghiên cứu và học tập về DNS mã hoá, cơ chế lọc mạng và DPI. Người dùng tự chịu hoàn toàn trách nhiệm về cách sử dụng phần mềm, cũng như việc tuân thủ pháp luật nơi mình sinh sống và điều khoản của nhà cung cấp mạng. Không sử dụng Ghostline vào bất kỳ mục đích vi phạm pháp luật nào.
+
+Phần mềm được cung cấp "nguyên trạng", không kèm bất kỳ bảo đảm nào. Tác giả không chịu trách nhiệm về bất kỳ thiệt hại, mất mát dữ liệu, gián đoạn dịch vụ hay hệ quả pháp lý nào phát sinh từ việc sử dụng phần mềm. Xem chi tiết tại [LICENSE](LICENSE).
 
 ## Giấy phép và ghi công
 

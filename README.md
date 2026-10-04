@@ -38,6 +38,7 @@ Ghostline runs a local DNS server on `127.0.0.1` / `::1`, points every network a
 - [Project layout](#project-layout)
 - [Contributing](#contributing)
 - [Security](#security)
+- [Disclaimer](#disclaimer)
 - [License and credits](#license-and-credits)
 
 ## Features
@@ -169,6 +170,12 @@ Bug reports, translations and pull requests are welcome. Please read [CONTRIBUTI
 ## Security
 
 Please do **not** open a public issue for vulnerabilities. See [SECURITY.md](SECURITY.md).
+
+## Disclaimer
+
+Ghostline is provided for research and educational purposes, to study encrypted DNS, network filtering and DPI. You are solely responsible for how you use it and for complying with the laws and regulations of your country and the terms of your network provider. Do not use Ghostline for any unlawful purpose.
+
+The software is provided "as is", without warranty of any kind. The authors are not liable for any damage, data loss, service disruption or legal consequences arising from its use. See [LICENSE](LICENSE) for the full terms.
 
 ## License and credits
 
