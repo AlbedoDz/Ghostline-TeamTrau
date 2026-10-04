@@ -27,3 +27,17 @@ export function tCode(key: string, params?: Record<string, unknown>): string {
 }
 
 export default i18n;
+
+/**
+ * describeError turns an error from a Go binding ("CODE" or "CODE: cause")
+ * into the translated message; anything else is shown as-is.
+ */
+export function describeError(e: unknown): string {
+  const msg = e instanceof Error ? e.message : String(e);
+  const m = /^([A-Z][A-Z0-9_]{2,})(?::\s*([\s\S]*))?$/.exec(msg.trim());
+  if (m && i18n.exists(`errors.${m[1]}.message`)) {
+    const text = i18n.t(`errors.${m[1]}.message`) as string;
+    return m[2] ? `${text} (${m[2]})` : text;
+  }
+  return msg;
+}

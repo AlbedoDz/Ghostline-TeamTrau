@@ -82,3 +82,8 @@ func TestRestoreNow_FallbackDeletesRecoveryTask(t *testing.T) {
 }
 
 var _ = engine.Stats{}
+
+func TestAppErrorString_IsReadable(t *testing.T) {
+	require.Equal(t, "DPI_START_FAILED: boom", appErr(CodeDPIStartFailed, errors.New("boom")).Error())
+	require.Equal(t, "PORT53_BUSY", appErr(CodePort53Busy, nil, "pid", 4).Error())
+}

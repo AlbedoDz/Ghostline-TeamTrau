@@ -91,6 +91,7 @@ type Runner interface {
 
 // Services controls Windows services.
 type Services interface {
+	Find(prefix string) ([]string, error)
 	Running(name string) (bool, error)
 	Stop(name string) error
 	Delete(name string) error
@@ -148,7 +149,7 @@ func (m *Manager) Start(ctx context.Context, args []string) (int, error) {
 		}
 		return 0, ErrStartFailed
 	}
-	if running, _ := m.svc.Running(driverService); !running {
+	if !m.driverRunning() {
 		_ = p.Kill()
 		return 0, fmt.Errorf("%w: WinDivert driver not running", ErrStartFailed)
 	}
@@ -172,7 +173,11 @@ func (m *Manager) Stop() error {
 		}
 		m.proc = nil
 	}
-	errs = append(errs, m.svc.Stop(driverService), m.svc.Delete(driverService))
+	names, err := m.svc.Find(driverService)
+	errs = append(errs, err)
+	for _, n := range names {
+		errs = append(errs, m.svc.Stop(n), m.svc.Delete(n))
+	}
 	return errors.Join(errs...)
 }
 
@@ -203,4 +208,16 @@ func (m *Manager) localBlacklist(args []string) ([]string, error) {
 		out[i+1] = "blacklist.txt"
 	}
 	return out, nil
+}
+
+// driverRunning reports whether any WinDivert driver service is running.
+// WinDivert 1.x names its service with the version ("WinDivert1.4").
+func (m *Manager) driverRunning() bool {
+	names, _ := m.svc.Find(driverService)
+	for _, n := range names {
+		if ok, _ := m.svc.Running(n); ok {
+			return true
+		}
+	}
+	return false
 }

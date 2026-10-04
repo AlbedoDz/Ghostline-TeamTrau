@@ -4,7 +4,7 @@ import { Browser } from "@wailsio/runtime";
 import { Service, type Adapter } from "../../../app/api";
 import { useGhost } from "../../../app/store";
 import { saveSettings } from "../../../app/settings";
-import { initI18n } from "../../../i18n";
+import { describeError, initI18n } from "../../../i18n";
 import { Toggle } from "../../../components/neon/Toggle";
 import { Chip } from "../../../components/neon/Chip";
 import css from "../advanced.module.css";
@@ -123,7 +123,7 @@ export function Settings() {
           onClick={() =>
             void Service.RestoreDNSNow()
               .then(() => (setError(null), setNote(t("settings.restored"))))
-              .catch((e) => setError(String(e?.message ?? e)))
+              .catch((e) => setError(describeError(e)))
           }
         >
           {t("settings.restoreNow")}
@@ -143,7 +143,7 @@ export function Settings() {
               <button
                 className={css.danger}
                 onClick={() => {
-                  void Service.StopConflictingService(confirmService).catch((e) => setError(String(e?.message ?? e)));
+                  void Service.StopConflictingService(confirmService).catch((e) => setError(describeError(e)));
                   setConfirmService(null);
                 }}
               >

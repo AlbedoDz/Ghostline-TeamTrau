@@ -32,11 +32,12 @@ type AppError struct {
 	cause  error
 }
 
+// Error is "CODE" or "CODE: cause"; the UI translates the leading code.
 func (e *AppError) Error() string {
 	if e.cause != nil {
-		return fmt.Sprintf("%s %v: %v", e.Code, e.Params, e.cause)
+		return e.Code + ": " + e.cause.Error()
 	}
-	return fmt.Sprintf("%s %v", e.Code, e.Params)
+	return e.Code
 }
 
 func (e *AppError) Unwrap() error { return e.cause }

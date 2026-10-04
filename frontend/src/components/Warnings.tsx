@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Service } from "../app/api";
 import { useGhost } from "../app/store";
-import { tCode } from "../i18n";
+import { describeError, tCode } from "../i18n";
 import { Banner } from "./neon/Banner";
 
 /** Persistent warnings. RESTORE_FAILED can only be cleared by restoring. */
@@ -14,7 +14,7 @@ export function Warnings() {
 
   const restore = () => {
     setFailure(null);
-    Service.RestoreDNSNow().catch((e) => setFailure(String(e?.message ?? e)));
+    Service.RestoreDNSNow().catch((e) => setFailure(describeError(e)));
   };
 
   return (

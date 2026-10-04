@@ -2,6 +2,7 @@ package winutil
 
 import (
 	"errors"
+	"strings"
 	"time"
 	"unsafe"
 
@@ -116,4 +117,35 @@ func DeleteService(name string) error {
 		return err
 	}
 	return nil
+}
+
+// FindServices lists installed services and drivers (any state) whose name
+// starts with prefix, case-insensitively.
+func FindServices(prefix string) ([]string, error) {
+	scm, err := openSCM(windows.SC_MANAGER_ENUMERATE_SERVICE)
+	if err != nil {
+		return nil, err
+	}
+	defer windows.CloseServiceHandle(scm)
+	const kinds = windows.SERVICE_DRIVER | windows.SERVICE_WIN32
+	var needed, count, resume uint32
+	_ = windows.EnumServicesStatusEx(scm, windows.SC_ENUM_PROCESS_INFO, kinds, windows.SERVICE_STATE_ALL, nil, 0, &needed, &count, &resume, nil)
+	if needed == 0 {
+		return nil, nil
+	}
+	buf := make([]byte, needed+4096)
+	resume = 0
+	if err := windows.EnumServicesStatusEx(scm, windows.SC_ENUM_PROCESS_INFO, kinds, windows.SERVICE_STATE_ALL,
+		&buf[0], uint32(len(buf)), &needed, &count, &resume, nil); err != nil {
+		return nil, err
+	}
+	var out []string
+	p := strings.ToLower(prefix)
+	for _, e := range unsafe.Slice((*windows.ENUM_SERVICE_STATUS_PROCESS)(unsafe.Pointer(&buf[0])), count) {
+		name := windows.UTF16PtrToString(e.ServiceName)
+		if strings.HasPrefix(strings.ToLower(name), p) {
+			out = append(out, name)
+		}
+	}
+	return out, nil
 }

@@ -121,6 +121,8 @@ Section "uninstall"
     nsExec::Exec 'schtasks /Delete /TN "Ghostline Recovery" /F'
     nsExec::Exec 'sc stop WinDivert'
     nsExec::Exec 'sc delete WinDivert'
+    nsExec::Exec 'sc stop WinDivert1.4'
+    nsExec::Exec 'sc delete WinDivert1.4'
 
     RMDir /r "$AppData\${PRODUCT_EXECUTABLE}" # Remove the WebView2 DataPath
 

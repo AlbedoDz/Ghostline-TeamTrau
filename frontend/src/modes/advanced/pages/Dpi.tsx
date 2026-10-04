@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Service, type ProbeResult } from "../../../app/api";
 import { useGhost } from "../../../app/store";
 import { saveSettings } from "../../../app/settings";
-import { tCode } from "../../../i18n";
+import { describeError, tCode } from "../../../i18n";
 import { Toggle } from "../../../components/neon/Toggle";
 import { Chip } from "../../../components/neon/Chip";
 import css from "../advanced.module.css";
@@ -42,7 +42,7 @@ export function Dpi() {
       <div className={css.panel}>
         <div className={css.panelTitle}>
           <span>{t("dpi.goodbyedpi")}</span>
-          <Toggle label={t("dpi.goodbyedpi")} checked={dpi.enabled} onChange={(v) => void Service.SetDPIEnabled(v).catch((e) => setError(String(e?.message ?? e)))} />
+          <Toggle label={t("dpi.goodbyedpi")} checked={dpi.enabled} onChange={(v) => void Service.SetDPIEnabled(v).catch((e) => setError(describeError(e)))} />
         </div>
         <div className={css.setting}>
           <span>{t("dpi.preset")}</span>

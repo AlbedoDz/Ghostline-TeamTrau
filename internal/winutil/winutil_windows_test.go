@@ -144,3 +144,15 @@ func TestNamedMutex_ExclusiveWithinOneInstance(t *testing.T) { // review I6
 		t.Fatal("second goroutine never acquired the mutex")
 	}
 }
+
+func TestFindServices_NoMatch(t *testing.T) {
+	names, err := FindServices("Ghostline-No-Such-Service-")
+	require.NoError(t, err)
+	require.Empty(t, names)
+}
+
+func TestFindServices_FindsKnownDriver(t *testing.T) {
+	names, err := FindServices("Tcpip") // the TCP/IP driver exists on every Windows
+	require.NoError(t, err)
+	require.Contains(t, names, "Tcpip")
+}

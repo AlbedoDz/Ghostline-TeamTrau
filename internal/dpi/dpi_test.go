@@ -118,9 +118,17 @@ func (r *fakeRunner) Start(exe string, args []string, dir string) (Process, erro
 type fakeSvc struct {
 	running bool
 	calls   []string
+	names   []string // installed WinDivert services
 }
 
-func (s *fakeSvc) Running(name string) (bool, error) { return s.running, nil }
+func (s *fakeSvc) Find(prefix string) ([]string, error) {
+	if s.names == nil {
+		return []string{"WinDivert1.4"}, nil
+	}
+	return s.names, nil
+}
+
+func (s *fakeSvc) Running(name string) (bool, error) { return s.running && name == "WinDivert1.4", nil }
 func (s *fakeSvc) Stop(name string) error            { s.calls = append(s.calls, "svc.stop:"+name); return nil }
 func (s *fakeSvc) Delete(name string) error {
 	s.calls = append(s.calls, "svc.delete:"+name)
@@ -171,7 +179,7 @@ func TestManager_StopKillsAndRemovesWinDivert(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, m.Stop())
 	require.True(t, r.proc.killed)
-	require.Equal(t, []string{"svc.stop:WinDivert", "svc.delete:WinDivert"}, s.calls)
+	require.Equal(t, []string{"svc.stop:WinDivert1.4", "svc.delete:WinDivert1.4"}, s.calls)
 	require.False(t, m.Running())
 }
 
@@ -179,7 +187,7 @@ func TestManager_StopWhenNotRunningStillCleansDriver(t *testing.T) {
 	s := &fakeSvc{}
 	m := newTestManager(t, &fakeRunner{}, s)
 	require.NoError(t, m.Stop())
-	require.Equal(t, []string{"svc.stop:WinDivert", "svc.delete:WinDivert"}, s.calls)
+	require.Equal(t, []string{"svc.stop:WinDivert1.4", "svc.delete:WinDivert1.4"}, s.calls)
 	require.False(t, errors.Is(nil, ErrStartFailed))
 }
 
@@ -195,4 +203,20 @@ func TestManager_BlacklistCopiedToASCIIName(t *testing.T) { // review I7: Goodby
 	b, err := os.ReadFile(filepath.Join(m.dir, "blacklist.txt"))
 	require.NoError(t, err)
 	require.Equal(t, "youtube.com\n", string(b))
+}
+
+// WinDivert 1.x registers a versioned service ("WinDivert1.4"); looking for
+// exactly "WinDivert" made every start look failed.
+func TestManager_VersionedDriverServiceCountsAsRunning(t *testing.T) {
+	m := newTestManager(t, &fakeRunner{proc: &fakeProc{pid: 7}}, &fakeSvc{running: true, names: []string{"WinDivert1.4"}})
+	pid, err := m.Start(context.Background(), light)
+	require.NoError(t, err)
+	require.Equal(t, 7, pid)
+}
+
+func TestManager_StopRemovesEveryWinDivertService(t *testing.T) {
+	s := &fakeSvc{names: []string{"WinDivert", "WinDivert1.4"}}
+	m := newTestManager(t, &fakeRunner{}, s)
+	require.NoError(t, m.Stop())
+	require.Equal(t, []string{"svc.stop:WinDivert", "svc.delete:WinDivert", "svc.stop:WinDivert1.4", "svc.delete:WinDivert1.4"}, s.calls)
 }

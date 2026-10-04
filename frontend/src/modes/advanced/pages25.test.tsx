@@ -131,3 +131,11 @@ test("query view toggle survives leaving the logs page", () => { // review minor
   render(<Logs />);
   expect(screen.getByRole("switch", { name: "hiện truy vấn" })).toHaveAttribute("aria-checked", "true");
 });
+
+test("errors from Go are translated, not shown raw", async () => {
+  svc.SetDPIEnabled.mockRejectedValueOnce(new Error("DPI_START_FAILED: dpi: GoodbyeDPI failed to start"));
+  render(<Dpi />);
+  fireEvent.click(screen.getByRole("switch", { name: "GOODBYEDPI" }));
+  expect(await screen.findByText(/GoodbyeDPI không chạy được/)).toBeInTheDocument();
+  expect(screen.queryByText(/map\[/)).toBeNull();
+});
