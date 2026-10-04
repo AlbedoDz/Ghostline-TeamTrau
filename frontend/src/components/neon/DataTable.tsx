@@ -6,6 +6,8 @@ export type Column<T> = {
   label: string;
   render: (row: T) => ReactNode;
   sort?: (a: T, b: T) => number;
+  align?: "left" | "right" | "center";
+  width?: string; // CSS width for a fixed, balanced layout
 };
 
 type Sort = { key: string; dir: "asc" | "desc" };
@@ -34,12 +36,18 @@ export function DataTable<T>({ columns, rows, rowKey, initialSort, highlight }: 
 
   return (
     <table className={css.table}>
+      <colgroup>
+        {columns.map((c) => (
+          <col key={c.key} style={c.width ? { width: c.width } : undefined} />
+        ))}
+      </colgroup>
       <thead>
         <tr>
           {columns.map((c) => (
             <th
               key={c.key}
               onClick={() => onHeader(c)}
+              style={{ textAlign: c.align ?? "left", cursor: c.sort ? "pointer" : "default" }}
               aria-sort={sort?.key === c.key ? (sort.dir === "asc" ? "ascending" : "descending") : undefined}
             >
               {c.label}
@@ -52,7 +60,9 @@ export function DataTable<T>({ columns, rows, rowKey, initialSort, highlight }: 
         {sorted.map((r) => (
           <tr key={rowKey(r)} data-highlight={highlight?.(r) ?? false}>
             {columns.map((c) => (
-              <td key={c.key}>{c.render(r)}</td>
+              <td key={c.key} style={{ textAlign: c.align ?? "left" }}>
+                {c.render(r)}
+              </td>
             ))}
           </tr>
         ))}

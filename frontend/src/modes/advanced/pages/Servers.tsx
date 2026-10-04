@@ -6,6 +6,7 @@ import { Chip } from "../../../components/neon/Chip";
 import { DataTable } from "../../../components/neon/DataTable";
 import { Toggle } from "../../../components/neon/Toggle";
 import { AddServersDialog } from "../AddServersDialog";
+import { prettyServerName, serverDetail } from "../../../app/format";
 import css from "../advanced.module.css";
 
 const PROTOCOLS = ["doh", "dot", "doq", "dnscrypt"];
@@ -92,38 +93,64 @@ export function Servers() {
           {
             key: "pin",
             label: "",
+            width: "28px",
+            align: "center",
             render: (r) => (
               <button className={css.pin} aria-pressed={r.pinned} aria-label={`${t("servers.pin")} ${r.server.name}`} onClick={() => void pin(r)}>
                 {r.pinned ? "★" : "☆"}
               </button>
             ),
           },
-          { key: "name", label: t("servers.name"), render: (r) => r.server.name, sort: (a, b) => a.server.name.localeCompare(b.server.name) },
-          { key: "protocol", label: t("servers.protocol"), render: (r) => String(r.server.protocol) },
+          {
+            key: "name",
+            label: t("servers.name"),
+            render: (r) => (
+              <div className={css.nameCell}>
+                <span data-name>{prettyServerName(r.server)}</span>
+                <span className={css.detail}>{serverDetail(r.server)}</span>
+              </div>
+            ),
+            sort: (a, b) => prettyServerName(a.server).localeCompare(prettyServerName(b.server)),
+          },
+          {
+            key: "protocol",
+            label: t("servers.protocol"),
+            width: "96px",
+            render: (r) => <span className={css.badge}>{String(r.server.protocol).toUpperCase()}</span>,
+          },
           {
             key: "latency",
             label: t("servers.latency"),
-            render: (r) => (r.result?.ok ? `${ms(r.result.latency)}ms` : "—"),
+            width: "84px",
+            align: "right",
+            render: (r) => {
+              if (!r.result?.ok) return <span className={css.dim}>—</span>;
+              const v = ms(r.result.latency);
+              return <span className={v < 50 ? css.ok : v < 150 ? css.warn : css.bad}>{v} ms</span>;
+            },
             sort: (a, b) => rank(a) - rank(b),
           },
           {
             key: "state",
             label: t("servers.state"),
+            width: "120px",
             render: (r) =>
               r.inUse ? (
-                <span className={css.ok}>{t("servers.inUse")}</span>
+                <span className={css.ok}>● {t("servers.inUse")}</span>
               ) : !r.result ? (
                 <span className={css.dim}>{t("servers.notChecked")}</span>
               ) : r.result.ok ? (
                 t("servers.pass")
               ) : (
-                <span className={css.bad}>{r.result.reason}</span>
+                <span className={css.bad}>✕ {r.result.reason}</span>
               ),
           },
-          { key: "tags", label: t("servers.tags"), render: (r) => <span className={css.dim}>{(r.server.tags ?? []).join(" ")}</span> },
+          { key: "tags", label: t("servers.tags"), width: "120px", render: (r) => <span className={css.dim}>{(r.server.tags ?? []).join(" ")}</span> },
           {
             key: "rm",
             label: "",
+            width: "28px",
+            align: "center",
             render: (r) =>
               r.server.source === "custom" ? (
                 <button className={css.dim} aria-label={`${t("servers.remove")} ${r.server.name}`} onClick={() => void Service.RemoveCustomServer(r.server.id).then(load)}>

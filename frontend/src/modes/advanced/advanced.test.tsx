@@ -35,7 +35,7 @@ beforeEach(() => {
   useGhost.getState().setSettings({ pinnedOnly: false, includeTags: ["no-filter"] } as any);
 });
 
-const names = () => screen.getAllByRole("row").slice(1).map((r) => within(r).getAllByRole("cell")[1].textContent);
+const names = () => screen.getAllByRole("row").slice(1).map((r) => within(r).getAllByRole("cell")[1].querySelector("[data-name]")?.textContent);
 
 test("servers table filters by protocol chip and only-ok", async () => {
   render(<Servers />);
@@ -88,4 +88,33 @@ test("advanced view switches pages from the sidebar", async () => {
   fireEvent.click(screen.getByRole("button", { name: "máy chủ" }));
   expect(useGhost.getState().page).toBe("servers");
   await screen.findByText(/MÁY CHỦ/);
+});
+
+test("duplicate server names are told apart by host or IP", async () => {
+  svc.ListServers.mockResolvedValue([
+    { server: { id: "a1", name: "AdGuard (unfiltered)", protocol: "doh", address: "https://unfiltered.adguard-dns.com/dns-query", source: "builtin", tags: ["no-filter"] }, inUse: false, pinned: false },
+    { server: { id: "a2", name: "AdGuard (unfiltered)", protocol: "dot", address: "tls://unfiltered.adguard-dns.com", source: "builtin", tags: ["no-filter"] }, inUse: false, pinned: false },
+    { server: { id: "dnscrypt:a-and-a", name: "a-and-a", protocol: "doh", address: "sdns://x", ips: ["217.169.20.22"], source: "dnscrypt", tags: ["no-filter"] }, inUse: false, pinned: false },
+  ]);
+  render(<Servers />);
+  await waitFor(() => expect(names()).toHaveLength(3));
+  expect(names()).toContain("A And A"); // DNSCrypt ids are made readable
+  expect(screen.getAllByText("unfiltered.adguard-dns.com")).toHaveLength(2);
+  expect(screen.getByText("217.169.20.22")).toBeInTheDocument();
+  expect(screen.getAllByText("DOH").length).toBeGreaterThan(0);
+});
+
+test("sidebar status explains its numbers and offers a clear button", () => {
+  useGhost.getState().setSnapshot({ status: "protected", servers: ["a", "b", "c", "d", "e"], latencyMs: 26, warnings: [], blockedSites: [], dpi: {} } as any);
+  render(<AdvancedView />);
+  expect(screen.getByText(/26 ms · 5 máy chủ/)).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "⏻ NGẮT KẾT NỐI" }));
+  expect(svc.Disconnect).toHaveBeenCalled();
+});
+
+test("sidebar button connects when disconnected", () => {
+  useGhost.getState().setSnapshot({ status: "disconnected", servers: [], warnings: [], blockedSites: [], dpi: {} } as any);
+  render(<AdvancedView />);
+  fireEvent.click(screen.getByRole("button", { name: "⏻ KẾT NỐI" }));
+  expect(svc.Connect).toHaveBeenCalled();
 });

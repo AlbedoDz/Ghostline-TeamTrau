@@ -256,5 +256,11 @@
   "tray": {
     "connect": "Kết nối",
     "disconnect": "Ngắt kết nối"
+  },
+  "side": {
+    "connect": "⏻ KẾT NỐI",
+    "disconnect": "⏻ NGẮT KẾT NỐI",
+    "cancel": "■ HUỶ",
+    "summary": "{{latency}} ms · {{count}} máy chủ"
   }
 }

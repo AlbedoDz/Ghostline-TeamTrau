@@ -38,3 +38,24 @@ export function serverSummary(servers: string[] | null | undefined): string {
   if (!servers || servers.length === 0) return "—";
   return servers.length === 1 ? servers[0] : `${servers[0]} +${servers.length - 1}`;
 }
+
+type ServerLike = { name: string; address: string; source?: string; ips?: string[] | null };
+
+/** DNSCrypt list ids like "a-and-a" become "A And A"; curated names stay. */
+export function prettyServerName(s: ServerLike): string {
+  if (s.source === "dnscrypt" && /^[a-z0-9-]+$/.test(s.name)) {
+    return s.name
+      .split("-")
+      .filter(Boolean)
+      .map((w) => w[0].toUpperCase() + w.slice(1))
+      .join(" ");
+  }
+  return s.name;
+}
+
+/** The host (for URLs) or IP (for stamps) that tells same-named servers apart. */
+export function serverDetail(s: ServerLike): string {
+  const m = /^(?:https|tls|quic):\/\/([^/:]+)/.exec(s.address);
+  if (m) return m[1];
+  return s.ips?.[0] ?? "";
+}

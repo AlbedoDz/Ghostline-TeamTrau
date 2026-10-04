@@ -256,5 +256,11 @@
   "tray": {
     "connect": "Connect",
     "disconnect": "Disconnect"
+  },
+  "side": {
+    "connect": "⏻ CONNECT",
+    "disconnect": "⏻ DISCONNECT",
+    "cancel": "■ CANCEL",
+    "summary": "{{latency}} ms · {{count}} servers"
   }
 }

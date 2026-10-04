@@ -183,3 +183,62 @@
   padding: 4px 10px;
   letter-spacing: 0.06em;
 }
+
+.nameCell {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.35;
+  min-width: 0;
+}
+.nameCell > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.detail {
+  color: var(--dim);
+  font-size: 10.5px;
+}
+.badge {
+  border: 1px solid var(--line-strong);
+  color: var(--cyan);
+  padding: 0 5px;
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+}
+.warn {
+  color: var(--amber);
+}
+
+/* Sidebar status card */
+.sideCard {
+  display: grid;
+  gap: 6px;
+  padding-bottom: 12px;
+}
+.sideState {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+.sideState::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 8px currentColor;
+}
+.sideBtn {
+  margin-top: 4px;
+  width: 100%;
+  border: 1px solid currentColor;
+  padding: 7px 0;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+  text-align: center;
+}
+.sideBtn:hover {
+  background: color-mix(in srgb, currentColor 12%, transparent);
+}
