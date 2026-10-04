@@ -1,0 +1,11 @@
+version: "2"
+
+linters:
+  exclusions:
+    rules:
+      # Errors from releasing resources (deferred Close, handle cleanup,
+      # temp-file removal) carry no actionable information here.
+      - linters: [errcheck]
+        text: 'Error return value of `[^`]*\.(Close|CloseHandle|CloseServiceHandle|Disconnect)` is not checked'
+      - linters: [errcheck]
+        text: 'Error return value of `os\.Remove` is not checked'

@@ -131,7 +131,7 @@ func TestEngine_NeverLogsToDefaultLogger(t *testing.T) { // review I11: domains 
 	l.Close()
 	e := engine.New(nil)
 	require.NoError(t, e.Start(context.Background(), engine.Config{ListenV4: addr, Upstreams: []upstream.Upstream{errUp{}}}))
-	defer e.Stop(context.Background())
+	defer func() { _ = e.Stop(context.Background()) }()
 	c := &dns.Client{Net: "tcp", Timeout: 2 * time.Second}
 	_, _, _ = c.Exchange(new(dns.Msg).SetQuestion("secret-domain.example.", dns.TypeA), addr.String())
 	time.Sleep(50 * time.Millisecond)

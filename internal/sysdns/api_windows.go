@@ -102,7 +102,7 @@ func (winAPI) GetDNS(guid string, v6 bool) ([]string, error) {
 	if r != 0 {
 		return nil, fmt.Errorf("sysdns: GetInterfaceDnsSettings: %w", windows.Errno(r))
 	}
-	defer procFreeInterfaceDnsSettings.Call(uintptr(unsafe.Pointer(&s)))
+	defer func() { _, _, _ = procFreeInterfaceDnsSettings.Call(uintptr(unsafe.Pointer(&s))) }()
 	if s.NameServer == nil {
 		return nil, nil
 	}

@@ -64,7 +64,7 @@ func (s *StateStore) Locked(fn func() error) error {
 	if err := s.lock.Lock(); err != nil {
 		return err
 	}
-	defer s.lock.Unlock()
+	defer func() { _ = s.lock.Unlock() }()
 	return fn()
 }
 
@@ -93,7 +93,7 @@ func (s *StateStore) Update(fn func(*State) error) error {
 	if err := s.lock.Lock(); err != nil {
 		return err
 	}
-	defer s.lock.Unlock()
+	defer func() { _ = s.lock.Unlock() }()
 	st, err := s.Load()
 	if err != nil {
 		return err
@@ -110,6 +110,6 @@ func (s *StateStore) Reset() error {
 	if err := s.lock.Lock(); err != nil {
 		return err
 	}
-	defer s.lock.Unlock()
+	defer func() { _ = s.lock.Unlock() }()
 	return WriteJSONAtomic(s.path, cleanState())
 }

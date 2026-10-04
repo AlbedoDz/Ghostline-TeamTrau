@@ -64,7 +64,7 @@ func New(address string, o Options) (*Upstream, error) {
 			if err != nil {
 				return nil, fmt.Errorf("fragdoh: bootstrap %s: %w", host, err)
 			}
-			var lastErr error = fmt.Errorf("fragdoh: no addresses for %s", host)
+			lastErr := fmt.Errorf("fragdoh: no addresses for %s", host)
 			for _, ip := range ips {
 				c, err := dialer.DialContext(ctx, "tcp", net.JoinHostPort(ip.String(), port))
 				if err != nil {

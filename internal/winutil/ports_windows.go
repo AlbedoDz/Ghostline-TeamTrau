@@ -72,7 +72,7 @@ func PortOwners(port uint16) ([]PortOwner, error) {
 	seen := map[[2]uint32]bool{}
 	var out []PortOwner
 	for _, r := range rows {
-		if r.port != port || !(r.addr.IsLoopback() || r.addr.IsUnspecified()) {
+		if r.port != port || (!r.addr.IsLoopback() && !r.addr.IsUnspecified()) {
 			continue
 		}
 		proto := "udp"

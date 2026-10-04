@@ -58,7 +58,7 @@ func (r *Rotating) rotate() error {
 	}
 	os.Remove(r.name(r.keep - 1))
 	for i := r.keep - 2; i >= 0; i-- {
-		os.Rename(r.name(i), r.name(i+1))
+		_ = os.Rename(r.name(i), r.name(i+1)) // older files may not exist yet
 	}
 	return r.open()
 }
