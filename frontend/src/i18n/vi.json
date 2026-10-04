@@ -98,7 +98,12 @@
     "addHint": "Dán URL (https://, tls://, quic://) hoặc stamp sdns://, mỗi dòng một máy chủ.",
     "importFile": "import từ file",
     "added": "đã thêm {{count}} máy chủ",
-    "rejected": "bị từ chối: {{lines}}"
+    "rejected": "bị từ chối: {{lines}}",
+    "search": "tìm máy chủ",
+    "searchHint": "tìm theo tên, IP, địa chỉ, nhãn…",
+    "clearSearch": "xoá tìm kiếm",
+    "noMatch": "không có máy chủ nào khớp",
+    "matched": "khớp {{count}}"
   },
   "dpi": {
     "title": "VƯỢT DPI",

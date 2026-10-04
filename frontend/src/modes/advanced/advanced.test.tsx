@@ -118,3 +118,35 @@ test("sidebar button connects when disconnected", () => {
   fireEvent.click(screen.getByRole("button", { name: "⏻ KẾT NỐI" }));
   expect(svc.Connect).toHaveBeenCalled();
 });
+
+test("search filters servers by name, address, IP and tag, and can be cleared", async () => {
+  const withIPs = rows.map((r) => (r.server.id === "q9" ? { ...r, server: { ...r.server, ips: ["9.9.9.9"] } } : r));
+  svc.ListServers.mockResolvedValue(withIPs);
+  render(<Servers />);
+  await waitFor(() => expect(names()).toHaveLength(4));
+  const box = screen.getByRole("searchbox", { name: "tìm máy chủ" });
+
+  fireEvent.change(box, { target: { value: "GOOG" } }); // case-insensitive name
+  expect(names()).toEqual(["Google"]);
+  expect(screen.getByText(/khớp 1$/)).toBeInTheDocument();
+  fireEvent.change(box, { target: { value: "doh no-filter" } }); // every word must match
+  expect(names()).toEqual(["Cloudflare", "Google"]);
+  fireEvent.change(box, { target: { value: "9.9.9.9" } }); // IP
+  expect(names()).toEqual(["Quad9"]);
+  fireEvent.change(box, { target: { value: "sdns://" } }); // address
+  expect(names()).toEqual(["AdGuard"]);
+  fireEvent.change(box, { target: { value: "adblock" } }); // tag
+  expect(names()).toEqual(["AdGuard"]);
+
+  // Combines with the chips.
+  fireEvent.change(box, { target: { value: "o" } });
+  fireEvent.click(screen.getByRole("button", { name: "chỉ đạt" }));
+  expect(names()).toEqual(["Cloudflare", "Quad9"]);
+
+  fireEvent.change(box, { target: { value: "nothing-matches" } });
+  expect(screen.getByText("không có máy chủ nào khớp")).toBeInTheDocument();
+
+  fireEvent.click(screen.getByRole("button", { name: "xoá tìm kiếm" }));
+  expect((box as HTMLInputElement).value).toBe("");
+  expect(names()).toEqual(["Cloudflare", "Quad9"]);
+});

@@ -98,7 +98,12 @@
     "addHint": "Paste URLs (https://, tls://, quic://) or sdns:// stamps, one server per line.",
     "importFile": "import from file",
     "added": "added {{count}} servers",
-    "rejected": "rejected: {{lines}}"
+    "rejected": "rejected: {{lines}}",
+    "search": "search servers",
+    "searchHint": "search by name, IP, address, tag…",
+    "clearSearch": "clear search",
+    "noMatch": "no servers match",
+    "matched": "{{count}} match"
   },
   "dpi": {
     "title": "DPI BYPASS",

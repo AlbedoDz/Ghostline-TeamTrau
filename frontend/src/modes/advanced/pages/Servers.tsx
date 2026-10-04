@@ -13,6 +13,16 @@ const PROTOCOLS = ["doh", "dot", "doq", "dnscrypt"];
 const TAGS = ["no-filter", "adblock", "family"];
 const ms = (ns?: number) => Math.round((ns ?? 0) / 1e6);
 // Unchecked rows sort after checked ones, failures after successes.
+// matches reports whether every word of query is found (case-insensitive)
+// in the server's name, provider, protocol, address, IPs or tags.
+function matches(r: ServerRow, query: string): boolean {
+  const words = query.toLowerCase().split(/\s+/).filter(Boolean);
+  if (words.length === 0) return true;
+  const s = r.server;
+  const hay = [prettyServerName(s), s.name, s.provider, String(s.protocol), s.address, ...(s.ips ?? []), ...(s.tags ?? [])].join(" ").toLowerCase();
+  return words.every((w) => hay.includes(w));
+}
+
 const rank = (r: ServerRow) => (!r.result ? 3e12 : r.result.ok ? ms(r.result.latency) : 2e12);
 
 export function Servers() {
@@ -24,6 +34,7 @@ export function Servers() {
   const [protocols, setProtocols] = useState<string[]>(PROTOCOLS);
   const [tags, setTags] = useState<string[]>(TAGS);
   const [onlyOk, setOnlyOk] = useState(false);
+  const [query, setQuery] = useState("");
   const [adding, setAdding] = useState(false);
 
   const load = useCallback(() => void Service.ListServers().then((r) => setRows(r ?? [])), []);
@@ -39,9 +50,9 @@ export function Servers() {
         const rtags = r.server.tags ?? [];
         if (r.server.source !== "custom" && rtags.length > 0 && !rtags.some((x) => tags.includes(x))) return false;
         if (onlyOk && !r.result?.ok) return false;
-        return true;
+        return matches(r, query);
       }),
-    [rows, protocols, tags, onlyOk],
+    [rows, protocols, tags, onlyOk, query],
   );
   const okCount = rows.filter((r) => r.result?.ok).length;
 
@@ -58,6 +69,7 @@ export function Servers() {
       <div className={css.head}>
         <span>
           {t("servers.title")} · {rows.length} <span className={css.count}>[{t("servers.ok", { count: okCount })}]</span>
+          {query && <span className={css.count}> · {t("servers.matched", { count: visible.length })}</span>}
         </span>
         <span className={css.tools}>
           <Chip onClick={onScan}>
@@ -84,6 +96,18 @@ export function Servers() {
           {t("servers.onlyOk")}
         </Chip>
       </div>
+      <div className={css.row}>
+        <input
+          type="search"
+          aria-label={t("servers.search")}
+          placeholder={t("servers.searchHint")}
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          style={{ flex: 1 }}
+        />
+        {query && <Chip label={t("servers.clearSearch")} onClick={() => setQuery("")}>✕</Chip>}
+      </div>
+      {query && visible.length === 0 && <div className={css.dim}>{t("servers.noMatch")}</div>}
       <DataTable<ServerRow>
         rows={visible}
         rowKey={(r) => r.server.id}
