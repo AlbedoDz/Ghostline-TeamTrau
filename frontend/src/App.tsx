@@ -4,6 +4,7 @@ import { useGhost, type Mode } from "./app/store";
 import { Service } from "./app/api";
 import { TitleBar } from "./components/neon/TitleBar";
 import { SimpleView } from "./modes/simple/SimpleView";
+import { AdvancedView } from "./modes/advanced/AdvancedView";
 import i18n, { initI18n, type Lang } from "./i18n";
 import css from "./App.module.css";
 
@@ -39,7 +40,9 @@ function App() {
               onMode("advanced");
             }}
           />
-        ) : null}
+        ) : (
+          <AdvancedView />
+        )}
       </main>
     </div>
   );
