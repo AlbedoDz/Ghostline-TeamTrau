@@ -6,6 +6,7 @@ require (
 	github.com/AdguardTeam/dnsproxy v0.86.0
 	github.com/ameshkov/dnsstamps v1.0.3
 	github.com/jedisct1/go-minisign v0.0.0-20260527172527-a09352b57a22
+	github.com/makiuchi-d/gozxing v0.1.1
 	github.com/miekg/dns v1.1.72
 	github.com/stretchr/testify v1.11.1
 	github.com/wailsapp/wails/v3 v3.0.0-beta.27
@@ -35,6 +36,7 @@ require (
 	golang.org/x/sync v0.22.0 // indirect
 	golang.org/x/text v0.41.0 // indirect
 	golang.org/x/tools v0.49.0 // indirect
+	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 	gonum.org/v1/gonum v0.17.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
