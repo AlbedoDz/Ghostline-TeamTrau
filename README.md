@@ -18,7 +18,7 @@ English · [Tiếng Việt](README.vi.md)
 
 ---
 
-Ghostline runs a local DNS server on `127.0.0.1` / `::1`, points every network adapter at it, and forwards your queries over **DoH, DoT, DoQ or DNSCrypt** to the fastest healthy resolver. When your network blocks sites by SNI, it can also run **GoodbyeDPI**. Above all, it is built to **always give your original DNS back**, even if the app crashes or the machine loses power.
+Ghostline runs a local DNS server on `127.0.0.1` / `::1`, points every network adapter at it, and forwards your queries over **DoH, DoT, DoQ or DNSCrypt** to the fastest healthy resolver. When your network interferes with encrypted connections by inspecting packets (DPI), it can also run **GoodbyeDPI**. Above all, it is built to **always give your original DNS back**, even if the app crashes or the machine loses power.
 
 <p align="center">
   <img src="docs/screenshots/simple-en.png" height="360" alt="Simple mode">
@@ -187,7 +187,13 @@ Please do **not** open a public issue for vulnerabilities. See [SECURITY.md](SEC
 
 ## Disclaimer
 
-Ghostline is provided for research and educational purposes, to study encrypted DNS, network filtering and DPI. You are solely responsible for how you use it and for complying with the laws and regulations of your country and the terms of your network provider. Do not use Ghostline for any unlawful purpose.
+Ghostline is provided for research and educational purposes, to study encrypted DNS, network filtering and DPI. Its main goals are privacy (keeping DNS queries from being read or logged), protection against DNS spoofing and hijacking, and network diagnostics. You are solely responsible for how you use it and for complying with the laws and regulations of your country and the terms of your network provider. Do not use Ghostline for any unlawful purpose, including:
+
+- reaching websites, services or content that a competent authority has ordered to be blocked under the law of your country;
+- online gambling, copyright infringement, fraud, or spreading content that is prohibited by law;
+- attacking, disrupting or getting unauthorized access to any network or system.
+
+Ghostline does not ship, recommend or maintain lists of sites blocked by authorities. Lists and rules you add yourself are your own responsibility.
 
 The software is provided "as is", without warranty of any kind. The authors are not liable for any damage, data loss, service disruption or legal consequences arising from its use. See [LICENSE](LICENSE) for the full terms.
 

@@ -18,7 +18,7 @@
 
 ---
 
-Ghostline chạy một DNS server cục bộ trên `127.0.0.1` / `::1`, trỏ mọi card mạng về đó, rồi chuyển tiếp truy vấn qua **DoH, DoT, DoQ hoặc DNSCrypt** tới máy chủ nhanh nhất còn hoạt động. Khi nhà mạng chặn trang web theo SNI, Ghostline có thể chạy thêm **GoodbyeDPI**. Trên hết, Ghostline được thiết kế để **luôn trả lại DNS gốc của bạn**, kể cả khi app bị tắt đột ngột hay máy mất điện.
+Ghostline chạy một DNS server cục bộ trên `127.0.0.1` / `::1`, trỏ mọi card mạng về đó, rồi chuyển tiếp truy vấn qua **DoH, DoT, DoQ hoặc DNSCrypt** tới máy chủ nhanh nhất còn hoạt động. Khi kết nối mã hoá bị can thiệp bằng cách soi gói tin (DPI), Ghostline có thể chạy thêm **GoodbyeDPI**. Trên hết, Ghostline được thiết kế để **luôn trả lại DNS gốc của bạn**, kể cả khi app bị tắt đột ngột hay máy mất điện.
 
 <p align="center">
   <img src="docs/screenshots/simple-vi.png" height="360" alt="Chế độ Đơn giản">
@@ -92,7 +92,7 @@ Get-FileHash .\Ghostline-0.1.0-portable.zip -Algorithm SHA256
 
 ## Sử dụng
 
-> 📖 Hướng dẫn chi tiết từng màn hình, cách vượt chặn và xử lý sự cố: **[docs/huong-dan-su-dung.md](docs/huong-dan-su-dung.md)**
+> 📖 Hướng dẫn chi tiết từng màn hình, cách xử lý khi không vào được trang và xử lý sự cố: **[docs/huong-dan-su-dung.md](docs/huong-dan-su-dung.md)**
 
 1. Mở Ghostline và bấm **Kết nối**. App tự chọn máy chủ, chuyển hướng DNS và kiểm tra rò rỉ.
 2. Nếu vẫn còn trang bị chặn, hoặc bật **proxy** (Nâng cao → Proxy → bật proxy + dùng cho máy này) để trình duyệt được fragment tự động, hoặc vào **Nâng cao → DPI**, bật **GoodbyeDPI** / bấm **tự dò**.
@@ -177,7 +177,13 @@ Vui lòng **không** báo lỗ hổng bảo mật qua issue công khai. Xem [SEC
 
 ## Tuyên bố miễn trừ trách nhiệm
 
-Ghostline được phát triển với mục đích nghiên cứu và học tập về DNS mã hoá, cơ chế lọc mạng và DPI. Người dùng tự chịu hoàn toàn trách nhiệm về cách sử dụng phần mềm, cũng như việc tuân thủ pháp luật nơi mình sinh sống và điều khoản của nhà cung cấp mạng. Không sử dụng Ghostline vào bất kỳ mục đích vi phạm pháp luật nào.
+Ghostline được phát triển với mục đích nghiên cứu và học tập về DNS mã hoá, cơ chế lọc mạng và DPI. Mục tiêu chính là bảo vệ quyền riêng tư (truy vấn DNS không bị đọc hay ghi lại), chống giả mạo và chiếm quyền DNS, và chẩn đoán mạng. Người dùng tự chịu hoàn toàn trách nhiệm về cách sử dụng phần mềm, cũng như việc tuân thủ pháp luật nơi mình sinh sống và điều khoản của nhà cung cấp mạng. Không sử dụng Ghostline vào bất kỳ mục đích vi phạm pháp luật nào, bao gồm:
+
+- truy cập trang web, dịch vụ hay nội dung mà cơ quan có thẩm quyền đã yêu cầu chặn theo quy định của pháp luật;
+- cờ bạc trực tuyến, vi phạm bản quyền, lừa đảo, hoặc phát tán nội dung bị pháp luật cấm;
+- tấn công, gây gián đoạn hoặc truy cập trái phép vào bất kỳ mạng hay hệ thống nào.
+
+Ghostline không đóng gói, không khuyến nghị và không duy trì danh sách các trang bị cơ quan chức năng chặn. Danh sách và rule do người dùng tự thêm thuộc trách nhiệm của người dùng.
 
 Phần mềm được cung cấp "nguyên trạng", không kèm bất kỳ bảo đảm nào. Tác giả không chịu trách nhiệm về bất kỳ thiệt hại, mất mát dữ liệu, gián đoạn dịch vụ hay hệ quả pháp lý nào phát sinh từ việc sử dụng phần mềm. Xem chi tiết tại [LICENSE](LICENSE).
 

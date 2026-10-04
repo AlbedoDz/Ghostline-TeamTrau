@@ -34,5 +34,10 @@ wails3 dev
 - Telemetry, or anything that writes visited domains to disk.
 - Code that stops or kills third-party processes or services without the user's explicit consent.
 - Changes to the bundled GoodbyeDPI binaries without updating their pinned hashes and NOTICE.
+- Lists, presets, default test sites or docs that target websites or services blocked by a competent authority (for example gambling, piracy, or platforms blocked by government order). Ghostline's purpose is privacy and protection against DNS spoofing, not reaching content that is prohibited by law.
+
+## Issues about specific blocked sites
+
+Please don't post issues asking how to reach a specific site or service that is blocked by government order, or share lists of such sites. Those issues will be edited or closed. Describe the network symptom instead (for example "TLS handshake resets on network X") so it can be fixed in a general way.
 
 By contributing, you agree that your contributions are licensed under the [GNU GPL v3.0 only](LICENSE).

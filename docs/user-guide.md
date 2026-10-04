@@ -122,7 +122,9 @@ Every encrypted DNS server Ghostline knows about (several hundred), refreshed da
 
 ![DPI bypass](screenshots/dpi-en.png)
 
-Use this when DNS is encrypted but a site is **still blocked**, because your ISP reads the site name inside your traffic (SNI) to block it.
+Use this when DNS is encrypted but connections to a site are **still interfered with**: equipment on the path reads the site name inside your traffic (SNI) and resets the connection.
+
+> ⚖️ You are responsible for complying with the law and your network provider's terms. Do not use these features to reach content that is prohibited by law. See the [Disclaimer](../README.md#disclaimer).
 
 **GoodbyeDPI**
 
@@ -149,7 +151,7 @@ Splits the packets sent to DoH servers into pieces so the ISP has a harder time 
 
 **Test sites**
 
-The sites used to check whether blocking is bypassed (default: youtube.com, discord.com, telegram.org, x.com). Click **⟳ test again** to check; each site shows:
+The sites used to check connectivity (default: youtube.com, discord.com, x.com). Click **⟳ test again** to check; each site shows:
 
 | Result | Meaning |
 | --- | --- |
@@ -256,6 +258,8 @@ Ghostline puts a ring icon in the system tray (bottom right, next to the clock).
 - **Quit:** disconnect, restore your DNS, then close the app
 
 ## 6. When a site is still blocked
+
+> ⚖️ You are responsible for complying with the law and your network provider's terms. Do not use these features to reach content that is prohibited by law. See the [Disclaimer](../README.md#disclaimer).
 
 Work through these in order and stop as soon as the site opens:
 

@@ -122,7 +122,9 @@ Danh sách toàn bộ máy chủ DNS mã hoá mà Ghostline biết (vài trăm m
 
 ![Vượt DPI](screenshots/dpi-vi.png)
 
-Dùng khi DNS đã được mã hoá nhưng trang web **vẫn bị chặn**: nhà mạng soi tên trang trong gói tin (SNI) để chặn.
+Dùng khi DNS đã được mã hoá nhưng kết nối tới một trang **vẫn bị can thiệp**: thiết bị trên đường truyền soi tên trang trong gói tin (SNI) rồi ngắt kết nối.
+
+> ⚖️ Bạn tự chịu trách nhiệm tuân thủ pháp luật và điều khoản của nhà mạng. Không dùng các tính năng này để truy cập nội dung bị cấm theo quy định của pháp luật. Xem [Tuyên bố miễn trừ trách nhiệm](../README.vi.md#tuyên-bố-miễn-trừ-trách-nhiệm).
 
 **GoodbyeDPI**
 
@@ -149,7 +151,7 @@ Chia nhỏ gói tin gửi tới máy chủ DoH để nhà mạng khó nhận ra.
 
 **Trang mẫu**
 
-Danh sách trang dùng để kiểm tra việc vượt chặn (mặc định: youtube.com, discord.com, telegram.org, x.com). Bấm **⟳ thử lại** để kiểm tra; mỗi trang hiện:
+Danh sách trang dùng để kiểm tra kết nối (mặc định: youtube.com, discord.com, x.com). Bấm **⟳ thử lại** để kiểm tra; mỗi trang hiện:
 
 | Kết quả | Ý nghĩa |
 | --- | --- |
@@ -256,6 +258,8 @@ Ghostline có icon hình vòng tròn ở khay (góc dưới bên phải, cạnh 
 - **Thoát:** ngắt kết nối, trả DNS về như cũ, rồi tắt app
 
 ## 6. Khi một trang web vẫn bị chặn
+
+> ⚖️ Bạn tự chịu trách nhiệm tuân thủ pháp luật và điều khoản của nhà mạng. Không dùng các tính năng này để truy cập nội dung bị cấm theo quy định của pháp luật. Xem [Tuyên bố miễn trừ trách nhiệm](../README.vi.md#tuyên-bố-miễn-trừ-trách-nhiệm).
 
 Làm lần lượt, dừng lại khi trang đã mở được:
 
