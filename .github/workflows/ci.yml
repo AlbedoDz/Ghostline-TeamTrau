@@ -1,8 +1,19 @@
 name: ci
 
+# Docs-only changes don't touch the build, so they skip CI.
 on:
   push:
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+      - "LICENSE"
+      - "NOTICE"
   pull_request:
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+      - "LICENSE"
+      - "NOTICE"
 
 permissions:
   contents: read
