@@ -2,7 +2,8 @@ package store
 
 import "time"
 
-// Meta records when once-a-day background jobs last ran.
+// Meta records when background jobs last ran (server lists daily, release
+// check at start and every 6 hours).
 type Meta struct {
 	LastUpdateCheck time.Time `json:"lastUpdateCheck"`
 	LastServerList  time.Time `json:"lastServerList"`

@@ -89,7 +89,7 @@ Mỗi module làm đúng một việc. Chỉ `app` biết đến các module kh�
 | `internal/watchdog` | Chạy ở chế độ `--watchdog` và `--restore` |
 | `internal/store` | Đọc và ghi `settings.json`, `state.json`, `scan-cache.json` một cách nguyên tử (ghi file tạm, fsync, rồi rename). Chọn thư mục dữ liệu cho bản cài đặt hoặc portable |
 | `internal/startup` | Tạo và xoá tác vụ Task Scheduler (`Ghostline`, `Ghostline Recovery`) bằng `schtasks /Create /XML` |
-| `internal/updater` | Gọi `releases/latest` tối đa 1 lần/ngày và so phiên bản theo semver |
+| `internal/updater` | Gọi `releases/latest` mỗi lần mở app và mỗi 6 giờ, so phiên bản theo semver |
 | `internal/winutil` | Hàm hỗ trợ Win32: tìm process giữ một cổng, Job Object, kiểm tra quyền admin |
 
 ### 4.3 Thư mục dữ liệu
@@ -438,7 +438,7 @@ Phát triển theo TDD. Test Go chạy bằng `go test ./...`. Test cần Window
   - `ci.yml`, chạy cho mỗi push và PR: `golangci-lint`, `go test ./...`, `npm test`, build thử.
   - `release.yml`, chạy khi đẩy tag `v*`: chạy `genservers`, ký `servers.json`, build installer và zip, tạo `SHA256SUMS`, tạo GitHub Release.
 - **Ký số file exe:** chưa làm ở giai đoạn 1. README ghi rõ là SmartScreen sẽ cảnh báo và hướng dẫn kiểm tra SHA-256. Sau này sẽ xin SignPath Foundation (ký miễn phí cho mã nguồn mở).
-- **Kiểm tra bản mới:** gọi `GET https://api.github.com/repos/hashcott/ghostline/releases/latest` tối đa 1 lần/ngày, so semver. Có bản mới thì báo trên giao diện và trong menu khay, kèm link tới trang Release.
+- **Kiểm tra bản mới:** gọi `GET https://api.github.com/repos/hashcott/ghostline/releases/latest` mỗi lần mở app, mỗi 6 giờ khi đang chạy, và ngay khi chưa lưu bản mới nhất nào (sửa đổi sau v0.2.0; trước đó là tối đa 1 lần/ngày), so semver. Có bản mới thì báo trên giao diện và trong menu khay, kèm link tới trang Release.
 - **License và ghi công:** `LICENSE` (GPL-3.0-only). `NOTICE` liệt kê các thành phần bên thứ ba: dnsproxy (Apache-2.0), GoodbyeDPI (Apache-2.0), WinDivert (LGPLv3) và JetBrains Mono (OFL-1.1). Danh sách DNSCrypt chỉ được tải lúc chạy, không phân phối kèm app.
 
 ## 13. Cấu trúc repo

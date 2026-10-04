@@ -38,11 +38,17 @@ func (u *updateState) set(tag, url string) bool {
 	return true
 }
 
-// releaseCheck asks for the latest release once a day and remembers it in
-// meta, so a newer release found earlier is announced again after a
-// restart. ok is false when the running version is already current.
-func releaseCheck(meta *store.Meta, now time.Time, current string, latest func() (updater.Release, error)) (updater.Release, bool) {
-	if updater.Due(meta.LastUpdateCheck, now) {
+// releaseInterval is how often a running app asks for the latest release.
+const releaseInterval = 6 * time.Hour
+
+// releaseCheck asks for the latest release at every app start, every
+// releaseInterval while running, and whenever no release is remembered yet
+// (meta written by v0.1.0/0.1.1 had a recent lastUpdateCheck but no tag, so
+// waiting for the interval hid new releases for up to a day). The result is
+// remembered in meta so the notice survives restarts and failed checks. ok
+// is false when the running version is already current.
+func releaseCheck(meta *store.Meta, now time.Time, current string, startup bool, latest func() (updater.Release, error)) (updater.Release, bool) {
+	if startup || meta.LatestTag == "" || now.Sub(meta.LastUpdateCheck) >= releaseInterval {
 		if r, err := latest(); err == nil {
 			meta.LastUpdateCheck = now
 			meta.LatestTag, meta.LatestURL = r.Tag, r.URL
@@ -59,14 +65,15 @@ func releaseCheck(meta *store.Meta, now time.Time, current string, latest func()
 // (may be nil) is told about a newer release once per tag.
 func runUpdates(ctx context.Context, paths store.Paths, box *app.SettingsBox, cat *catalog, st *updateState, bus *app.Bus, log *slog.Logger, onUpdate func(tag, url string)) {
 	client := &http.Client{Timeout: 30 * time.Second}
-	tick := time.NewTicker(6 * time.Hour)
+	tick := time.NewTicker(releaseInterval)
 	defer tick.Stop()
+	startup := true
 	for {
 		meta := store.LoadMeta(paths.Meta)
 		now := time.Now()
 		s := box.Get()
 		if s.Updates.CheckApp {
-			r, ok := releaseCheck(&meta, now, brand.Version, func() (updater.Release, error) {
+			r, ok := releaseCheck(&meta, now, brand.Version, startup, func() (updater.Release, error) {
 				r, err := updater.Latest(ctx, client, brand.ReleasesAPI)
 				if err != nil {
 					log.Info("update check", "code", app.CodeUpdateCheckFailed, "err", err)
@@ -101,6 +108,7 @@ func runUpdates(ctx context.Context, paths store.Paths, box *app.SettingsBox, ca
 			}
 		}
 		_ = store.SaveMeta(paths.Meta, meta)
+		startup = false
 		select {
 		case <-ctx.Done():
 			return
