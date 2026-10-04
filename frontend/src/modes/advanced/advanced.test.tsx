@@ -167,7 +167,12 @@ test("pinned servers: chip filter, pinned-only switch at the top, bulk pin and u
   expect(search.closest("[data-row=head]")).toContainElement(screen.getByRole("button", { name: "⟳ quét toàn bộ" }));
   const filters = screen.getByRole("button", { name: "dot" }).closest("[data-row=filters]")!;
   expect(filters).toContainElement(screen.getByRole("button", { name: "★ đã ghim (1)" }));
-  expect(filters).toContainElement(screen.getByRole("switch", { name: "chỉ dùng máy chủ đã ghim" }));
+  // The pinned-only switch starts its own row right below the filters.
+  const pinSw = screen.getByRole("switch", { name: "chỉ dùng máy chủ đã ghim" });
+  expect(filters).not.toContainElement(pinSw);
+  const pinRow = pinSw.closest("[data-row=pin]")!;
+  expect(filters.nextElementSibling).toBe(pinRow);
+  expect(pinRow.firstElementChild).toContainElement(pinSw);
   expect(screen.queryByRole("button", { name: "bỏ ghim tất cả" })).not.toBeInTheDocument(); // only with the pinned filter on
   fireEvent.click(screen.getByRole("button", { name: "★ đã ghim (1)" }));
   expect(names()).toEqual(["Quad9"]);

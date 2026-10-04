@@ -165,8 +165,10 @@ export function Servers() {
           <Chip active={showPinned} onClick={() => setShowPinned(!showPinned)}>{t("servers.pinnedChip", { count: pinnedIds.length })}</Chip>
         </span>
         {showPinned && pinnedIds.length > 0 && <Chip onClick={() => void pinMany(pinnedIds, false)}>{t("servers.unpinAll")}</Chip>}
-        <span style={{ marginLeft: "auto" }} title={pinnedIds.length === 0 ? t("servers.pinnedOnlyNeedsPin") : undefined}>
-          <Toggle chip label={t("servers.pinnedOnly")} checked={!!settings?.pinnedOnly} onChange={setPinnedOnly} disabled={pinnedIds.length === 0} />
+      </div>
+      <div className={css.row} data-row="pin">
+        <span title={pinnedIds.length === 0 ? t("servers.pinnedOnlyNeedsPin") : undefined}>
+          <Toggle showLabel label={t("servers.pinnedOnly")} checked={!!settings?.pinnedOnly} onChange={setPinnedOnly} disabled={pinnedIds.length === 0} />
         </span>
       </div>
       {pinsChanged && connected && (
