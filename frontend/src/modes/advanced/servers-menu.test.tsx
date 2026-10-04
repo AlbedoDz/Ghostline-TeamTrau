@@ -119,6 +119,7 @@ test("unpin all with pinned-only on reloads settings (Go turns it off)", async (
   useGhost.getState().setSettings({ ...structuredClone(settings), pinnedOnly: true } as any);
   render(<Servers />);
   await rowOf("Quad9");
+  fireEvent.click(screen.getByRole("button", { name: "★ đã ghim (1)" }));
   fireEvent.click(screen.getByRole("button", { name: "bỏ ghim tất cả" }));
   await waitFor(() => expect(svc.GetSettings).toHaveBeenCalled());
   await waitFor(() => expect(useGhost.getState().settings?.pinnedOnly).toBe(false));

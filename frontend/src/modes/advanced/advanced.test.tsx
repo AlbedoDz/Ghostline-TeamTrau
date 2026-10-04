@@ -162,9 +162,13 @@ test("pinned servers: chip filter, pinned-only switch at the top, bulk pin and u
   expect(sw.compareDocumentPosition(screen.getByRole("table")) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
 
   expect(screen.getByRole("button", { name: "★ đã ghim (1)" }).closest("[title]")?.getAttribute("title")).toBe("máy chủ đã ghim được ưu tiên khi kết nối");
-  // Pin controls sit on their own row under the search box.
+  // Two rows: search sits with the title; the pinned chip and switch with the filters.
   const search = screen.getByRole("searchbox", { name: "tìm máy chủ" });
-  expect(search.parentElement).not.toContainElement(screen.getByRole("switch", { name: "chỉ dùng máy chủ đã ghim" }));
+  expect(search.closest("[data-row=head]")).toContainElement(screen.getByRole("button", { name: "⟳ quét toàn bộ" }));
+  const filters = screen.getByRole("button", { name: "dot" }).closest("[data-row=filters]")!;
+  expect(filters).toContainElement(screen.getByRole("button", { name: "★ đã ghim (1)" }));
+  expect(filters).toContainElement(screen.getByRole("switch", { name: "chỉ dùng máy chủ đã ghim" }));
+  expect(screen.queryByRole("button", { name: "bỏ ghim tất cả" })).not.toBeInTheDocument(); // only with the pinned filter on
   fireEvent.click(screen.getByRole("button", { name: "★ đã ghim (1)" }));
   expect(names()).toEqual(["Quad9"]);
   fireEvent.click(screen.getByRole("button", { name: "★ đã ghim (1)" }));
@@ -174,6 +178,8 @@ test("pinned servers: chip filter, pinned-only switch at the top, bulk pin and u
   fireEvent.click(screen.getByRole("button", { name: "★ ghim tất cả kết quả (2)" }));
   await waitFor(() => expect(svc.SetPinnedMany).toHaveBeenCalledWith(["cf", "gg"], true));
 
+  fireEvent.change(screen.getByRole("searchbox", { name: "tìm máy chủ" }), { target: { value: "" } });
+  fireEvent.click(screen.getByRole("button", { name: "★ đã ghim (1)" }));
   fireEvent.click(screen.getByRole("button", { name: "bỏ ghim tất cả" }));
   await waitFor(() => expect(svc.SetPinnedMany).toHaveBeenCalledWith(["q9"], false));
 });

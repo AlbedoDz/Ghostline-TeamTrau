@@ -119,19 +119,31 @@ export function Servers() {
 
   return (
     <div className={css.page}>
-      <div className={css.head}>
+      <div className={css.head} data-row="head">
         <span>
           {t("servers.title")} · {rows.length} <span className={css.count}>[{t("servers.ok", { count: okCount })}]</span>
           {query && <span className={css.count}> · {t("servers.matched", { count: visible.length })}</span>}
         </span>
         <span className={css.tools}>
+          <input
+            type="search"
+            aria-label={t("servers.search")}
+            placeholder={t("servers.searchHint")}
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            style={{ width: 260 }}
+          />
+          {query && <Chip label={t("servers.clearSearch")} onClick={() => setQuery("")}>✕</Chip>}
+          {query && visible.length > 0 && (
+            <Chip onClick={() => void pinMany(visible.map((r) => r.server.id), true)}>{t("servers.pinAllResults", { count: visible.length })}</Chip>
+          )}
           <Chip onClick={onScan}>
             {scan?.running ? t("servers.scanning", { done: scan.done, total: scan.total }) : t("servers.scanAll")}
           </Chip>
           <Chip onClick={() => setAdding(true)}>{t("servers.add")}</Chip>
         </span>
       </div>
-      <div className={css.chips}>
+      <div className={css.chips} data-row="filters">
         {t("servers.filter")}:
         {PROTOCOLS.map((p) => (
           <Chip key={p} active={protocols.includes(p)} onClick={() => toggle(protocols, p, setProtocols)}>
@@ -148,29 +160,14 @@ export function Servers() {
         <Chip active={onlyOk} onClick={() => setOnlyOk(!onlyOk)}>
           {t("servers.onlyOk")}
         </Chip>
-      </div>
-      <div className={css.row}>
-        <input
-          type="search"
-          aria-label={t("servers.search")}
-          placeholder={t("servers.searchHint")}
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          style={{ flex: 1 }}
-        />
-        {query && <Chip label={t("servers.clearSearch")} onClick={() => setQuery("")}>✕</Chip>}
-      </div>
-      <div className={css.row} style={{ flexWrap: "wrap" }}>
+        ·
         <span title={pinnedIds.length > 0 && !settings?.pinnedOnly ? t("servers.pinnedPreferred") : undefined}>
           <Chip active={showPinned} onClick={() => setShowPinned(!showPinned)}>{t("servers.pinnedChip", { count: pinnedIds.length })}</Chip>
         </span>
-        <span title={pinnedIds.length === 0 ? t("servers.pinnedOnlyNeedsPin") : undefined}>
-          <Toggle showLabel label={t("servers.pinnedOnly")} checked={!!settings?.pinnedOnly} onChange={setPinnedOnly} disabled={pinnedIds.length === 0} />
+        {showPinned && pinnedIds.length > 0 && <Chip onClick={() => void pinMany(pinnedIds, false)}>{t("servers.unpinAll")}</Chip>}
+        <span style={{ marginLeft: "auto" }} title={pinnedIds.length === 0 ? t("servers.pinnedOnlyNeedsPin") : undefined}>
+          <Toggle chip label={t("servers.pinnedOnly")} checked={!!settings?.pinnedOnly} onChange={setPinnedOnly} disabled={pinnedIds.length === 0} />
         </span>
-        {query && visible.length > 0 && (
-          <Chip onClick={() => void pinMany(visible.map((r) => r.server.id), true)}>{t("servers.pinAllResults", { count: visible.length })}</Chip>
-        )}
-        {pinnedIds.length > 0 && <Chip onClick={() => void pinMany(pinnedIds, false)}>{t("servers.unpinAll")}</Chip>}
       </div>
       {pinsChanged && connected && (
         <div className={css.row}>

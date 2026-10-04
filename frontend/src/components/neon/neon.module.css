@@ -171,7 +171,12 @@
   padding: 0 6px;
   line-height: 1.6;
 }
-.chip[aria-pressed="true"] {
+.chip:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.chip[aria-pressed="true"],
+.chip[aria-checked="true"] {
   color: var(--green);
   border-color: var(--green);
 }
