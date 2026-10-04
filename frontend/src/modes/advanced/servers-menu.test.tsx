@@ -154,6 +154,20 @@ test("double-click a row toggles its pin", async () => {
   await waitFor(() => expect(svc.SetPinned).toHaveBeenCalledWith("q9", false));
 });
 
+test("searching does not add anything to the title row", async () => {
+  render(<Servers />);
+  await rowOf("Cloudflare");
+  const head = screen.getByRole("searchbox", { name: "tìm máy chủ" }).closest("[data-row=head]") as HTMLElement;
+  const before = head.querySelectorAll("button").length;
+  fireEvent.change(screen.getByRole("searchbox", { name: "tìm máy chủ" }), { target: { value: "doh" } });
+  const pinRow = screen.getByRole("switch", { name: "chỉ dùng máy chủ đã ghim" }).closest("[data-row=pin]") as HTMLElement;
+  expect(within(pinRow).getByRole("button", { name: "★ ghim 2 kết quả" })).toBeInTheDocument();
+  expect(within(pinRow).getByText(/khớp 2/)).toBeInTheDocument();
+  // only the ✕ inside the search box appears in the title row
+  expect(head.querySelectorAll("button").length).toBe(before + 1);
+  expect(within(head).getByRole("button", { name: "xoá tìm kiếm" }).closest("[data-search]")).toBeTruthy();
+});
+
 test("search ignores the base64 inside sdns:// stamps", async () => {
   svc.ListServers.mockResolvedValue([
     ...structuredClone(rows),

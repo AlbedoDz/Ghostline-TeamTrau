@@ -26,9 +26,8 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  flex-wrap: wrap;
   gap: 10px;
-  white-space: nowrap;
+  white-space: nowrap; /* one line, whatever is typed in the search box */
   color: var(--text-strong);
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -37,8 +36,9 @@
 .head .tools {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
   justify-content: flex-end;
+  flex: 1;
+  min-width: 0;
   gap: 6px;
   font-weight: 400;
   letter-spacing: 0;
@@ -264,12 +264,34 @@
 
 /* Search box sized like the chips next to it; no native clear button
    (the page has its own ✕). */
+.searchBox {
+  position: relative;
+  flex: 0 1 260px;
+  min-width: 120px;
+  display: flex;
+}
 .search {
   -webkit-appearance: none;
   appearance: none;
-  width: 220px;
-  padding: 0 6px;
+  width: 100%;
+  padding: 0 22px 0 6px; /* room for the ✕ inside */
   line-height: 1.6;
+}
+.searchClear {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--dim);
+}
+.searchClear:hover {
+  color: var(--text-strong);
+}
+.searchInfo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 12px;
 }
 .search::-webkit-search-cancel-button {
   display: none;

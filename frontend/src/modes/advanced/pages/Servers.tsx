@@ -124,21 +124,23 @@ export function Servers() {
       <div className={css.head} data-row="head">
         <span>
           {t("servers.title")} · {rows.length} <span className={css.count}>[{t("servers.ok", { count: okCount })}]</span>
-          {query && <span className={css.count}> · {t("servers.matched", { count: visible.length })}</span>}
         </span>
         <span className={css.tools}>
-          <input
-            type="search"
-            aria-label={t("servers.search")}
-            placeholder={t("servers.searchHint")}
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            className={css.search}
-          />
-          {query && <Chip label={t("servers.clearSearch")} onClick={() => setQuery("")}>✕</Chip>}
-          {query && visible.length > 0 && (
-            <Chip onClick={() => void pinMany(visible.map((r) => r.server.id), true)}>{t("servers.pinAllResults", { count: visible.length })}</Chip>
-          )}
+          <span className={css.searchBox} data-search>
+            <input
+              type="search"
+              aria-label={t("servers.search")}
+              placeholder={t("servers.searchHint")}
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              className={css.search}
+            />
+            {query && (
+              <button className={css.searchClear} aria-label={t("servers.clearSearch")} onClick={() => setQuery("")}>
+                ✕
+              </button>
+            )}
+          </span>
           <Chip onClick={onScan}>
             {scan?.running ? t("servers.scanning", { done: scan.done, total: scan.total }) : t("servers.scanAll")}
           </Chip>
@@ -172,6 +174,14 @@ export function Servers() {
         <span title={pinnedIds.length === 0 ? t("servers.pinnedOnlyNeedsPin") : undefined}>
           <Toggle showLabel label={t("servers.pinnedOnly")} checked={!!settings?.pinnedOnly} onChange={setPinnedOnly} disabled={pinnedIds.length === 0} />
         </span>
+        {query && (
+          <span className={css.searchInfo}>
+            <span className={css.count}>{t("servers.matched", { count: visible.length })}</span>
+            {visible.length > 0 && (
+              <Chip onClick={() => void pinMany(visible.map((r) => r.server.id), true)}>{t("servers.pinAllResults", { count: visible.length })}</Chip>
+            )}
+          </span>
+        )}
       </div>
       {pinsChanged && connected && (
         <div className={css.row}>
