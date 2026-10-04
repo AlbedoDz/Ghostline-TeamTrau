@@ -182,3 +182,17 @@ func TestManager_StopWhenNotRunningStillCleansDriver(t *testing.T) {
 	require.Equal(t, []string{"svc.stop:WinDivert", "svc.delete:WinDivert"}, s.calls)
 	require.False(t, errors.Is(nil, ErrStartFailed))
 }
+
+func TestManager_BlacklistCopiedToASCIIName(t *testing.T) { // review I7: GoodbyeDPI uses ANSI argv
+	src := filepath.Join(t.TempDir(), "Đức Hạnh", "dpi-blacklist.txt")
+	require.NoError(t, os.MkdirAll(filepath.Dir(src), 0o755))
+	require.NoError(t, os.WriteFile(src, []byte("youtube.com\n"), 0o644))
+	r := &fakeRunner{proc: &fakeProc{pid: 1}}
+	m := newTestManager(t, r, &fakeSvc{running: true})
+	_, err := m.Start(context.Background(), append(append([]string{}, light...), "--blacklist", src))
+	require.NoError(t, err)
+	require.Equal(t, "blacklist.txt", r.args[len(r.args)-1])
+	b, err := os.ReadFile(filepath.Join(m.dir, "blacklist.txt"))
+	require.NoError(t, err)
+	require.Equal(t, "youtube.com\n", string(b))
+}

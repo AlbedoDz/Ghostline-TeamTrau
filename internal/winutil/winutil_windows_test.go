@@ -121,3 +121,26 @@ func TestServiceRunning_UnknownService(t *testing.T) {
 	require.NoError(t, err)
 	require.False(t, running)
 }
+
+func TestNamedMutex_ExclusiveWithinOneInstance(t *testing.T) { // review I6
+	m, err := NewNamedMutex(`Local\Ghostline-Test-Same-` + time.Now().Format("150405.000000"))
+	require.NoError(t, err)
+	require.NoError(t, m.Lock())
+	got := make(chan struct{})
+	go func() {
+		_ = m.Lock()
+		close(got)
+		_ = m.Unlock()
+	}()
+	select {
+	case <-got:
+		t.Fatal("second goroutine acquired the mutex while it was held")
+	case <-time.After(150 * time.Millisecond):
+	}
+	require.NoError(t, m.Unlock())
+	select {
+	case <-got:
+	case <-time.After(2 * time.Second):
+		t.Fatal("second goroutine never acquired the mutex")
+	}
+}

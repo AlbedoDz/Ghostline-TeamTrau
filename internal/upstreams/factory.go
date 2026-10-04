@@ -8,6 +8,7 @@ import (
 	"crypto/x509"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/netip"
 	"strings"
 	"time"
@@ -48,7 +49,7 @@ func NewFactory(o Options) (*Factory, error) {
 	}
 	var par upstream.ParallelResolver
 	for _, addr := range o.Bootstrap {
-		r, err := upstream.NewUpstreamResolver(addr, &upstream.Options{Timeout: o.Timeout})
+		r, err := upstream.NewUpstreamResolver(addr, &upstream.Options{Timeout: o.Timeout, Logger: quiet})
 		if err != nil {
 			return nil, fmt.Errorf("upstreams: bootstrap %q: %w", addr, err)
 		}
@@ -84,7 +85,7 @@ func (f *Factory) Build(s model.Server) (upstream.Upstream, error) {
 		return fu, nil
 	}
 	u, err := upstream.AddressToUpstream(s.Address, &upstream.Options{
-		Bootstrap: boot, Timeout: f.o.Timeout, RootCAs: f.o.RootCAs,
+		Bootstrap: boot, Timeout: f.o.Timeout, RootCAs: f.o.RootCAs, Logger: quiet,
 	})
 	if err != nil {
 		return nil, err
@@ -120,3 +121,7 @@ func (b *bounded) Exchange(ctx context.Context, req *dns.Msg) (*dns.Msg, error) 
 
 // Unwrap exposes the underlying upstream.
 func (b *bounded) Unwrap() upstream.Upstream { return b.Upstream }
+
+// quiet keeps dnsproxy's upstream logs (which can include queried names)
+// out of the application log.
+var quiet = slog.New(slog.DiscardHandler)

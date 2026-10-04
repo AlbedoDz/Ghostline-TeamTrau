@@ -57,11 +57,6 @@ var statusColour = map[app.Status]color.RGBA{
 	app.StatusError:         {0xff, 0x4d, 0x6d, 0xff},
 }
 
-var statusLabel = map[app.Status]string{
-	app.StatusDisconnected: "Chưa bảo vệ", app.StatusConnecting: "Đang kết nối", app.StatusProtected: "Đã bảo vệ",
-	app.StatusDegraded: "Suy giảm", app.StatusDisconnecting: "Đang ngắt", app.StatusError: "Lỗi",
-}
-
 type ui struct {
 	app  *application.App
 	orch *app.Orchestrator
@@ -73,6 +68,8 @@ type ui struct {
 	tray      *application.SystemTray
 	connItem  *application.MenuItem
 	dpiItem   *application.MenuItem
+	openItem  *application.MenuItem
+	quitItem  *application.MenuItem
 	lastState app.Status
 }
 
@@ -144,9 +141,10 @@ func (u *ui) setMode(mode string) {
 func (u *ui) createTray() {
 	u.tray = u.app.SystemTray.New()
 	u.tray.SetIcon(icon.Ring(statusColour[app.StatusDisconnected], 32))
-	u.tray.SetTooltip(brand.AppName + " · " + statusLabel[app.StatusDisconnected])
+	tt := trayText(u.box.Get().Language)
+	u.tray.SetTooltip(brand.AppName + " · " + tt.status[app.StatusDisconnected])
 	menu := application.NewMenu()
-	u.connItem = menu.Add("Kết nối").OnClick(func(*application.Context) {
+	u.connItem = menu.Add(tt.connect).OnClick(func(*application.Context) {
 		go func() {
 			if st := u.orch.Snapshot().Status; st == app.StatusProtected || st == app.StatusDegraded {
 				_ = u.orch.Disconnect(context.Background())
@@ -155,7 +153,7 @@ func (u *ui) createTray() {
 			}
 		}()
 	})
-	u.dpiItem = menu.AddCheckbox("Vượt DPI", u.box.Get().DPI.Enabled)
+	u.dpiItem = menu.AddCheckbox(tt.dpi, u.box.Get().DPI.Enabled)
 	u.dpiItem.OnClick(func(c *application.Context) {
 		on := c.IsChecked()
 		go func() {
@@ -165,10 +163,10 @@ func (u *ui) createTray() {
 		}()
 	})
 	menu.AddSeparator()
-	menu.Add("Mở Ghostline").OnClick(func(*application.Context) { u.show() })
+	u.openItem = menu.Add(tt.open).OnClick(func(*application.Context) { u.show() })
 	menu.Add("Ghostline " + brand.Version).SetEnabled(false)
 	menu.AddSeparator()
-	menu.Add("Thoát").OnClick(func(*application.Context) { u.app.Quit() })
+	u.quitItem = menu.Add(tt.quit).OnClick(func(*application.Context) { u.app.Quit() })
 	u.tray.SetMenu(menu)
 	u.tray.OnClick(u.show)
 	u.tray.OnRightClick(u.tray.OpenMenu) // works around tray menu issue #6161
@@ -183,11 +181,35 @@ func (u *ui) onState(s app.Snapshot) {
 		return
 	}
 	u.tray.SetIcon(icon.Ring(statusColour[s.Status], 32))
-	u.tray.SetTooltip(brand.AppName + " · " + statusLabel[s.Status])
-	if s.Status == app.StatusProtected || s.Status == app.StatusDegraded {
-		u.connItem.SetLabel("Ngắt kết nối")
-	} else {
-		u.connItem.SetLabel("Kết nối")
-	}
+	u.relabel(s.Status)
 	u.dpiItem.SetChecked(s.DPI.Enabled)
+}
+
+// relabel applies the current language to the tray (also called when the
+// language setting changes).
+func (u *ui) relabel(status app.Status) {
+	if u.tray == nil {
+		return
+	}
+	tt := trayText(u.box.Get().Language)
+	u.tray.SetTooltip(brand.AppName + " · " + tt.status[status])
+	if status == app.StatusProtected || status == app.StatusDegraded {
+		u.connItem.SetLabel(tt.disconnect)
+	} else {
+		u.connItem.SetLabel(tt.connect)
+	}
+	u.dpiItem.SetLabel(tt.dpi)
+	u.openItem.SetLabel(tt.open)
+	u.quitItem.SetLabel(tt.quit)
+}
+
+// onLanguage re-labels the tray after a language change.
+func (u *ui) onLanguage() {
+	u.mu.Lock()
+	st := u.lastState
+	u.mu.Unlock()
+	if st == "" {
+		st = app.StatusDisconnected
+	}
+	u.relabel(st)
 }

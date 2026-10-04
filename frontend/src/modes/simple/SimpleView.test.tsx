@@ -105,3 +105,9 @@ test("English locale renders English strings", async () => {
   expect(screen.getByText("tap to connect")).toBeInTheDocument();
   await initI18n("vi");
 });
+
+test("RESTORE_FAILED error never claims DNS is unchanged", () => { // review C1
+  useGhost.getState().setSnapshot(snap({ status: "error", error: { code: "RESTORE_FAILED", params: { adapter: "Wi-Fi" } } }));
+  render(<SimpleView onOpenLogs={() => {}} />);
+  expect(screen.queryByText("DNS của máy vẫn như cũ, không có gì bị thay đổi")).toBeNull();
+});

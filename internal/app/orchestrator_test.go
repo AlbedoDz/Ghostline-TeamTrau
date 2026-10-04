@@ -39,7 +39,7 @@ func TestConnect_FailureAtEachStepRollsBack(t *testing.T) {
 		{"engine.selftest", CodeEngineSelfTest, []string{"engine.stop"}},
 		{"dns.snapshot", CodeSetDNSFailed, []string{"engine.stop"}},
 		{"safety.watchdog", CodeInternal, []string{"state.clean", "engine.stop"}},
-		{"dns.apply", CodeSetDNSFailed, []string{"safety.task.delete", "safety.watchdog.stop", "state.clean", "engine.stop"}},
+		{"dns.apply", CodeSetDNSFailed, []string{"dns.restore", "dns.flush", "safety.task.delete", "safety.watchdog.stop", "state.clean", "engine.stop"}},
 		{"engine.saw", CodeVerifyLeak, []string{"dns.restore", "dns.flush", "safety.task.delete", "safety.watchdog.stop", "state.clean", "engine.stop"}},
 	}
 	for _, c := range cases {
@@ -105,7 +105,8 @@ func TestDisconnect_RestoreFailureWarnsAndKeepsStateDirty(t *testing.T) {
 	require.Equal(t, "Wi-Fi", sn.Warnings[0].Params["adapter"])
 	st, _ := h.states.Load()
 	require.Equal(t, store.PhaseDNSSet, st.Phase)
-	require.Contains(t, h.r.list(), "engine.stop")
+	require.NotContains(t, h.r.list(), "engine.stop", "DNS still points at loopback: keep the engine alive")
+	require.Equal(t, StatusProtected, sn.Status)
 }
 
 func TestConnect_CancelDuringPickRollsBackToDisconnected(t *testing.T) {

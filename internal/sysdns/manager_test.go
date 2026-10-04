@@ -192,3 +192,13 @@ func TestDebounce_CoalescesBursts(t *testing.T) {
 	time.Sleep(250 * time.Millisecond)
 	require.Equal(t, int32(1), n.Load())
 }
+
+func TestSnapshot_LoopbackIsRecordedAsDHCP(t *testing.T) { // review I1
+	api := &fakeAPI{adapters: []sysdns.Adapter{eth("{A}", 1)}, dns: map[string][]string{"{A}|v4": {"127.0.0.1"}, "{A}|v6": {"::1"}}}
+	m, _ := newMgr(api)
+	ads, _ := m.Select("auto", nil)
+	snaps, err := m.Snapshot(ads)
+	require.NoError(t, err)
+	require.Equal(t, model.FamilyDNS{Mode: model.DNSModeDHCP}, snaps[0].IPv4, "never save Ghostline's own loopback as the original")
+	require.Equal(t, model.FamilyDNS{Mode: model.DNSModeDHCP}, snaps[0].IPv6)
+}

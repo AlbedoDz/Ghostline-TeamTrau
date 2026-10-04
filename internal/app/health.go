@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/hashcott/ghostline/internal/engine"
+	"github.com/hashcott/ghostline/internal/model"
 	"github.com/hashcott/ghostline/internal/probe"
 	"github.com/hashcott/ghostline/internal/store"
 	"github.com/hashcott/ghostline/internal/sysdns"
@@ -95,7 +96,20 @@ func (o *Orchestrator) heal(ctx context.Context) {
 	}
 	o.update(func(s *Snapshot) { s.Status = StatusDegraded })
 	o.log("engine", "DEGRADED")
-	picked, err := o.d.Picker.Pick(ctx, nil)
+	var picked []model.Server
+	var err error
+	if fp, ok := o.d.Picker.(FreshPicker); ok {
+		// Bypass the scan cache and skip the servers that are failing now.
+		o.mu.Lock()
+		exclude := make([]string, 0, len(o.servers))
+		for _, s := range o.servers {
+			exclude = append(exclude, s.ID)
+		}
+		o.mu.Unlock()
+		picked, err = fp.PickFresh(ctx, exclude)
+	} else {
+		picked, err = o.d.Picker.Pick(ctx, nil)
+	}
 	if err != nil {
 		o.log("engine", CodeNoServers)
 		return
@@ -105,7 +119,19 @@ func (o *Orchestrator) heal(ctx context.Context) {
 		return
 	}
 	if err := o.d.Engine.Swap(ctx, ups); err != nil {
+		// The engine may be gone while DNS still points at loopback: put
+		// DNS back rather than stay "connected" to nothing.
 		o.log("engine", "SWAP_FAILED")
+		if errs := o.disconnectLocked(ctx); len(errs) > 0 {
+			o.update(func(s *Snapshot) {
+				s.Status, s.Error = StatusError, &AppError{Code: CodeRestoreFailed, Params: map[string]any{"adapter": errs[0].Alias}}
+			})
+			return
+		}
+		o.update(func(s *Snapshot) {
+			s.Status, s.Error, s.Servers, s.LatencyMs, s.Queries = StatusError, &AppError{Code: CodeEngineSelfTest}, nil, 0, 0
+			s.DPI.Running = false
+		})
 		return
 	}
 	o.mu.Lock()
@@ -194,4 +220,10 @@ func (o *Orchestrator) probeBlocked(ctx context.Context) {
 		}
 	})
 	o.log("dpi", "SITES_BLOCKED", "count", len(blocked))
+}
+
+// FreshPicker is implemented by pickers that can ignore their cache and
+// exclude servers (used when healing).
+type FreshPicker interface {
+	PickFresh(ctx context.Context, exclude []string) ([]model.Server, error)
 }

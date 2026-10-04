@@ -352,11 +352,7 @@ func (s *Service) DismissWarning(code string) {
 
 // RestoreDNSNow forces a DNS restore.
 func (s *Service) RestoreDNSNow() error {
-	if err := s.x.RestoreNow(); err != nil {
-		return err
-	}
-	s.o.ClearWarning(CodeRestoreFailed)
-	return nil
+	return s.o.RestoreNow(context.Background(), s.x.RestoreNow)
 }
 
 // StopConflictingService stops a Windows service holding port 53. The UI

@@ -69,10 +69,10 @@ func RestoreIfOrphaned(d Deps) (Outcome, error) {
 				_ = d.StopDPI()
 			}
 			out = RestoredFromCorrupt
-			if werr := d.States.Write(store.State{Version: 1, Phase: store.PhaseClean}); werr != nil {
-				return werr
+			if rerr != nil {
+				return rerr // leave the corrupt file: the next layer retries
 			}
-			return rerr
+			return d.States.Write(store.State{Version: 1, Phase: store.PhaseClean})
 		}
 		if err != nil {
 			return err

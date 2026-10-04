@@ -31,8 +31,8 @@ jobs:
         shell: pwsh
         run: |
           wails3 generate bindings -clean=true -ts -i
+          Push-Location frontend; npm run build; npm test; Pop-Location
           go test ./...
-          cd frontend; npm test
       - name: Package
         shell: pwsh
         run: |

@@ -98,7 +98,7 @@ export function SimpleView({ onOpenLogs }: { onOpenLogs: () => void }) {
           {status === "disconnected" && t("simple.tapToConnect")}
           {status === "connecting" && t("simple.tapToCancel")}
           {isConnected(status) && t("simple.encrypted")}
-          {status === "error" && t("simple.errorUnchanged")}
+          {status === "error" && snap.error?.code !== "RESTORE_FAILED" && t("simple.errorUnchanged")}
         </div>
       </div>
       <div className={css.bottom}>

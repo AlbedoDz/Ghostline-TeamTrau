@@ -11,6 +11,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"slices"
 	"time"
 
 	"github.com/hashcott/ghostline/internal/app"
@@ -77,10 +78,11 @@ func Run(o Options) error {
 	recoverDeps := watchdog.Deps{States: states, DNS: dnsMgr, StopDPI: dpiMgr.Stop, Alive: winutil.ProcessAlive, Log: log}
 
 	// Safety layer 3: restore whatever a dead previous run left behind.
-	if out, err := watchdog.RestoreIfOrphaned(recoverDeps); err != nil {
-		log.Error("startup restore", "err", err)
-	} else if out != watchdog.NothingToDo {
-		log.Info("startup restore", "outcome", out)
+	startOut, startErr := watchdog.RestoreIfOrphaned(recoverDeps)
+	if startErr != nil {
+		log.Error("startup restore", "err", startErr)
+	} else if startOut != watchdog.NothingToDo {
+		log.Info("startup restore", "outcome", startOut)
 	}
 
 	cat := newCatalog(paths)
@@ -142,6 +144,9 @@ func Run(o Options) error {
 	if settingsReset {
 		orch.AddWarning(app.AppError{Code: app.CodeSettingsReset})
 	}
+	for _, w := range app.StartupWarnings(startOut, startErr) {
+		orch.AddWarning(w)
+	}
 
 	ui := &ui{orch: orch, box: box, log: log}
 	update := &updateState{}
@@ -151,10 +156,7 @@ func Run(o Options) error {
 		ListAdapters: func() ([]sysdns.Adapter, error) { return sysdns.NewWindowsAPI().Adapters() },
 		StopService:  func(name string) error { return winutil.StopService(name, 10*time.Second) },
 		SetMode:      ui.setMode,
-		RestoreNow: func() error {
-			_ = orch.Disconnect(context.Background())
-			return restoreNow(states, dnsMgr)
-		},
+		RestoreNow:   func() error { return restoreNow(states, dnsMgr) },
 		Info: func() app.AppInfo {
 			tag, url := update.get()
 			return app.AppInfo{Version: brand.Version, Portable: paths.Portable, UpdateTag: tag, UpdateURL: url}
@@ -171,7 +173,10 @@ func Run(o Options) error {
 					log.Error("autostart task", "err", err)
 				}
 			}
-			if old.Bootstrap[0] != n.Bootstrap[0] || old.TestDomain != n.TestDomain {
+			if old.Language != n.Language {
+				ui.onLanguage()
+			}
+			if !slices.Equal(old.Bootstrap, n.Bootstrap) || old.TestDomain != n.TestDomain {
 				picker.Checker = scanner.DNSChecker{Build: build.Build, TestDomain: n.TestDomain, Timeout: 3 * time.Second}
 			}
 		},

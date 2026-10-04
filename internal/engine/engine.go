@@ -102,8 +102,14 @@ func (e *Engine) startLocked(ctx context.Context, v4, v6 netip.AddrPort, ups []u
 		udp = append(udp, net.UDPAddrFromAddrPort(v6))
 		tcp = append(tcp, net.TCPAddrFromAddrPort(v6))
 	}
+	logger := e.cfg.Logger
+	if logger == nil {
+		// dnsproxy error logs can carry DoH URLs with the base64 query, i.e.
+		// the domain. They must never reach the file log.
+		logger = slog.New(slog.DiscardHandler)
+	}
 	p, err := proxy.New(&proxy.Config{
-		Logger:         e.cfg.Logger,
+		Logger:         logger,
 		UDPListenAddr:  udp,
 		TCPListenAddr:  tcp,
 		UpstreamConfig: &proxy.UpstreamConfig{Upstreams: ups},

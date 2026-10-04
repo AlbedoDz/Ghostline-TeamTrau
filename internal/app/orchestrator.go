@@ -13,6 +13,7 @@ import (
 	"github.com/hashcott/ghostline/internal/engine"
 	"github.com/hashcott/ghostline/internal/model"
 	"github.com/hashcott/ghostline/internal/store"
+	"github.com/hashcott/ghostline/internal/sysdns"
 )
 
 // Orchestrator owns the connection lifecycle.
@@ -28,6 +29,10 @@ type Orchestrator struct {
 	stopWatchdog func() error
 	servers      []model.Server
 	healthStop   func()
+	// dirty: DNS may still point at loopback after a failed restore; the
+	// engine, watchdog, recovery task and snapshot are kept until a restore
+	// succeeds.
+	dirty bool
 }
 
 // New creates an orchestrator in the disconnected state.
@@ -158,7 +163,23 @@ func (o *Orchestrator) Connect(ctx context.Context) error {
 	defer o.opMu.Unlock()
 
 	err := runSteps(cctx, o.connectSteps(), func(i int) { o.update(func(s *Snapshot) { s.Step = i }) })
+	if err != nil && errors.Is(err, errHalt) {
+		// DNS could not be put back: keep engine, watchdog, recovery task
+		// and the dns_set snapshot so Disconnect/RestoreNow/later layers retry.
+		var ae *AppError
+		errors.As(err, &ae)
+		o.mu.Lock()
+		o.dirty = true
+		o.mu.Unlock()
+		o.AddWarning(AppError{Code: CodeRestoreFailed, Params: ae.Params})
+		o.update(func(s *Snapshot) { s.Status, s.Error = StatusError, &AppError{Code: ae.Code, Params: ae.Params} })
+		o.log("system", ae.Code, flatten(ae.Params)...)
+		return err
+	}
 	if err != nil {
+		o.mu.Lock()
+		o.snaps, o.stopWatchdog = nil, nil
+		o.mu.Unlock()
 		if cctx.Err() != nil && ctx.Err() == nil || errors.Is(err, context.Canceled) {
 			o.update(func(s *Snapshot) { s.Status, s.Step, s.Error = StatusDisconnected, 0, nil })
 			o.log("system", "CONNECT_CANCELLED")
@@ -221,6 +242,18 @@ func (o *Orchestrator) connectSteps() []step {
 		{name: "preflight", do: func(ctx context.Context) error {
 			if !o.d.System.IsAdmin() {
 				return appErr(CodeNotAdmin, nil)
+			}
+			o.mu.Lock()
+			dirty := o.dirty
+			o.mu.Unlock()
+			if dirty {
+				// Our own earlier attempt left DNS on loopback. Restore from
+				// that snapshot first; snapshotting now would record
+				// 127.0.0.1 as the "original" DNS.
+				if errs := o.disconnectLocked(ctx); len(errs) > 0 {
+					return halt(appErr(CodeRestoreFailed, errs[0], "adapter", errs[0].Alias))
+				}
+				o.ClearWarning(CodeRestoreFailed)
 			}
 			if st, err := o.d.States.Load(); err != nil || st.Phase != store.PhaseClean {
 				if o.d.Recover != nil {
@@ -289,11 +322,17 @@ func (o *Orchestrator) connectSteps() []step {
 				return appErr(CodeSetDNSFailed, err, "adapter", ads[0].Alias)
 			}
 			pid, start := o.d.System.SelfPID()
-			return o.d.States.Update(func(st *store.State) error {
+			if err := o.d.States.Update(func(st *store.State) error {
 				st.Version, st.Phase, st.PID, st.PIDStartTime, st.StartedAt = 1, store.PhaseDNSSet, pid, start, o.d.Now()
 				st.Snapshot = snaps
 				return nil
-			})
+			}); err != nil {
+				return err
+			}
+			o.mu.Lock()
+			o.snaps = snaps
+			o.mu.Unlock()
+			return nil
 		}, undo: func(ctx context.Context) error {
 			return o.d.States.Update(func(st *store.State) error {
 				*st = store.State{Version: 1, Phase: store.PhaseClean}
@@ -311,6 +350,9 @@ func (o *Orchestrator) connectSteps() []step {
 				return appErr(CodeInternal, err, "step", 5)
 			}
 			stopWD = stop
+			o.mu.Lock()
+			o.stopWatchdog = stop
+			o.mu.Unlock()
 			return nil
 		}, undo: func(ctx context.Context) error {
 			err := o.d.Safety.DeleteRecoveryTask()
@@ -320,23 +362,17 @@ func (o *Orchestrator) connectSteps() []step {
 			return err
 		}},
 		{name: "apply", do: func(ctx context.Context) error {
+			// ApplyLoopback can change some adapters before failing, so a
+			// failure here restores before the rollback continues.
 			if err := o.d.DNS.ApplyLoopback(snaps, v6); err != nil {
-				return appErr(CodeSetDNSFailed, err, "adapter", snaps[0].Alias)
+				return o.restoreOrHalt(snaps, appErr(CodeSetDNSFailed, err, "adapter", snaps[0].Alias))
 			}
 			if err := o.d.DNS.Flush(); err != nil {
-				return appErr(CodeSetDNSFailed, err, "adapter", snaps[0].Alias)
+				return o.restoreOrHalt(snaps, appErr(CodeSetDNSFailed, err, "adapter", snaps[0].Alias))
 			}
-			o.mu.Lock()
-			o.snaps, o.stopWatchdog = snaps, stopWD
-			o.mu.Unlock()
 			return nil
 		}, undo: func(ctx context.Context) error {
-			errs := o.d.DNS.Restore(snaps)
-			ferr := o.d.DNS.Flush()
-			if len(errs) > 0 {
-				return errors.Join(errs[0], ferr)
-			}
-			return ferr
+			return o.restoreOrHalt(snaps, nil)
 		}},
 		{name: "verify", do: func(ctx context.Context) error {
 			nonce := randomHex(8)
@@ -362,53 +398,88 @@ func randomHex(n int) string {
 	return hex.EncodeToString(b)
 }
 
-// Disconnect restores DNS first, then stops GoodbyeDPI and the engine
-// (spec §5.3). If any adapter cannot be restored the state stays dirty and
-// the watchdog and recovery task stay armed so later layers retry.
+// restoreOrHalt puts snaps back. On success it returns orig (the error that
+// triggered the rollback, or nil); if any adapter cannot be restored it
+// returns a halt error so the rollback keeps every safety layer.
+func (o *Orchestrator) restoreOrHalt(snaps []model.AdapterSnapshot, orig error) error {
+	errs := o.d.DNS.Restore(snaps)
+	_ = o.d.DNS.Flush()
+	if len(errs) > 0 {
+		return halt(appErr(CodeRestoreFailed, errs[0], "adapter", errs[0].Alias))
+	}
+	return orig
+}
+
+// disconnectLocked restores DNS and, only if that fully succeeds, stops
+// GoodbyeDPI and the engine and disarms the safety net (spec §5.3). On a
+// restore failure nothing else is touched: DNS still points at loopback, so
+// the engine must keep answering and the watchdog/recovery task stay armed.
+// Callers hold opMu.
+func (o *Orchestrator) disconnectLocked(ctx context.Context) []sysdns.RestoreError {
+	o.mu.Lock()
+	snaps, stopWD, healthStop := o.snaps, o.stopWatchdog, o.healthStop
+	o.mu.Unlock()
+
+	errs := o.d.DNS.Restore(snaps)
+	_ = o.d.DNS.Flush()
+	if len(errs) > 0 {
+		o.mu.Lock()
+		o.dirty = true
+		o.mu.Unlock()
+		for _, e := range errs {
+			o.AddWarning(AppError{Code: CodeRestoreFailed, Params: map[string]any{"adapter": e.Alias}})
+		}
+		return errs
+	}
+	if healthStop != nil {
+		healthStop()
+	}
+	if o.d.DPI.Running() {
+		_ = o.d.DPI.Stop()
+	}
+	_ = o.d.Engine.Stop(ctx)
+	_ = o.d.States.Update(func(s *store.State) error {
+		*s = store.State{Version: 1, Phase: store.PhaseClean}
+		return nil
+	})
+	if stopWD != nil {
+		_ = stopWD()
+	}
+	_ = o.d.Safety.DeleteRecoveryTask()
+	o.mu.Lock()
+	o.snaps, o.stopWatchdog, o.servers, o.healthStop, o.dirty = nil, nil, nil, nil, false
+	o.mu.Unlock()
+	o.ClearWarning(CodeRestoreFailed)
+	return nil
+}
+
+// Disconnect restores DNS first, then stops GoodbyeDPI and the engine.
+// If any adapter cannot be restored, the connection stays up (DNS still
+// needs the engine) with a RESTORE_FAILED warning; calling Disconnect again
+// retries.
 func (o *Orchestrator) Disconnect(ctx context.Context) error {
 	o.Cancel()
 	o.opMu.Lock()
 	defer o.opMu.Unlock()
 
 	o.mu.Lock()
-	st := o.snap.Status
-	if st != StatusProtected && st != StatusDegraded {
+	prev := o.snap.Status
+	connected := prev == StatusProtected || prev == StatusDegraded
+	if !connected && !o.dirty {
 		o.mu.Unlock()
 		return nil
 	}
 	o.snap.Status = StatusDisconnecting
-	snaps, stopWD, healthStop := o.snaps, o.stopWatchdog, o.healthStop
-	o.healthStop = nil
 	o.mu.Unlock()
 	o.emit()
-	if healthStop != nil {
-		healthStop()
-	}
 
-	errs := o.d.DNS.Restore(snaps)
-	_ = o.d.DNS.Flush()
-	for _, e := range errs {
-		o.AddWarning(AppError{Code: CodeRestoreFailed, Params: map[string]any{"adapter": e.Alias}})
+	if errs := o.disconnectLocked(ctx); len(errs) > 0 {
+		o.update(func(s *Snapshot) { s.Status = prev })
+		o.log("system", CodeRestoreFailed, "adapter", errs[0].Alias)
+		return nil
 	}
-	if o.d.DPI.Running() {
-		_ = o.d.DPI.Stop()
-	}
-	_ = o.d.Engine.Stop(ctx)
-	if len(errs) == 0 {
-		_ = o.d.States.Update(func(s *store.State) error {
-			*s = store.State{Version: 1, Phase: store.PhaseClean}
-			return nil
-		})
-		if stopWD != nil {
-			_ = stopWD()
-		}
-		_ = o.d.Safety.DeleteRecoveryTask()
-	}
-	o.mu.Lock()
-	o.snaps, o.stopWatchdog, o.servers = nil, nil, nil
-	o.mu.Unlock()
 	o.update(func(s *Snapshot) {
-		s.Status, s.Since, s.Servers, s.BlockedSites, s.LatencyMs, s.Queries = StatusDisconnected, time.Time{}, nil, nil, 0, 0
+		s.Status, s.Error, s.Since, s.Servers, s.BlockedSites, s.LatencyMs, s.Queries = StatusDisconnected, nil, time.Time{}, nil, nil, 0, 0
 		s.DPI.Running = false
 	})
 	o.log("system", "DISCONNECTED")

@@ -130,6 +130,10 @@ func (m *Manager) Start(ctx context.Context, args []string) (int, error) {
 			return 0, err
 		}
 	}
+	args, err := m.localBlacklist(args)
+	if err != nil {
+		return 0, fmt.Errorf("%w: blacklist: %v", ErrStartFailed, err)
+	}
 	p, err := m.runner.Start(filepath.Join(m.dir, "goodbyedpi.exe"), args, m.dir)
 	if err != nil {
 		if errors.Is(err, os.ErrPermission) || errors.Is(err, fs.ErrNotExist) || isAppControlBlock(err) {
@@ -177,4 +181,26 @@ func (m *Manager) Running() bool {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	return m.proc != nil && !m.proc.Exited()
+}
+
+// localBlacklist copies a --blacklist file into the working directory as
+// "blacklist.txt" and passes that relative name. GoodbyeDPI 0.2.2 reads its
+// argv as ANSI, so a path with Vietnamese letters (C:\Users\Đức…) would be
+// mangled before fopen.
+func (m *Manager) localBlacklist(args []string) ([]string, error) {
+	out := append([]string(nil), args...)
+	for i := 0; i+1 < len(out); i++ {
+		if out[i] != "--blacklist" {
+			continue
+		}
+		b, err := os.ReadFile(out[i+1])
+		if err != nil {
+			return nil, err
+		}
+		if err := os.WriteFile(filepath.Join(m.dir, "blacklist.txt"), b, 0o644); err != nil {
+			return nil, err
+		}
+		out[i+1] = "blacklist.txt"
+	}
+	return out, nil
 }

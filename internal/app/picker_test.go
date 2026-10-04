@@ -109,3 +109,15 @@ func TestPicker_RescanScansAllAndSaves(t *testing.T) {
 	require.Equal(t, 1, *saves)
 	require.Len(t, p.Results(), 10)
 }
+
+func TestPicker_PickFreshIgnoresCacheAndExcludes(t *testing.T) { // review I3
+	chk := &fChecker{ok: map[string]time.Duration{"s01": 5, "s05": 30, "s07": 10}}
+	s := store.DefaultSettings()
+	s.MaxUpstreams = 2
+	p, _ := newPicker(chk, s)
+	p.Cache.Put("net1", p.Now(), []scanner.Result{{ServerID: "s01", OK: true}, {ServerID: "s03", OK: true}})
+	got, err := p.PickFresh(context.Background(), []string{"s01", "s03"})
+	require.NoError(t, err)
+	require.Equal(t, []string{"s07", "s05"}, []string{got[0].ID, got[1].ID})
+	require.Positive(t, chk.calls.Load(), "a fresh scan must run")
+}

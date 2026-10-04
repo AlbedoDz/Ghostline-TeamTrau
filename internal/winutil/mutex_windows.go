@@ -3,6 +3,7 @@ package winutil
 import (
 	"fmt"
 	"runtime"
+	"sync"
 
 	"golang.org/x/sys/windows"
 )
@@ -11,7 +12,10 @@ import (
 // thread, so every Lock/Unlock runs on one locked OS thread. If the owning
 // process dies the mutex is abandoned and the next Lock still succeeds.
 type NamedMutex struct {
-	reqs chan mutexReq
+	// local excludes goroutines of this process: the Win32 mutex is
+	// recursive for its owning thread, which serves every caller here.
+	local sync.Mutex
+	reqs  chan mutexReq
 }
 
 type mutexReq struct {
@@ -60,7 +64,18 @@ func (m *NamedMutex) do(lock bool) error {
 }
 
 // Lock waits for the mutex.
-func (m *NamedMutex) Lock() error { return m.do(true) }
+func (m *NamedMutex) Lock() error {
+	m.local.Lock()
+	if err := m.do(true); err != nil {
+		m.local.Unlock()
+		return err
+	}
+	return nil
+}
 
 // Unlock releases the mutex.
-func (m *NamedMutex) Unlock() error { return m.do(false) }
+func (m *NamedMutex) Unlock() error {
+	err := m.do(false)
+	m.local.Unlock()
+	return err
+}

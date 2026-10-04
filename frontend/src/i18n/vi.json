@@ -243,6 +243,10 @@
     "SETTINGS_RESET": {
       "message": "file cài đặt bị hỏng nên đã dùng cài đặt mặc định",
       "action": ""
+    },
+    "STATE_RESET": {
+      "message": "file trạng thái bị hỏng; các card mạng đang trỏ về Ghostline đã được đưa về DHCP",
+      "action": "Kiểm tra lại DNS của card mạng nếu trước đó bạn đặt DNS tĩnh"
     }
   },
   "tray": {

@@ -46,7 +46,9 @@ func (m *Manager) Select(mode string, guids []string) ([]Adapter, error) {
 }
 
 func family(servers []string) model.FamilyDNS {
-	if len(servers) == 0 {
+	// Exactly loopback is Ghostline's own fingerprint, never an original
+	// setting: recording it would make a later restore keep DNS dead.
+	if len(servers) == 0 || slices.Equal(servers, []string{"127.0.0.1"}) || slices.Equal(servers, []string{"::1"}) {
 		return model.FamilyDNS{Mode: model.DNSModeDHCP}
 	}
 	return model.FamilyDNS{Mode: model.DNSModeStatic, Servers: servers}

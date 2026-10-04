@@ -1,7 +1,10 @@
 package engine_test
 
 import (
+	"bytes"
 	"context"
+	"errors"
+	"log/slog"
 	"net"
 	"net/netip"
 	"sync"
@@ -107,4 +110,31 @@ func TestEngine_StatsAndOnQuery(t *testing.T) {
 	mu.Lock()
 	defer mu.Unlock()
 	require.Contains(t, seen, "a.example.org.")
+}
+
+type errUp struct{}
+
+func (errUp) Exchange(context.Context, *dns.Msg) (*dns.Msg, error) {
+	return nil, errors.New(`Get "https://dns.example/dns-query?dns=c2VjcmV0": connection refused`)
+}
+func (errUp) Address() string { return "https://dns.example/dns-query" }
+func (errUp) Close() error    { return nil }
+
+func TestEngine_NeverLogsToDefaultLogger(t *testing.T) { // review I11: domains must not reach the file log
+	var buf bytes.Buffer
+	prev := slog.Default()
+	slog.SetDefault(slog.New(slog.NewTextHandler(&buf, &slog.HandlerOptions{Level: slog.LevelDebug})))
+	defer slog.SetDefault(prev)
+	l, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+	addr := netip.MustParseAddrPort(l.Addr().String())
+	l.Close()
+	e := engine.New(nil)
+	require.NoError(t, e.Start(context.Background(), engine.Config{ListenV4: addr, Upstreams: []upstream.Upstream{errUp{}}}))
+	defer e.Stop(context.Background())
+	c := &dns.Client{Net: "tcp", Timeout: 2 * time.Second}
+	_, _, _ = c.Exchange(new(dns.Msg).SetQuestion("secret-domain.example.", dns.TypeA), addr.String())
+	time.Sleep(50 * time.Millisecond)
+	require.NotContains(t, buf.String(), "secret")
+	require.NotContains(t, buf.String(), "c2VjcmV0")
 }

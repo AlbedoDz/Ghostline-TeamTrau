@@ -72,17 +72,26 @@ func topOK(rs []scanner.Result, pool []model.Server, want int) []model.Server {
 
 // Pick implements Picker (spec §6.3).
 func (p *ScanPicker) Pick(ctx context.Context, onProgress func(done, total int)) ([]model.Server, error) {
+	return p.pick(ctx, onProgress, true, nil)
+}
+
+// PickFresh skips the cache and the excluded servers (used when healing).
+func (p *ScanPicker) PickFresh(ctx context.Context, exclude []string) ([]model.Server, error) {
+	return p.pick(ctx, nil, false, exclude)
+}
+
+func (p *ScanPicker) pick(ctx context.Context, onProgress func(done, total int), useCache bool, exclude []string) ([]model.Server, error) {
 	s := p.Settings()
 	want := s.MaxUpstreams
 	if want <= 0 {
 		want = defaultWants
 	}
-	pool := p.pool(s)
+	pool := slices.DeleteFunc(p.pool(s), func(sv model.Server) bool { return slices.Contains(exclude, sv.ID) })
 	key := p.NetKey()
 	now := p.Now()
 
 	p.mu.Lock()
-	if !s.PinnedOnly {
+	if useCache && !s.PinnedOnly {
 		if rs, ok := p.Cache.Fresh(key, now, cacheTTL); ok {
 			if top := topOK(rs, pool, want); len(top) >= want {
 				p.mu.Unlock()

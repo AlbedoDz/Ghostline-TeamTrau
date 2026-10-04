@@ -142,3 +142,22 @@ func TestRestore_FailureKeepsSnapshotForLaterLayers(t *testing.T) {
 	require.Equal(t, store.PhaseDNSSet, st.Phase)
 	require.Len(t, st.Snapshot, 1)
 }
+
+func TestRestore_CorruptStateWithFailedResetStaysUnclean(t *testing.T) {
+	d, _, _ := setup(t, false, nil)
+	d.DNS = &failingLoopback{}
+	require.NoError(t, os.WriteFile(d.States.Path(), []byte(`{"phase":"dns_`), 0o644))
+	_, err := watchdog.RestoreIfOrphaned(d)
+	require.Error(t, err)
+	_, lerr := d.States.Load()
+	require.Error(t, lerr, "a failed reset must not be recorded as clean")
+}
+
+type failingLoopback struct{}
+
+func (failingLoopback) Restore(s []model.AdapterSnapshot) []sysdns.RestoreError {
+	return []sysdns.RestoreError{{GUID: "{B}", Err: os.ErrPermission}}
+}
+func (failingLoopback) LoopbackAdapters() ([]sysdns.Adapter, error) {
+	return []sysdns.Adapter{{GUID: "{B}"}}, nil
+}

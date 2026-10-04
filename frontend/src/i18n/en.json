@@ -243,6 +243,10 @@
     "SETTINGS_RESET": {
       "message": "the settings file was corrupt, defaults are in use",
       "action": ""
+    },
+    "STATE_RESET": {
+      "message": "the state file was corrupt; adapters still pointing at Ghostline were reset to DHCP",
+      "action": "Re-check adapter DNS if you used static DNS before"
     }
   },
   "tray": {

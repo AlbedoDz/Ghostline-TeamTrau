@@ -97,6 +97,10 @@ Section
     
     !insertmacro wails.files
 
+    ; The taskkill above also killed the watchdog: restore DNS now if the
+    ; killed instance was connected (no-op when state.json is clean).
+    ExecWait '"$INSTDIR\${PRODUCT_EXECUTABLE}" --restore'
+
     CreateShortcut "$SMPROGRAMS\${INFO_PRODUCTNAME}.lnk" "$INSTDIR\${PRODUCT_EXECUTABLE}"
     CreateShortCut "$DESKTOP\${INFO_PRODUCTNAME}.lnk" "$INSTDIR\${PRODUCT_EXECUTABLE}"
 
