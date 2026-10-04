@@ -141,7 +141,7 @@ func DefaultSettings() Settings {
 		MaxUpstreams:   5,
 		IncludeTags:    []string{"no-filter"},
 		Pinned:         []string{},
-		ProbeSites:     []string{"youtube.com", "discord.com", "telegram.org", "x.com"},
+		ProbeSites:     []string{"youtube.com", "discord.com", "x.com"},
 		DPI:            DPISettings{Preset: "light", Scope: "all"},
 		FragmentDNS:    FragmentSettings{Chunks: 5, DelayMs: 5},
 		Updates:        UpdateSettings{CheckApp: true, UpdateServerList: true},

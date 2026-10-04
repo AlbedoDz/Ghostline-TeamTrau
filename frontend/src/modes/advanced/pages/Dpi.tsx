@@ -112,6 +112,7 @@ export function Dpi() {
   return (
     <div className={css.page}>
       <div className={css.head}>{t("dpi.title")}</div>
+      <div className={css.dim}>{t("dpi.legalNote")}</div>
 
       <div className={css.panel}>
         <div className={css.panelTitle}>

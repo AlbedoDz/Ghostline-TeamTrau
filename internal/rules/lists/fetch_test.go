@@ -311,7 +311,7 @@ func TestScheduler_DueAndJitter(t *testing.T) {
 
 func TestCatalog_Valid(t *testing.T) {
 	items := lists.Catalog()
-	require.Len(t, items, 31)
+	require.Len(t, items, 30)
 	seen := map[string]bool{}
 	perCat := map[string]int{}
 	for _, it := range items {

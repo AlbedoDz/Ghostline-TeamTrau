@@ -100,3 +100,8 @@ test("saving while GoodbyeDPI runs says it restarted", async () => {
   expect(await screen.findByText(/GoodbyeDPI đã khởi động lại/)).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "danh sách đen (2)" })).toBeInTheDocument();
 });
+
+test("the page reminds the user they are responsible for lawful use", async () => {
+  render(<Dpi />);
+  expect(await screen.findByText(/tự chịu trách nhiệm tuân thủ pháp luật/)).toBeInTheDocument();
+});

@@ -1,4 +1,4 @@
-# Synthetic CIDR list in the style of Telegram CIDR lists.
+# Synthetic CIDR list in the style of public CIDR lists.
 91.108.4.0/22
 149.154.160.0/20
 2001:b28:f23d::/48

@@ -135,13 +135,13 @@ const catalog3 = [
     url: "https://raw.githubusercontent.com/bigdargon/hostsVN/master/hosts", format: "hosts", action: "block" },
   { id: "urlhaus", name: "URLhaus (abuse.ch)", description: "malware hosts", category: "security", repo: "https://urlhaus.abuse.ch", license: "CC0-1.0",
     url: "https://urlhaus.abuse.ch/downloads/hostfile/", format: "hosts", action: "block" },
-  { id: "v2fly-telegram", name: "Telegram", description: "tg", category: "bypass", repo: "https://github.com/v2fly/domain-list-community", license: "MIT",
-    url: "https://raw.githubusercontent.com/v2fly/domain-list-community/master/data/telegram", format: "v2fly", action: "fragment=on" },
+  { id: "v2fly-reddit", name: "Reddit", description: "rd", category: "bypass", repo: "https://github.com/v2fly/domain-list-community", license: "MIT",
+    url: "https://raw.githubusercontent.com/v2fly/domain-list-community/master/data/reddit", format: "v2fly", action: "fragment=on" },
 ];
 
 test("quick add filters by group and search, and marks lists already added", async () => {
   svc.Catalog.mockResolvedValueOnce(catalog3 as any);
-  svc.GetRules.mockResolvedValue({ ...structuredClone(view), lists: [...view.lists, { ...view.lists[0], id: "tg", name: "Telegram", url: catalog3[2].url }] } as any);
+  svc.GetRules.mockResolvedValue({ ...structuredClone(view), lists: [...view.lists, { ...view.lists[0], id: "rd", name: "Reddit", url: catalog3[2].url }] } as any);
   render(<Rules />);
   fireEvent.click(await screen.findByRole("button", { name: "thêm nhanh" }));
   expect(await screen.findByText("hostsVN")).toBeInTheDocument();
@@ -153,10 +153,10 @@ test("quick add filters by group and search, and marks lists already added", asy
   expect(screen.getByText("URLhaus (abuse.ch)")).toBeInTheDocument();
 
   fireEvent.click(screen.getByRole("button", { name: "tất cả" }));
-  fireEvent.change(screen.getByRole("textbox", { name: "tìm danh sách" }), { target: { value: "tele" } });
+  fireEvent.change(screen.getByRole("textbox", { name: "tìm danh sách" }), { target: { value: "redd" } });
   const panel = screen.getByTestId("catalog");
   expect(within(panel).queryByText("URLhaus (abuse.ch)")).not.toBeInTheDocument();
-  expect(within(panel).getByText("Telegram")).toBeInTheDocument();
+  expect(within(panel).getByText("Reddit")).toBeInTheDocument();
   expect(within(panel).getByText("đã thêm")).toBeInTheDocument();
-  expect(within(panel).queryByRole("button", { name: "thêm Telegram" })).not.toBeInTheDocument();
+  expect(within(panel).queryByRole("button", { name: "thêm Reddit" })).not.toBeInTheDocument();
 });

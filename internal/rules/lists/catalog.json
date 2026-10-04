@@ -275,17 +275,6 @@
     "action": "block"
   },
   {
-    "id": "v2fly-telegram",
-    "name": "Telegram",
-    "description": "Telegram domains: fragment through the proxy.",
-    "category": "bypass",
-    "repo": "https://github.com/v2fly/domain-list-community",
-    "license": "MIT",
-    "url": "https://raw.githubusercontent.com/v2fly/domain-list-community/master/data/telegram",
-    "format": "v2fly",
-    "action": "fragment=on"
-  },
-  {
     "id": "v2fly-discord",
     "name": "Discord",
     "description": "Discord domains: fragment through the proxy.",

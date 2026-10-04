@@ -126,6 +126,7 @@
   },
   "dpi": {
     "title": "DPI BYPASS",
+    "legalNote": "You are responsible for complying with the laws where you live and your network provider's terms. Do not use this feature to reach content that is prohibited by law.",
     "goodbyedpi": "GOODBYEDPI",
     "preset": "preset",
     "presets": {
@@ -537,7 +538,6 @@
       "hagezi-samsung": "Samsung device tracking.",
       "hagezi-apple": "Apple device tracking.",
       "hostsvn": "Ads and trackers common on Vietnamese sites.",
-      "v2fly-telegram": "Telegram domains: fragment through the proxy.",
       "v2fly-discord": "Discord domains: fragment through the proxy.",
       "v2fly-twitter": "X (Twitter) domains: fragment through the proxy.",
       "v2fly-facebook": "Facebook domains: fragment through the proxy.",

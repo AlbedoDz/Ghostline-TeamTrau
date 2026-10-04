@@ -18,7 +18,7 @@ const browser = vi.hoisted(() => ({ OpenURL: vi.fn(() => Promise.resolve()) }));
 vi.mock("@wailsio/runtime", () => ({ Browser: browser }));
 
 const settings = {
-  probeSites: ["youtube.com", "discord.com", "telegram.org", "x.com"],
+  probeSites: ["youtube.com", "discord.com", "x.com"],
   fragmentDns: { enabled: false, chunks: 5, delayMs: 5 },
   dpi: { enabled: false, preset: "light", customArgs: "", scope: "all" },
 } as any;
@@ -59,7 +59,7 @@ test("protected with blocked sites shows autotune banner; dismiss hides it", () 
   render(<SimpleView onOpenLogs={() => {}} />);
   expect(screen.getByText(/ĐÃ BẢO VỆ/)).toBeInTheDocument();
   expect(screen.getByText("Cloudflare +1")).toBeInTheDocument();
-  expect(screen.getByText(/2\/4 trang mẫu vẫn bị chặn/)).toBeInTheDocument();
+  expect(screen.getByText(/2\/3 trang mẫu vẫn bị chặn/)).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "TỰ DÒ VƯỢT DPI" }));
   expect(svc.StartAutotune).toHaveBeenCalled();
   fireEvent.click(screen.getByRole("button", { name: "bỏ qua" }));

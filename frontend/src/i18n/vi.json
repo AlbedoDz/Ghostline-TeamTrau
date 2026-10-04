@@ -126,6 +126,7 @@
   },
   "dpi": {
     "title": "VƯỢT DPI",
+    "legalNote": "Bạn tự chịu trách nhiệm tuân thủ pháp luật nơi mình sinh sống và điều khoản của nhà mạng. Không dùng tính năng này để truy cập nội dung bị cấm theo quy định của pháp luật.",
     "goodbyedpi": "GOODBYEDPI",
     "preset": "preset",
     "presets": {
@@ -537,7 +538,6 @@
       "hagezi-samsung": "theo dõi trên thiết bị Samsung",
       "hagezi-apple": "theo dõi trên thiết bị Apple",
       "hostsvn": "quảng cáo và tracker hay gặp trên các trang Việt Nam",
-      "v2fly-telegram": "domain của Telegram: fragment qua proxy",
       "v2fly-discord": "domain của Discord: fragment qua proxy",
       "v2fly-twitter": "domain của X (Twitter): fragment qua proxy",
       "v2fly-facebook": "domain của Facebook: fragment qua proxy",

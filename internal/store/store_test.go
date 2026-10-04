@@ -50,7 +50,7 @@ func TestDefaultSettings_MatchSpec(t *testing.T) {
 	require.Equal(t, []string{"1.1.1.1:53", "8.8.8.8:53"}, s.Bootstrap)
 	require.Equal(t, 5, s.MaxUpstreams)
 	require.Equal(t, []string{"no-filter"}, s.IncludeTags)
-	require.Equal(t, []string{"youtube.com", "discord.com", "telegram.org", "x.com"}, s.ProbeSites)
+	require.Equal(t, []string{"youtube.com", "discord.com", "x.com"}, s.ProbeSites)
 	require.Equal(t, store.DPISettings{Enabled: false, Preset: "light", CustomArgs: "", Scope: "all"}, s.DPI)
 	require.Equal(t, store.FragmentSettings{Enabled: false, Chunks: 5, DelayMs: 5}, s.FragmentDNS)
 	require.Equal(t, store.UpdateSettings{CheckApp: true, UpdateServerList: true}, s.Updates)
