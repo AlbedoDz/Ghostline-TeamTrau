@@ -1,0 +1,258 @@
+# Hướng dẫn sử dụng Ghostline
+
+Hướng dẫn này dành cho người dùng Windows 10/11, không cần biết về kỹ thuật. Bạn chỉ cần đọc phần 1–3 là dùng được ngay; các phần sau dành cho khi bạn muốn tinh chỉnh hoặc gặp sự cố.
+
+## Mục lục
+
+1. [Ghostline làm gì?](#1-ghostline-làm-gì)
+2. [Cài đặt](#2-cài-đặt)
+3. [Bắt đầu nhanh: một nút bấm](#3-bắt-đầu-nhanh-một-nút-bấm)
+4. [Chế độ Nâng cao](#4-chế-độ-nâng-cao)
+   - [Tổng quan](#41-tổng-quan)
+   - [Máy chủ](#42-máy-chủ)
+   - [Vượt DPI](#43-vượt-dpi)
+   - [Nhật ký](#44-nhật-ký)
+   - [Cài đặt](#45-cài-đặt)
+5. [Icon ở khay hệ thống](#5-icon-ở-khay-hệ-thống)
+6. [Khi một trang web vẫn bị chặn](#6-khi-một-trang-web-vẫn-bị-chặn)
+7. [Xử lý sự cố](#7-xử-lý-sự-cố)
+8. [Gỡ cài đặt](#8-gỡ-cài-đặt)
+9. [Câu hỏi thường gặp](#9-câu-hỏi-thường-gặp)
+
+---
+
+## 1. Ghostline làm gì?
+
+Mỗi khi bạn mở một trang web, máy tính phải hỏi **DNS** "trang này ở địa chỉ IP nào?". Bình thường câu hỏi đó được gửi đi **không mã hoá**, nên nhà mạng có thể đọc, ghi lại hoặc trả lời sai để chặn trang.
+
+Ghostline chạy một DNS nhỏ ngay trên máy bạn (`127.0.0.1`), trỏ mọi card mạng về đó, rồi gửi câu hỏi DNS qua kênh **mã hoá** (DoH, DoT, DoQ, DNSCrypt) tới máy chủ nhanh nhất. Nếu nhà mạng còn chặn bằng cách soi gói tin (DPI), Ghostline có thể bật thêm **GoodbyeDPI** để vượt qua.
+
+Điều quan trọng nhất: **Ghostline luôn trả lại DNS gốc của bạn** khi ngắt kết nối, kể cả khi app bị tắt đột ngột hay máy mất điện.
+
+## 2. Cài đặt
+
+Tải về từ trang [Releases](https://github.com/hashcott/ghostline/releases). Có hai lựa chọn:
+
+| Bản | Khi nào nên dùng |
+| --- | --- |
+| `ghostline-amd64-installer.exe` | Dùng lâu dài trên máy của bạn. Có shortcut trong Start Menu, gỡ được qua Settings → Apps. |
+| `Ghostline-<phiên bản>-portable.zip` | Không muốn cài, hoặc chạy từ USB. Giải nén ra một thư mục rồi chạy `ghostline.exe`. Mọi dữ liệu nằm trong thư mục `data\` bên cạnh. |
+
+**Kiểm tra file (khuyến nghị).** Mở PowerShell trong thư mục chứa file vừa tải:
+
+```powershell
+Get-FileHash .\ghostline-amd64-installer.exe -Algorithm SHA256
+```
+
+So mã hiện ra với dòng tương ứng trong file `SHA256SUMS` trên trang Releases. Nếu khác nhau, **đừng chạy file đó**.
+
+**Cảnh báo SmartScreen.** Bản phát hành chưa được ký số nên Windows sẽ hiện "Windows protected your PC". Sau khi đã kiểm tra SHA-256, bấm **More info → Run anyway**.
+
+**Quyền admin.** Ghostline cần quyền quản trị để đổi DNS và chạy GoodbyeDPI, nên Windows sẽ hỏi UAC mỗi lần mở. Chọn **Yes**. Nếu bật *Khởi động cùng Windows*, app được mở qua Task Scheduler và không hỏi UAC nữa.
+
+**Phần mềm diệt virus.** GoodbyeDPI dùng driver **WinDivert**, đôi khi bị antivirus báo nhầm. Ghostline kiểm tra mã băm của GoodbyeDPI trước mỗi lần chạy. Nếu antivirus chặn, thêm thư mục cài Ghostline vào danh sách loại trừ (exclusions).
+
+## 3. Bắt đầu nhanh: một nút bấm
+
+<p align="center"><img src="screenshots/simple-vi.png" width="320" alt="Chế độ Đơn giản"></p>
+
+Khi mở lần đầu, Ghostline ở chế độ **ĐƠN GIẢN**.
+
+1. Bấm **nút nguồn tròn ở giữa**.
+2. Ghostline lần lượt: kiểm tra hệ thống → chọn máy chủ → bật engine → chụp DNS gốc → bật lưới an toàn → đặt DNS → xác minh không rò rỉ. Lần đầu mất khoảng 10–25 giây vì phải quét máy chủ; các lần sau chỉ vài giây.
+3. Khi vòng tròn sáng xanh và hiện **[ ĐÃ BẢO VỆ ]** là xong: mọi truy vấn DNS của máy đã được mã hoá.
+
+Muốn huỷ khi đang kết nối: bấm nút nguồn lần nữa. Muốn tắt bảo vệ: bấm nút nguồn khi đang ở trạng thái Đã bảo vệ, DNS được trả về như cũ.
+
+**Bảng thông tin bên dưới:**
+
+| Dòng | Ý nghĩa |
+| --- | --- |
+| máy chủ | Máy chủ DNS đang dùng; `+4` nghĩa là còn 4 máy chủ khác chạy song song làm dự phòng |
+| độ trễ | Thời gian trung bình để nhận câu trả lời DNS |
+| vượt dpi | Preset GoodbyeDPI đang chạy, hoặc *tắt* |
+| thời gian | Đã bảo vệ được bao lâu |
+
+**Các trạng thái có thể gặp:**
+
+| Trạng thái | Ý nghĩa |
+| --- | --- |
+| CHƯA BẢO VỆ | Đang dùng DNS gốc của máy |
+| ĐANG KẾT NỐI | Đang chạy các bước ở trên |
+| ĐÃ BẢO VỆ | Mọi thứ hoạt động bình thường |
+| SUY GIẢM | Máy chủ phản hồi chậm hoặc không phản hồi; Ghostline đang tự tìm máy chủ khác. Mạng vẫn dùng được |
+| LỖI | Không kết nối được. **DNS của máy không bị thay đổi**. Đọc thông báo bên dưới để biết cách xử lý (xem [phần 7](#7-xử-lý-sự-cố)) |
+
+## 4. Chế độ Nâng cao
+
+Bấm **NÂNG CAO** ở góc trên bên trái để mở giao diện đầy đủ. Bấm **ĐƠN GIẢN** để quay lại. Thanh bên trái luôn có trạng thái hiện tại và nút **⏻ KẾT NỐI / NGẮT KẾT NỐI**.
+
+### 4.1. Tổng quan
+
+![Tổng quan](screenshots/overview-vi.png)
+
+- **Dòng trên cùng:** trạng thái, thời gian bảo vệ, và đường đi của DNS: `127.0.0.1 → các máy chủ đang dùng`.
+- **Độ trễ · 60 giây:** biểu đồ độ trễ trong một phút gần nhất. Đường càng thấp càng tốt.
+- **Truy vấn:** số câu hỏi DNS đã xử lý từ lúc kết nối.
+- **Máy chủ đang dùng:** các máy chủ Ghostline gửi truy vấn tới song song; câu trả lời nhanh nhất được dùng.
+
+### 4.2. Máy chủ
+
+![Máy chủ](screenshots/servers-vi.png)
+
+Danh sách toàn bộ máy chủ DNS mã hoá mà Ghostline biết (vài trăm máy chủ), được cập nhật mỗi ngày từ danh sách có chữ ký số.
+
+- **⟳ quét toàn bộ:** đo lại độ trễ của mọi máy chủ và loại các máy chủ trả kết quả sai (bị đầu độc). Ghostline tự quét khi cần; bạn chỉ bấm khi đổi sang mạng khác hoặc thấy chậm.
+- **Lọc:** chọn giao thức (`doh`, `dot`, `doq`, `dnscrypt`) hoặc loại máy chủ:
+  - `no-filter`: không chặn gì.
+  - `adblock`: chặn quảng cáo và theo dõi.
+  - `family`: chặn nội dung người lớn, phù hợp cho máy của trẻ em.
+  - **chỉ đạt:** chỉ hiện các máy chủ đang hoạt động tốt.
+- **Bấm tiêu đề cột** (tên, độ trễ…) để sắp xếp.
+- **☆ Ghim:** bấm ngôi sao để ghim máy chủ bạn thích. Bật **chỉ dùng máy chủ đã ghim** ở cuối trang để Ghostline chỉ chọn trong số đó.
+- **+ thêm:** thêm máy chủ riêng. Dán URL (`https://…`, `tls://…`, `quic://…`) hoặc stamp `sdns://…`, mỗi dòng một máy chủ, hoặc import từ file. Máy chủ tự thêm có nút **✕** để xoá.
+- **Trạng thái:** *đang dùng* (đang nhận truy vấn), *đạt* (hoạt động tốt), *chưa kiểm tra*.
+
+### 4.3. Vượt DPI
+
+![Vượt DPI](screenshots/dpi-vi.png)
+
+Dùng khi DNS đã được mã hoá nhưng trang web **vẫn bị chặn**: nhà mạng soi tên trang trong gói tin (SNI) để chặn.
+
+**GoodbyeDPI**
+
+- **Công tắc GOODBYEDPI:** bật/tắt. GoodbyeDPI chỉ chạy khi Ghostline **đang kết nối**:
+  - `● GoodbyeDPI đã chạy (preset …)`: đang hoạt động.
+  - `○ GoodbyeDPI đang khởi động…`: chờ vài giây để driver WinDivert sẵn sàng.
+  - `○ Đã bật — GoodbyeDPI sẽ chạy khi kết nối`: bạn đã bật nhưng chưa kết nối.
+- **Preset:** mức độ can thiệp vào gói tin.
+  - **Nhẹ → Vừa → Mạnh → Cực mạnh:** mức càng cao càng dễ vượt chặn nhưng có thể làm vài trang chậm hoặc lỗi. Nên bắt đầu từ **Nhẹ**.
+  - **Mode 1–6:** các cấu hình có sẵn của GoodbyeDPI, thử khi các mức trên không hiệu quả.
+  - **Tự nhập:** nhập tham số GoodbyeDPI của riêng bạn (dành cho người dùng hiểu GoodbyeDPI; Ghostline từ chối các tham số nguy hiểm).
+- **⚡ tự dò:** Ghostline tự thử từng preset từ nhẹ đến mạnh và giữ preset nhẹ nhất mở được tất cả *trang mẫu*. Cần **kết nối trước** khi tự dò. Bấm lần nữa để huỷ.
+- **Phạm vi:**
+  - **mọi kết nối:** áp dụng cho mọi trang web.
+  - **danh sách đen:** chỉ áp dụng cho các domain trong danh sách. Bấm **sửa ›** để chỉnh, mỗi dòng một domain, rồi **lưu**. Cách này ít ảnh hưởng tới các trang khác nhất.
+- **Dòng lệnh:** cho xem chính xác lệnh GoodbyeDPI sẽ chạy.
+
+**Fragment DNS**
+
+Chia nhỏ gói tin gửi tới máy chủ DoH để nhà mạng khó nhận ra. Chỉ cần khi **không tìm được máy chủ nào** (nhà mạng chặn cả kết nối DNS mã hoá). Khi GoodbyeDPI đang bật thì Fragment là thừa.
+
+- **Số mảnh:** chia thành bao nhiêu phần (2–20).
+- **Độ trễ (ms):** thời gian chờ giữa các mảnh.
+
+**Trang mẫu**
+
+Danh sách trang dùng để kiểm tra việc vượt chặn (mặc định: youtube.com, discord.com, telegram.org, x.com). Bấm **⟳ thử lại** để kiểm tra; mỗi trang hiện:
+
+| Kết quả | Ý nghĩa |
+| --- | --- |
+| ✓ | Mở được |
+| ✕ DNS | Không phân giải được tên |
+| ✕ TCP | Không kết nối được tới máy chủ của trang |
+| ✕ TLS | Bị chặn ở bước bắt tay mã hoá, thường do DPI → bật GoodbyeDPI hoặc tự dò |
+| ✕ HTTP | Kết nối được nhưng trang trả lỗi |
+
+Bạn có thể sửa danh sách trang mẫu trong ô bên dưới, mỗi dòng một trang.
+
+### 4.4. Nhật ký
+
+![Nhật ký](screenshots/logs-vi.png)
+
+Ghi lại các sự kiện: kết nối, đổi máy chủ, bật/tắt GoodbyeDPI, lỗi.
+
+- **Lọc:** tất cả, engine, dpi, hệ thống.
+- **tạm dừng / tiếp tục:** dừng cuộn để đọc.
+- **copy / lưu file:** sao chép hoặc lưu thành `ghostline-log.txt` để gửi khi báo lỗi.
+- **hiện truy vấn:** xem từng truy vấn DNS theo thời gian thực. Chỉ giữ trong RAM, tối đa 500 dòng, **không bao giờ ghi xuống đĩa**.
+
+### 4.5. Cài đặt
+
+![Cài đặt](screenshots/settings-vi.png)
+
+| Mục | Ý nghĩa |
+| --- | --- |
+| ngôn ngữ | VI hoặc EN (cũng đổi được bằng nút VI/EN ở góc trên) |
+| khởi động cùng windows | Tự mở Ghostline khi đăng nhập, không hỏi UAC |
+| tự kết nối khi mở | Bấm kết nối ngay khi app mở |
+| đóng → thu xuống khay | Bấm ✕ thì ẩn xuống khay thay vì thoát. Ghostline vẫn bảo vệ ở chế độ nền |
+| card mạng | **tự động**: bảo vệ mọi card mạng đang dùng (khuyến nghị). **chọn tay**: chỉ bảo vệ các card bạn chọn |
+| tên miền thử | Domain dùng để kiểm tra máy chủ có trả lời đúng không |
+| bootstrap | DNS thường dùng để tìm địa chỉ của các máy chủ DoH lúc khởi động (mặc định `1.1.1.1:53`, `8.8.8.8:53`). Đây là lưu lượng DNS không mã hoá duy nhất, và chỉ dùng để tra tên máy chủ DoH |
+| số máy chủ tối đa | Số máy chủ dùng song song (mặc định 5). Nhiều hơn thì ổn định hơn nhưng tốn băng thông hơn một chút |
+| cập nhật danh sách máy chủ | Tải danh sách máy chủ mới mỗi ngày (có kiểm tra chữ ký) |
+| báo có bản mới | Hiện thông báo khi có phiên bản mới. Ghostline **không bao giờ tự cập nhật** |
+| ⚠ KHÔI PHỤC DNS NGAY | Đưa DNS mọi card mạng về trạng thái đã lưu. Dùng khi nghi ngờ DNS bị sai |
+
+## 5. Icon ở khay hệ thống
+
+Ghostline có icon hình vòng tròn ở khay (góc dưới bên phải, cạnh đồng hồ). Màu icon cho biết trạng thái. **Bấm chuột phải** để mở menu:
+
+- **Kết nối / Ngắt kết nối**
+- **Vượt DPI:** bật/tắt GoodbyeDPI nhanh
+- **Mở Ghostline:** hiện lại cửa sổ
+- **Thoát:** ngắt kết nối, trả DNS về như cũ, rồi tắt app
+
+## 6. Khi một trang web vẫn bị chặn
+
+Làm lần lượt, dừng lại khi trang đã mở được:
+
+1. **Kết nối Ghostline.** Nhiều trang chỉ bị chặn bằng DNS, nên kết nối là đủ.
+2. **Xoá cache trình duyệt** hoặc mở thử bằng cửa sổ ẩn danh (trình duyệt có thể còn nhớ kết quả DNS cũ).
+3. Vào **Vượt DPI**, bật **GoodbyeDPI** với preset **Nhẹ**.
+4. Bấm **⚡ tự dò** để Ghostline tự tìm preset phù hợp. Thêm trang bạn cần vào **Trang mẫu** trước để tự dò kiểm tra đúng trang đó.
+5. Vẫn không được: thử **Mode 1–6**.
+6. Nếu chỉ vài trang bị chặn, chuyển **Phạm vi** sang **danh sách đen** và thêm các trang đó, để GoodbyeDPI không ảnh hưởng tới phần còn lại.
+
+> **Lưu ý về trình duyệt:** Chrome, Edge và Firefox có tuỳ chọn *Secure DNS / DNS over HTTPS* riêng. Nếu bật, trình duyệt sẽ bỏ qua Ghostline. Hãy tắt tuỳ chọn đó, hoặc để ở chế độ "dùng DNS của hệ thống".
+
+## 7. Xử lý sự cố
+
+| Thông báo | Nguyên nhân và cách xử lý |
+| --- | --- |
+| **Ghostline cần quyền quản trị (admin) để đổi DNS** | Bạn đã mở app không có quyền admin. Đóng lại, chuột phải → **Run as administrator** |
+| **Cổng 53 đang bị … chiếm** | Một chương trình khác đang chạy DNS trên máy (thường là Mobile Hotspot/ICS, WSL, Hyper-V, hoặc một phần mềm DNS khác). Tắt chương trình đó, hoặc dùng nút **Tạm dừng dịch vụ …** mà Ghostline đưa ra. Ghostline luôn hỏi trước khi dừng dịch vụ nào |
+| **Không tìm được máy chủ hoạt động** | Mạng đang mất kết nối, hoặc nhà mạng chặn cả DNS mã hoá. Kiểm tra mạng, rồi thử bật **Fragment DNS** |
+| **Truy vấn DNS không đi qua Ghostline** | Có VPN hoặc phần mềm khác đang chiếm DNS. Tắt chúng rồi kết nối lại |
+| **Không đặt được DNS cho …** | Card mạng đó không cho đổi DNS (thường là card ảo của VPN/máy ảo). Vào **Cài đặt → card mạng → chọn tay** và bỏ card đó ra |
+| **Không trả được DNS về như cũ cho …** | Bấm **⚠ KHÔI PHỤC DNS NGAY**. Thông báo này sẽ còn hiện cho tới khi khôi phục thành công |
+| **GoodbyeDPI không chạy được** | Thử preset khác. Xem thêm chi tiết trong ngoặc của thông báo |
+| **GoodbyeDPI bị phần mềm diệt virus chặn** | Thêm thư mục Ghostline vào danh sách loại trừ của antivirus |
+| **File GoodbyeDPI đã bị thay đổi** | File GoodbyeDPI không còn khớp mã băm gốc (có thể bị antivirus sửa hoặc bị can thiệp). Cài lại Ghostline |
+| **Không tìm được cấu hình vượt DPI phù hợp** | Tự dò không tìm được preset mở được mọi trang mẫu. Thử Mode 1–6 hoặc tham số tự nhập |
+| **Cần kết nối trước khi tự dò vượt DPI** | Bấm Kết nối rồi tự dò lại |
+
+**Mất mạng sau khi dùng Ghostline?** Gần như không thể xảy ra vì có 4 lớp khôi phục, nhưng nếu gặp:
+
+1. Mở Ghostline → **Cài đặt → ⚠ KHÔI PHỤC DNS NGAY**.
+2. Hoặc mở PowerShell bằng quyền admin và chạy:
+   ```powershell
+   & "C:\Program Files\Ghostline\Ghostline\ghostline.exe" --restore
+   ```
+   (với bản portable, thay bằng đường dẫn tới `ghostline.exe` của bạn).
+3. Cách cuối cùng: vào **Settings → Network & internet → card mạng → DNS server assignment → Edit → Automatic (DHCP)**.
+
+**Báo lỗi:** vào **Nhật ký → lưu file**, rồi mở issue tại [GitHub](https://github.com/hashcott/ghostline/issues) kèm file đó. Nhật ký không chứa tên các trang bạn đã truy cập.
+
+## 8. Gỡ cài đặt
+
+- **Bản cài đặt:** Settings → Apps → Ghostline → Uninstall. Trình gỡ cài đặt tự trả DNS về như cũ, xoá các tác vụ khởi động và driver WinDivert.
+- **Bản portable:** trong app bấm **Ngắt kết nối**, tắt **khởi động cùng Windows**, thoát từ khay, rồi xoá thư mục.
+
+## 9. Câu hỏi thường gặp
+
+**Ghostline có phải VPN không?**
+Không. Ghostline chỉ mã hoá **DNS** (câu hỏi "trang này ở đâu?"), không đổi địa chỉ IP của bạn và không mã hoá nội dung bạn truy cập. Nếu bạn cần ẩn IP, hãy dùng VPN; lưu ý VPN và Ghostline thường không chạy cùng lúc được.
+
+**Ghostline có làm chậm mạng không?**
+Thường là không. Ghostline gửi truy vấn tới nhiều máy chủ cùng lúc, lấy câu trả lời nhanh nhất, và có bộ nhớ đệm. GoodbyeDPI ở preset cao có thể làm vài trang chậm hơn một chút.
+
+**Ghostline có thu thập dữ liệu của tôi không?**
+Không. Không telemetry, không tài khoản, không ghi tên trang bạn truy cập xuống đĩa. Mã nguồn mở, bạn có thể tự kiểm tra.
+
+**Tắt máy khi đang kết nối thì sao?**
+Không sao. Ghostline trả DNS về trước khi Windows tắt. Nếu máy mất điện đột ngột, lần đăng nhập sau tác vụ *Ghostline Recovery* sẽ tự khôi phục DNS, kể cả khi bạn không mở Ghostline.
+
+**Dùng chung với Mobile Hotspot được không?**
+Mobile Hotspot của Windows giữ cổng 53, nên hai thứ không chạy cùng lúc được. Ghostline sẽ báo lỗi *Cổng 53 đang bị chiếm* và đề nghị tạm dừng dịch vụ (chỉ khi bạn đồng ý).

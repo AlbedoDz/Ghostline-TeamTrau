@@ -84,6 +84,8 @@ Get-FileHash .\Ghostline-0.1.0-portable.zip -Algorithm SHA256
 
 ## Sử dụng
 
+> 📖 Hướng dẫn chi tiết từng màn hình, cách vượt chặn và xử lý sự cố: **[docs/huong-dan-su-dung.md](docs/huong-dan-su-dung.md)**
+
 1. Mở Ghostline và bấm **Kết nối**. App tự chọn máy chủ, chuyển hướng DNS và kiểm tra rò rỉ.
 2. Nếu vẫn còn trang bị chặn, vào **Nâng cao → DPI**, bật **GoodbyeDPI**, hoặc bấm **tự dò** để tìm preset hợp với mạng của bạn.
 3. Bấm **Ngắt kết nối** (hoặc thoát từ icon khay) để trả lại DNS gốc.
