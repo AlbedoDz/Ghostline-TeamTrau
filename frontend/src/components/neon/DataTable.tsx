@@ -22,9 +22,11 @@ type Props<T> = {
   pinTop?: (row: T) => boolean;
   // onRowMenu opens a row's context menu (right click, Menu key, Shift+F10).
   onRowMenu?: (row: T, x: number, y: number) => void;
+  // onRowDoubleClick runs on a left double-click (not on buttons inside the row).
+  onRowDoubleClick?: (row: T) => void;
 };
 
-export function DataTable<T>({ columns, rows, rowKey, initialSort, highlight, pinTop, onRowMenu }: Props<T>) {
+export function DataTable<T>({ columns, rows, rowKey, initialSort, highlight, pinTop, onRowMenu, onRowDoubleClick }: Props<T>) {
   const [sort, setSort] = useState<Sort | undefined>(initialSort);
   const sorted = useMemo(() => {
     const col = columns.find((c) => c.key === sort?.key);
@@ -70,6 +72,15 @@ export function DataTable<T>({ columns, rows, rowKey, initialSort, highlight, pi
             key={rowKey(r)}
             data-highlight={highlight?.(r) ?? false}
             tabIndex={onRowMenu ? 0 : undefined}
+            onDoubleClick={
+              onRowDoubleClick
+                ? (e) => {
+                    if ((e.target as HTMLElement).closest("button")) return; // the star/remove buttons act on their own
+                    window.getSelection()?.removeAllRanges(); // a double-click selects text otherwise
+                    onRowDoubleClick(r);
+                  }
+                : undefined
+            }
             onContextMenu={
               onRowMenu
                 ? (e) => {

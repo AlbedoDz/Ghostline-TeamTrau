@@ -113,7 +113,7 @@ Danh sách toàn bộ máy chủ DNS mã hoá mà Ghostline biết (vài trăm m
   - `family`: chặn nội dung người lớn, phù hợp cho máy của trẻ em.
   - **chỉ đạt:** chỉ hiện các máy chủ đang hoạt động tốt.
 - **Bấm tiêu đề cột** (tên, độ trễ…) để sắp xếp.
-- **☆ Ghim:** bấm ngôi sao để ghim máy chủ bạn thích. Máy chủ đã ghim luôn nằm trên cùng bảng và được **ưu tiên khi kết nối**: mọi máy chủ ghim đạt kiểm tra đều được dùng trước, các chỗ còn lại mới lấy máy chủ nhanh nhất. Bật **chỉ dùng máy chủ đã ghim** (cạnh ô tìm kiếm) để không dùng máy chủ nào khác.
+- **☆ Ghim:** bấm ngôi sao (hoặc double-click vào dòng) để ghim máy chủ bạn thích. Chuột phải vào dòng để có thêm: chỉ dùng máy chủ này, kiểm tra lại, sao chép địa chỉ/IP, xoá. Máy chủ đã ghim luôn nằm trên cùng bảng và được **ưu tiên khi kết nối**: mọi máy chủ ghim đạt kiểm tra đều được dùng trước, các chỗ còn lại mới lấy máy chủ nhanh nhất. Bật **chỉ dùng máy chủ đã ghim** (cạnh ô tìm kiếm) để không dùng máy chủ nào khác.
 - **Tìm kiếm và ghim hàng loạt:** gõ vào ô tìm kiếm (tên, nhà cung cấp, giao thức, địa chỉ, IP hoặc nhãn; nhiều từ thì phải khớp tất cả), rồi bấm **★ ghim tất cả kết quả**. Chip **★ đã ghim (N)** chỉ hiện máy chủ đã ghim; **bỏ ghim tất cả** để xoá hết. Đổi ghim khi đang kết nối thì bấm **kết nối lại để áp dụng**.
 - **+ thêm:** thêm máy chủ riêng. Dán URL (`https://…`, `tls://…`, `quic://…`) hoặc stamp `sdns://…`, mỗi dòng một máy chủ, hoặc import từ file. Máy chủ tự thêm có nút **✕** để xoá.
 - **Trạng thái:** *đang dùng* (đang nhận truy vấn), *đạt* (hoạt động tốt), *chưa kiểm tra*.

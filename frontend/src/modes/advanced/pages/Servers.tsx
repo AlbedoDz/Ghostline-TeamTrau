@@ -186,6 +186,7 @@ export function Servers() {
         highlight={(r) => r.inUse}
         pinTop={(r) => r.pinned}
         onRowMenu={(row, x, y) => setMenu({ row, x, y })}
+        onRowDoubleClick={(row) => void pin(row)}
         initialSort={{ key: "latency", dir: "asc" }}
         columns={[
           {

@@ -141,3 +141,11 @@ test("connect errors are shown in Advanced mode too", async () => {
   expect(screen.getByRole("alert")).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "thử lại" })).toBeInTheDocument();
 });
+
+test("double-click a row toggles its pin", async () => {
+  render(<Servers />);
+  fireEvent.doubleClick(await rowOf("Cloudflare"));
+  await waitFor(() => expect(svc.SetPinned).toHaveBeenCalledWith("cf", true));
+  fireEvent.doubleClick(await rowOf("Quad9"));
+  await waitFor(() => expect(svc.SetPinned).toHaveBeenCalledWith("q9", false));
+});
