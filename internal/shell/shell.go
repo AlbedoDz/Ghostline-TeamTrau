@@ -163,6 +163,8 @@ func Run(o Options) error {
 
 	ui := &ui{orch: orch, box: box, log: log}
 	update := &updateState{}
+	checker := newUpdateChecker(&metaFile{path: paths.Meta}, update, bus, log, func(tag, url string) { ui.onUpdate(tag, url) })
+	ui.checker = checker
 	svc = app.NewService(orch, app.ServiceDeps{
 		Bus: bus, Paths: paths, Settings: box, Catalog: cat.get,
 		LoadCustom: cat.loadCustom, SaveCustom: cat.saveCustom,
@@ -205,6 +207,7 @@ func Run(o Options) error {
 		LANInfo:      pw.lanInfo,
 		Protect:      winutil.ProtectString,
 		TestUpstream: pw.testUpstream,
+		CheckUpdate:  checker.checkNow,
 	})
 	ui.svc = svc
 	if recovered, err := app.LoadRules(svc); err != nil || recovered {
@@ -270,7 +273,7 @@ func Run(o Options) error {
 	defer proxyTick.Stop()
 	go runProxyStats(ctx, pw, proxyTick.C)
 	go runLists(ctx, svc)
-	go runUpdates(ctx, paths, box, cat, update, bus, log, ui.onUpdate)
+	go runUpdates(ctx, paths, box, cat, checker, log)
 
 	if o.Mode.Kind == cli.KindAutostart && box.Get().AutoConnect {
 		go func() { _ = orch.Connect(context.Background()) }()

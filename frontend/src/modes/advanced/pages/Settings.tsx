@@ -21,6 +21,19 @@ export function Settings() {
   const [bootstrap, setBootstrap] = useState((settings?.bootstrap ?? []).join("\n"));
   const [testDomain, setTestDomain] = useState(settings?.testDomain ?? "");
   const [confirmService, setConfirmService] = useState<string | null>(null);
+  const [check, setCheck] = useState<{ busy?: boolean; text?: string; error?: boolean } | null>(null);
+
+  const checkUpdate = () => {
+    setCheck({ busy: true });
+    Service.CheckUpdateNow()
+      .then((r) => {
+        if (r.newer) {
+          useGhost.getState().setUpdate({ tag: r.latest, url: r.url });
+          setCheck(null);
+        } else setCheck({ text: t("settings.upToDate", { version: r.current }) });
+      })
+      .catch((e) => setCheck({ text: describeError(e), error: true }));
+  };
 
   useEffect(() => {
     void Service.ListAdapters().then((a) => setAdapters(a ?? []));
@@ -53,11 +66,16 @@ export function Settings() {
         <span>{t("settings.title")}</span>
         <span className={css.count}>
           {t("settings.version", { version: info?.version ?? "" })}
-          {tag && url && (
+          {tag && url ? (
             <button className={css.ok} style={{ marginLeft: 8 }} onClick={() => void Browser.OpenURL(url)}>
               {t("settings.update", { tag })}
             </button>
+          ) : (
+            check && <span className={check.error ? css.bad : css.dim} style={{ marginLeft: 8 }}>{check.text}</span>
           )}
+          <button className={css.ok} style={{ marginLeft: 8 }} disabled={check?.busy} onClick={checkUpdate}>
+            {check?.busy ? t("settings.checking") : t("settings.checkUpdate")}
+          </button>
         </span>
       </div>
       <div className={css.panel}>

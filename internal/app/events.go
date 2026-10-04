@@ -49,6 +49,14 @@ type AutotuneProgress struct {
 	Error   *AppError `json:"error,omitempty"`
 }
 
+// UpdateCheck is the result of a manual "check for updates".
+type UpdateCheck struct {
+	Current string `json:"current"`
+	Latest  string `json:"latest"`
+	URL     string `json:"url"`
+	Newer   bool   `json:"newer"`
+}
+
 // UpdateInfo announces a newer release.
 type UpdateInfo struct {
 	Tag string `json:"tag"`

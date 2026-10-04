@@ -97,6 +97,8 @@ type ServiceDeps struct {
 	LANInfo      func() LANInfo
 	Protect      func(string) (string, error) // DPAPI
 	TestUpstream func(ctx context.Context, id string) error
+	// CheckUpdate asks GitHub for the latest release now (manual check).
+	CheckUpdate func(ctx context.Context) (UpdateCheck, error)
 }
 
 // Service is bound to the frontend by Wails; its exported methods are the
@@ -396,6 +398,21 @@ func (s *Service) StopConflictingService(name string) error { return s.x.StopSer
 func (s *Service) ListAdapters() []sysdns.Adapter {
 	ads, _ := s.x.ListAdapters()
 	return ads
+}
+
+// CheckUpdateNow checks for a newer release right away, ignoring the
+// schedule and the "notify about new versions" setting.
+func (s *Service) CheckUpdateNow() (UpdateCheck, error) {
+	if s.x.CheckUpdate == nil {
+		return UpdateCheck{}, errors.New(CodeUpdateCheckFailed)
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	defer cancel()
+	r, err := s.x.CheckUpdate(ctx)
+	if err != nil {
+		return UpdateCheck{}, fmt.Errorf("%s: %w", CodeUpdateCheckFailed, err)
+	}
+	return r, nil
 }
 
 // AppInfo returns version and update information.

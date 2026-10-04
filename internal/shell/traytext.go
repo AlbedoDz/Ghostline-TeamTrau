@@ -11,6 +11,7 @@ import (
 type trayStrings struct {
 	connect, disconnect, dpi, open, quit, update string // update: "%s" is the tag
 	proxyOn, proxyOff                            string
+	checkUpdate, upToDate, checkFailed           string
 	status                                       map[app.Status]string
 }
 
@@ -18,6 +19,7 @@ var trayLangs = map[string]trayStrings{
 	"vi": {
 		connect: "Kết nối", disconnect: "Ngắt kết nối", dpi: "Vượt DPI", open: "Mở Ghostline", quit: "Thoát",
 		update: "Có bản mới %s ↗", proxyOn: "Proxy: bật", proxyOff: "Proxy: tắt",
+		checkUpdate: "Kiểm tra cập nhật", upToDate: "Đã là bản mới nhất", checkFailed: "Không kiểm tra được cập nhật",
 		status: map[app.Status]string{
 			app.StatusDisconnected: "Chưa bảo vệ", app.StatusConnecting: "Đang kết nối", app.StatusProtected: "Đã bảo vệ",
 			app.StatusDegraded: "Suy giảm", app.StatusDisconnecting: "Đang ngắt", app.StatusError: "Lỗi",
@@ -26,6 +28,7 @@ var trayLangs = map[string]trayStrings{
 	"en": {
 		connect: "Connect", disconnect: "Disconnect", dpi: "DPI bypass", open: "Open Ghostline", quit: "Quit",
 		update: "New version %s ↗", proxyOn: "Proxy: on", proxyOff: "Proxy: off",
+		checkUpdate: "Check for updates", upToDate: "Up to date", checkFailed: "Could not check for updates",
 		status: map[app.Status]string{
 			app.StatusDisconnected: "Unprotected", app.StatusConnecting: "Connecting", app.StatusProtected: "Protected",
 			app.StatusDegraded: "Degraded", app.StatusDisconnecting: "Disconnecting", app.StatusError: "Error",

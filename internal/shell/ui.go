@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/netip"
 	"sync"
+	"time"
 
 	"github.com/AdguardTeam/dnsproxy/upstream"
 	"github.com/hashcott/ghostline/internal/app"
@@ -69,6 +70,8 @@ type ui struct {
 	connItem  *application.MenuItem
 	dpiItem   *application.MenuItem
 	proxyItem *application.MenuItem
+	checkItem *application.MenuItem
+	checker   *updateChecker
 	svc       *app.Service
 	openItem  *application.MenuItem
 	quitItem  *application.MenuItem
@@ -184,6 +187,7 @@ func (u *ui) createTray() {
 		}()
 	})
 	menu.AddSeparator()
+	u.checkItem = menu.Add(tt.checkUpdate).OnClick(func(*application.Context) { go u.checkUpdate() })
 	u.openItem = menu.Add(tt.open).OnClick(func(*application.Context) { u.show() })
 	menu.Add("Ghostline " + brand.Version).SetEnabled(false)
 	menu.AddSeparator()
@@ -229,6 +233,7 @@ func (u *ui) relabel(status app.Status) {
 	}
 	u.dpiItem.SetLabel(tt.dpi)
 	u.proxyItem.SetLabel(tt.proxyLabel(u.box.Get().Proxy.Enabled))
+	u.checkItem.SetLabel(tt.checkUpdate)
 	u.openItem.SetLabel(tt.open)
 	u.quitItem.SetLabel(tt.quit)
 }
@@ -254,4 +259,25 @@ func (u *ui) onUpdate(tag, url string) {
 		st = app.StatusDisconnected
 	}
 	u.relabel(st)
+}
+
+// checkUpdate is the tray's "Check for updates": a newer release shows up
+// through onUpdate (menu item + tooltip); otherwise the tooltip says so.
+func (u *ui) checkUpdate() {
+	if u.checker == nil || u.tray == nil {
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	defer cancel()
+	r, err := u.checker.checkNow(ctx)
+	if err == nil && r.Newer {
+		return
+	}
+	tt := trayText(u.box.Get().Language)
+	msg := tt.upToDate + " (" + brand.Version + ")"
+	if err != nil {
+		msg = tt.checkFailed
+	}
+	u.tray.SetTooltip(brand.AppName + " · " + msg)
+	time.AfterFunc(10*time.Second, u.onLanguage) // back to the status tooltip
 }

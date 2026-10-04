@@ -192,7 +192,10 @@
     "stopServiceConfirm": "Dịch vụ {{name}} của Windows đang giữ cổng 53. Tạm dừng nó có thể làm Mobile Hotspot, WSL hoặc Hyper-V ngừng hoạt động cho tới khi khởi động lại máy. Tiếp tục?",
     "saved": "đã lưu",
     "version": "phiên bản {{version}}",
-    "update": "có bản mới {{tag}} ↗"
+    "update": "có bản mới {{tag}} ↗",
+    "checkUpdate": "kiểm tra cập nhật",
+    "checking": "đang kiểm tra…",
+    "upToDate": "đã là bản mới nhất ({{version}})"
   },
   "errors": {
     "NOT_ADMIN": {

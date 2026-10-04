@@ -33,3 +33,12 @@ func TestTrayText_ProxyItem(t *testing.T) {
 	require.Equal(t, "Proxy: on", trayText("en").proxyLabel(true))
 	require.Equal(t, "Proxy: off", trayText("en").proxyLabel(false))
 }
+
+func TestTrayText_CheckUpdate(t *testing.T) {
+	require.Equal(t, "Kiểm tra cập nhật", trayText("vi").checkUpdate)
+	require.Equal(t, "Check for updates", trayText("en").checkUpdate)
+	require.Equal(t, "Đã là bản mới nhất", trayText("vi").upToDate)
+	require.Equal(t, "Up to date", trayText("en").upToDate)
+	require.Equal(t, "Không kiểm tra được cập nhật", trayText("vi").checkFailed)
+	require.Equal(t, "Could not check for updates", trayText("en").checkFailed)
+}
