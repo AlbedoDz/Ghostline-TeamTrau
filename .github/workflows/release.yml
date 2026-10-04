@@ -43,7 +43,9 @@ jobs:
         shell: pwsh
         run: |
           $files = Get-ChildItem bin -File | Where-Object { $_.Name -like "*installer.exe" -or $_.Name -like "*portable.zip" }
-          $files | ForEach-Object { "{0}  {1}" -f (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower(), $_.Name } | Set-Content -Encoding ascii bin/SHA256SUMS
+          # LF line endings so `sha256sum -c` works too, not only Get-FileHash.
+          $lines = $files | ForEach-Object { "{0}  {1}" -f (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower(), $_.Name }
+          [IO.File]::WriteAllText("$PWD/bin/SHA256SUMS", (($lines -join "`n") + "`n"), [Text.Encoding]::ASCII)
           Get-Content bin/SHA256SUMS
       - name: GitHub release
         shell: pwsh
