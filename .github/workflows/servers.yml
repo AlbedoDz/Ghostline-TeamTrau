@@ -16,7 +16,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: main
+          ref: master
       - uses: actions/setup-go@v7
         with:
           go-version: "1.27"
@@ -32,4 +32,4 @@ jobs:
           git add lists/servers.json lists/servers.json.sig
           if git diff --cached --quiet; then echo "no changes"; exit 0; fi
           git commit -m "chore(lists): regenerate signed server list"
-          git push origin HEAD:main
+          git push origin HEAD:master

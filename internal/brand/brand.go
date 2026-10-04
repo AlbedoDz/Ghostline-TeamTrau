@@ -12,7 +12,7 @@ const (
 	StateMutex       = `Local\Ghostline-State`
 	SingleInstanceID = "io.github.hashcott.ghostline"
 
-	ServerListURL    = "https://raw.githubusercontent.com/hashcott/ghostline/main/lists/servers.json"
+	ServerListURL    = "https://raw.githubusercontent.com/hashcott/ghostline/master/lists/servers.json"
 	ServerListSigURL = ServerListURL + ".sig"
 	ReleasesAPI      = "https://api.github.com/repos/hashcott/ghostline/releases/latest"
 
