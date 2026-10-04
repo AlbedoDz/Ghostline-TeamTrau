@@ -62,6 +62,7 @@ export function SimpleView({ onOpenLogs }: { onOpenLogs: () => void }) {
           { k: t("simple.latency"), v: t("common.ms", { value: lastLatency }) },
           { k: t("simple.dpi"), v: snap.dpi.running ? `${snap.dpi.preset} ✓` : t("common.off"), tone: snap.dpi.running ? "ok" : "dim" },
           { k: t("simple.uptime"), v: uptime },
+          ...(snap.proxy?.running ? [{ k: t("simple.proxy"), v: snap.proxy.addr }] : []),
         ]}
       />
     );

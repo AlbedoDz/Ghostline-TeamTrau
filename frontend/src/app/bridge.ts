@@ -14,6 +14,10 @@ export function startBridge(): () => void {
     Events.On("scan:progress", (ev: any) => useGhost.getState().setScan(ev.data.running ? ev.data : null)),
     Events.On("dpi:autotune", (ev: any) => useGhost.getState().setAutotune(ev.data)),
     Events.On("update", (ev: any) => useGhost.getState().setUpdate(ev.data)),
+    Events.On("proxy:stats", (ev: any) => useGhost.getState().setProxyStats(ev.data)),
+    Events.On("proxy:conn", (ev: any) => useGhost.getState().pushProxyConn(ev.data)),
+    Events.On("rules:compiled", () => useGhost.getState().bumpRules()),
+    Events.On("lists:progress", () => useGhost.getState().bumpRules()),
   ];
   void Service.GetSnapshot().then(s.setSnapshot);
   void Service.GetSettings().then((st) => {

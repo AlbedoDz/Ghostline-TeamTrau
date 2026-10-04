@@ -55,20 +55,24 @@
     "blocked": "{{count}}/{{total}} test sites are still blocked",
     "autotune": "AUTO-TUNE DPI BYPASS",
     "autotuning": "tuning: {{preset}} ({{index}}/{{total}})",
-    "enableFragment": "ENABLE DNS FRAGMENT"
+    "enableFragment": "ENABLE DNS FRAGMENT",
+    "proxy": "proxy"
   },
   "nav": {
     "overview": "overview",
     "servers": "servers",
     "dpi": "dpi bypass",
     "logs": "logs",
-    "settings": "settings"
+    "settings": "settings",
+    "proxy": "proxy",
+    "rules": "rules"
   },
   "overview": {
     "latency60": "latency · 60 seconds",
     "queries": "queries",
     "inUse": "servers in use",
-    "route": "127.0.0.1 → {{servers}}"
+    "route": "127.0.0.1 → {{servers}}",
+    "proxy": "proxy"
   },
   "servers": {
     "title": "SERVERS",
@@ -135,7 +139,8 @@
       "tcp": "✕ TCP",
       "tls": "✕ TLS",
       "http": "✕ HTTP"
-    }
+    },
+    "webFragmentNote": "Web fragmentation (Proxy page) only applies to apps that use the proxy; GoodbyeDPI applies to every app."
   },
   "logs": {
     "title": "LOGS",
@@ -162,7 +167,9 @@
     "DPI_STARTED": "GoodbyeDPI running (preset {{preset}})",
     "DPI_STOPPED": "GoodbyeDPI stopped",
     "AUTOTUNE_TRY": "auto-tune: trying {{preset}}",
-    "AUTOTUNE_FOUND": "auto-tune: using {{preset}}"
+    "AUTOTUNE_FOUND": "auto-tune: using {{preset}}",
+    "PROXY_STARTED": "proxy running on {{addr}}",
+    "PROXY_RESTART": "proxy stopped listening, restarting"
   },
   "settings": {
     "title": "SETTINGS",
@@ -253,6 +260,56 @@
     "NOT_CONNECTED": {
       "message": "connect first to auto-tune DPI bypass",
       "action": "Connect, then try again"
+    },
+    "PROXY_PORT_BUSY": {
+      "message": "port {{port}} is held by {{name}} (PID {{pid}})",
+      "action": "Change the proxy port or close that program"
+    },
+    "PROXY_SELFTEST_FAILED": {
+      "message": "the proxy failed its self test",
+      "action": "Retry; check the logs if it repeats"
+    },
+    "PROXY_FIREWALL": {
+      "message": "could not create the firewall rule for LAN sharing",
+      "action": "Retry or turn LAN sharing off"
+    },
+    "SYSPROXY_EXISTING": {
+      "message": "this PC already uses another proxy ({{server}}{{pac}}). Replace it? Ghostline puts it back when disconnecting.",
+      "action": "",
+      "override": "replace",
+      "keep": "don't use the system proxy"
+    },
+    "SYSPROXY_FAILED": {
+      "message": "could not set the Windows system proxy",
+      "action": "Retry or turn off \"use for this PC\""
+    },
+    "SYSPROXY_TAKEN_OVER": {
+      "message": "another app changed the system proxy; Ghostline will not fight it or restore over it",
+      "action": ""
+    },
+    "SYSPROXY_RESTORE_FAILED": {
+      "message": "could not restore the Windows system proxy",
+      "action": "Open Windows Settings → Proxy and turn the manual proxy off"
+    },
+    "RULES_PARSE": {
+      "message": "invalid rules on line {{line}}",
+      "action": ""
+    },
+    "LIST_FETCH_FAILED": {
+      "message": "could not download list {{id}}; the previous copy is in use",
+      "action": ""
+    },
+    "LIST_UNSUPPORTED_FORMAT": {
+      "message": "list {{id}} is in an unsupported format",
+      "action": "Pick the format manually or use the text version"
+    },
+    "LIST_TOO_LARGE": {
+      "message": "list {{id}} is too large (50 MB / 2 million entries max) and was turned off",
+      "action": ""
+    },
+    "UPSTREAM_PROXY_FAILED": {
+      "message": "upstream proxy {{id}} is not usable",
+      "action": "Check the address or re-enter the password"
     }
   },
   "tray": {
@@ -264,5 +321,69 @@
     "disconnect": "⏻ DISCONNECT",
     "cancel": "■ CANCEL",
     "summary": "{{latency}} ms · {{count}} servers"
+  },
+  "proxy": {
+    "title": "PROXY",
+    "enabled": "enable proxy",
+    "systemProxy": "use for this PC",
+    "shareLan": "share on LAN",
+    "port": "port",
+    "portInvalid": "the port must be 1024–65535 (and not 53)",
+    "note": "the proxy runs with Connect and always resolves names through Ghostline's encrypted DNS",
+    "lan": {
+      "title": "share with other devices",
+      "public": "This network is Public, so other devices cannot connect. Switch it to Private in Windows Settings to share.",
+      "none": "no LAN address found",
+      "qr": "QR code for {{addr}}",
+      "howto": "On a phone: Wi-Fi → this network → Proxy → Manual → enter the address and port above (HTTP)."
+    },
+    "fragment": {
+      "title": "web fragmentation",
+      "mode": "mode",
+      "modes": {
+        "auto": "auto when blocked",
+        "always": "always",
+        "never": "off"
+      },
+      "method": "method",
+      "methods": {
+        "tcp": "TCP",
+        "record": "TLS record",
+        "both": "combined"
+      },
+      "autoTimeout": "wait for server (ms)",
+      "cache": "remembered domains (this network)",
+      "cacheEmpty": "no domains yet",
+      "clearAll": "clear all",
+      "forget": "remove {{host}}"
+    },
+    "upstreams": {
+      "title": "upstream proxies",
+      "add": "+ add",
+      "empty": "no upstream proxies",
+      "id": "id",
+      "type": "type",
+      "addr": "address",
+      "user": "user",
+      "password": "password",
+      "test": "test",
+      "testFor": "test {{id}}",
+      "testOk": "reachable ✓",
+      "edit": "edit",
+      "deleteFor": "remove {{id}}"
+    },
+    "stats": {
+      "title": "statistics",
+      "open": "{{count}} connections",
+      "lan": "{{count}} LAN devices",
+      "direct": "direct",
+      "fragmented": "fragmented",
+      "upstream": "upstream",
+      "blocked": "blocked",
+      "blockedEvenFragmented": "blocked even fragmented"
+    },
+    "hint": {
+      "goodbyedpi": "{{count}} connections were blocked even fragmented — try GoodbyeDPI on the DPI page"
+    }
   }
 }

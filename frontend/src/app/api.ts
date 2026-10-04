@@ -10,8 +10,16 @@ export type {
   Snapshot,
   StatsEvent,
   UpdateInfo,
+  LANInfo,
+  RulesView,
+  RulesCompiled,
+  ListsProgress,
+  ProxyStatus,
 } from "../../bindings/github.com/hashcott/ghostline/internal/app/models";
-export type { Settings } from "../../bindings/github.com/hashcott/ghostline/internal/store/models";
+export type { Rule, Decision, LineError, Source as RuleSource } from "../../bindings/github.com/hashcott/ghostline/internal/rules/models";
+export type { List, CatalogItem } from "../../bindings/github.com/hashcott/ghostline/internal/rules/lists/models";
+export type { Stats as ProxyStats, ConnEvent } from "../../bindings/github.com/hashcott/ghostline/internal/proxy/models";
+export type { Settings, UpstreamProxy } from "../../bindings/github.com/hashcott/ghostline/internal/store/models";
 export type { QueryEvent } from "../../bindings/github.com/hashcott/ghostline/internal/engine/models";
 export type { Result as ProbeResult } from "../../bindings/github.com/hashcott/ghostline/internal/probe/models";
 export type { Adapter } from "../../bindings/github.com/hashcott/ghostline/internal/sysdns/models";

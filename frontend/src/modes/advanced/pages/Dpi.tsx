@@ -136,6 +136,7 @@ export function Dpi() {
               onChange={(e) => void save((s) => ({ ...s, fragmentDns: { ...s.fragmentDns, delayMs: Number(e.target.value) } }))} />
           </div>
           {dpi.enabled && <div className={css.dim}>{t("dpi.redundant")}</div>}
+          <div className={css.dim}>{t("dpi.webFragmentNote")}</div>
         </div>
 
         <div className={css.panel}>

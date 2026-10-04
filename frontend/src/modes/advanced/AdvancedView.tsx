@@ -7,11 +7,13 @@ import { Warnings } from "../../components/Warnings";
 import { Overview } from "./pages/Overview";
 import { Servers } from "./pages/Servers";
 import { Dpi } from "./pages/Dpi";
+import { Proxy } from "./pages/Proxy";
+import { Rules } from "./pages/Rules";
 import { Logs } from "./pages/Logs";
 import { Settings } from "./pages/Settings";
 import css from "./advanced.module.css";
 
-const pages: Page[] = ["overview", "servers", "dpi", "logs", "settings"];
+const pages: Page[] = ["overview", "servers", "dpi", "proxy", "rules", "logs", "settings"];
 
 export function AdvancedView() {
   const { t } = useTranslation();
@@ -59,6 +61,8 @@ export function AdvancedView() {
         {page === "overview" && <Overview />}
         {page === "servers" && <Servers />}
         {page === "dpi" && <Dpi />}
+        {page === "proxy" && <Proxy />}
+        {page === "rules" && <Rules />}
         {page === "logs" && <Logs />}
         {page === "settings" && <Settings />}
       </div>

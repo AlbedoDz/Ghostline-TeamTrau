@@ -2,7 +2,9 @@ import { create } from "zustand";
 import type {
   AppInfo,
   AutotuneProgress,
+  ConnEvent,
   LogEvent,
+  ProxyStats,
   QueryEvent,
   ScanProgress,
   Settings,
@@ -12,7 +14,7 @@ import type {
 } from "./api";
 
 export type Mode = "simple" | "advanced";
-export type Page = "overview" | "servers" | "dpi" | "logs" | "settings";
+export type Page = "overview" | "servers" | "dpi" | "proxy" | "rules" | "logs" | "settings";
 
 const emptySnapshot = {
   status: "disconnected",
@@ -24,6 +26,8 @@ const emptySnapshot = {
   queries: 0,
   dpi: { enabled: false, running: false, preset: "light" },
   blockedSites: [],
+  reasons: [],
+  proxy: { running: false, addr: "", systemProxy: false, shareLan: false },
 } as unknown as Snapshot;
 
 type State = {
@@ -40,6 +44,12 @@ type State = {
   page: Page;
   bannerDismissed: boolean;
   queryLog: boolean;
+  proxyStats: ProxyStats | null;
+  proxyConns: ConnEvent[];
+  rulesVersion: number;
+  setProxyStats: (s: ProxyStats) => void;
+  pushProxyConn: (c: ConnEvent) => void;
+  bumpRules: () => void;
   setQueryLog: (on: boolean) => void;
   setSnapshot: (s: Snapshot) => void;
   setSettings: (s: Settings) => void;
@@ -71,6 +81,9 @@ const initial = {
   page: "overview" as Page,
   bannerDismissed: false,
   queryLog: false,
+  proxyStats: null as ProxyStats | null,
+  proxyConns: [] as ConnEvent[],
+  rulesVersion: 0,
 };
 
 const tail = <T,>(arr: T[], v: T, n: number) => {
@@ -105,6 +118,9 @@ export const useGhost = create<State>((set) => ({
   setUpdate: (update) => set({ update }),
   setPage: (page) => set({ page }),
   dismissBanner: (bannerDismissed) => set({ bannerDismissed }),
-  setQueryLog: (queryLog) => set({ queryLog }),
+  setQueryLog: (queryLog) => set(queryLog ? { queryLog } : { queryLog, proxyConns: [] }),
+  setProxyStats: (proxyStats) => set({ proxyStats }),
+  pushProxyConn: (c) => set((s) => ({ proxyConns: tail(s.proxyConns, c, 500) })),
+  bumpRules: () => set((s) => ({ rulesVersion: s.rulesVersion + 1 })),
   reset: () => set({ ...initial }),
 }));

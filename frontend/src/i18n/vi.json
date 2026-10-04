@@ -55,20 +55,24 @@
     "blocked": "{{count}}/{{total}} trang mẫu vẫn bị chặn",
     "autotune": "TỰ DÒ VƯỢT DPI",
     "autotuning": "đang dò: {{preset}} ({{index}}/{{total}})",
-    "enableFragment": "BẬT FRAGMENT DNS"
+    "enableFragment": "BẬT FRAGMENT DNS",
+    "proxy": "proxy"
   },
   "nav": {
     "overview": "tổng quan",
     "servers": "máy chủ",
     "dpi": "vượt dpi",
     "logs": "nhật ký",
-    "settings": "cài đặt"
+    "settings": "cài đặt",
+    "proxy": "proxy",
+    "rules": "rules"
   },
   "overview": {
     "latency60": "độ trễ · 60 giây",
     "queries": "truy vấn",
     "inUse": "máy chủ đang dùng",
-    "route": "127.0.0.1 → {{servers}}"
+    "route": "127.0.0.1 → {{servers}}",
+    "proxy": "proxy"
   },
   "servers": {
     "title": "MÁY CHỦ",
@@ -135,7 +139,8 @@
       "tcp": "✕ TCP",
       "tls": "✕ TLS",
       "http": "✕ HTTP"
-    }
+    },
+    "webFragmentNote": "Fragment web (trang Proxy) chỉ áp dụng cho ứng dụng đi qua proxy; GoodbyeDPI áp dụng cho mọi ứng dụng."
   },
   "logs": {
     "title": "NHẬT KÝ",
@@ -162,7 +167,9 @@
     "DPI_STARTED": "GoodbyeDPI đã chạy (preset {{preset}})",
     "DPI_STOPPED": "đã tắt GoodbyeDPI",
     "AUTOTUNE_TRY": "tự dò: thử {{preset}}",
-    "AUTOTUNE_FOUND": "tự dò: dùng {{preset}}"
+    "AUTOTUNE_FOUND": "tự dò: dùng {{preset}}",
+    "PROXY_STARTED": "proxy đang chạy tại {{addr}}",
+    "PROXY_RESTART": "proxy ngừng lắng nghe, đang khởi động lại"
   },
   "settings": {
     "title": "CÀI ĐẶT",
@@ -253,6 +260,56 @@
     "NOT_CONNECTED": {
       "message": "cần kết nối trước khi tự dò vượt DPI",
       "action": "Bấm Connect rồi thử lại"
+    },
+    "PROXY_PORT_BUSY": {
+      "message": "cổng {{port}} đang bị {{name}} (PID {{pid}}) chiếm",
+      "action": "Đổi cổng proxy hoặc đóng chương trình đó"
+    },
+    "PROXY_SELFTEST_FAILED": {
+      "message": "proxy không tự kiểm tra được",
+      "action": "Thử lại; xem nhật ký nếu lặp lại"
+    },
+    "PROXY_FIREWALL": {
+      "message": "không tạo được luật tường lửa để chia sẻ LAN",
+      "action": "Thử lại hoặc tắt chia sẻ LAN"
+    },
+    "SYSPROXY_EXISTING": {
+      "message": "máy đang dùng proxy khác ({{server}}{{pac}}). Ghi đè? Ghostline sẽ trả lại như cũ khi ngắt.",
+      "action": "",
+      "override": "ghi đè",
+      "keep": "không dùng system proxy"
+    },
+    "SYSPROXY_FAILED": {
+      "message": "không đặt được system proxy của Windows",
+      "action": "Thử lại hoặc tắt \"dùng cho máy này\""
+    },
+    "SYSPROXY_TAKEN_OVER": {
+      "message": "một ứng dụng khác đã đổi system proxy; Ghostline sẽ không giành lại và không khôi phục đè lên",
+      "action": ""
+    },
+    "SYSPROXY_RESTORE_FAILED": {
+      "message": "không khôi phục được system proxy của Windows",
+      "action": "Mở Cài đặt Windows → Proxy và tắt proxy thủ công"
+    },
+    "RULES_PARSE": {
+      "message": "rules không hợp lệ ở dòng {{line}}",
+      "action": ""
+    },
+    "LIST_FETCH_FAILED": {
+      "message": "không tải được danh sách {{id}}, đang dùng bản cũ",
+      "action": ""
+    },
+    "LIST_UNSUPPORTED_FORMAT": {
+      "message": "danh sách {{id}} có định dạng không hỗ trợ",
+      "action": "Chọn định dạng bằng tay hoặc dùng bản text"
+    },
+    "LIST_TOO_LARGE": {
+      "message": "danh sách {{id}} quá lớn (giới hạn 50 MB / 2 triệu mục), đã tắt",
+      "action": ""
+    },
+    "UPSTREAM_PROXY_FAILED": {
+      "message": "upstream proxy {{id}} không dùng được",
+      "action": "Kiểm tra địa chỉ hoặc nhập lại mật khẩu"
     }
   },
   "tray": {
@@ -264,5 +321,69 @@
     "disconnect": "⏻ NGẮT KẾT NỐI",
     "cancel": "■ HUỶ",
     "summary": "{{latency}} ms · {{count}} máy chủ"
+  },
+  "proxy": {
+    "title": "PROXY",
+    "enabled": "bật proxy",
+    "systemProxy": "dùng cho máy này",
+    "shareLan": "chia sẻ LAN",
+    "port": "cổng",
+    "portInvalid": "cổng phải từ 1024 đến 65535 (và khác 53)",
+    "note": "proxy chạy cùng nút Connect và luôn phân giải tên miền qua DNS mã hoá của Ghostline",
+    "lan": {
+      "title": "chia sẻ cho thiết bị khác",
+      "public": "Mạng đang là Public, thiết bị khác không vào được. Đổi sang Private trong Cài đặt Windows để chia sẻ.",
+      "none": "không tìm thấy địa chỉ LAN",
+      "qr": "mã QR cho {{addr}}",
+      "howto": "Trên điện thoại: Wi-Fi → mạng này → Proxy → Thủ công → nhập địa chỉ và cổng ở trên (HTTP)."
+    },
+    "fragment": {
+      "title": "fragment web",
+      "mode": "chế độ",
+      "modes": {
+        "auto": "tự động khi bị chặn",
+        "always": "luôn bật",
+        "never": "tắt"
+      },
+      "method": "kiểu cắt",
+      "methods": {
+        "tcp": "TCP",
+        "record": "TLS record",
+        "both": "kết hợp"
+      },
+      "autoTimeout": "chờ server (ms)",
+      "cache": "domain đã ghi nhớ (mạng này)",
+      "cacheEmpty": "chưa có domain nào",
+      "clearAll": "xoá hết",
+      "forget": "xoá {{host}}"
+    },
+    "upstreams": {
+      "title": "upstream proxy",
+      "add": "+ thêm",
+      "empty": "chưa có upstream proxy",
+      "id": "mã",
+      "type": "loại",
+      "addr": "địa chỉ",
+      "user": "người dùng",
+      "password": "mật khẩu",
+      "test": "kiểm tra",
+      "testFor": "kiểm tra {{id}}",
+      "testOk": "kết nối được ✓",
+      "edit": "sửa",
+      "deleteFor": "xoá {{id}}"
+    },
+    "stats": {
+      "title": "thống kê",
+      "open": "{{count}} kết nối",
+      "lan": "{{count}} thiết bị LAN",
+      "direct": "thẳng",
+      "fragmented": "fragment",
+      "upstream": "upstream",
+      "blocked": "chặn",
+      "blockedEvenFragmented": "bị chặn dù đã fragment"
+    },
+    "hint": {
+      "goodbyedpi": "{{count}} kết nối bị chặn kể cả khi fragment — thử bật GoodbyeDPI ở trang Vượt DPI"
+    }
   }
 }

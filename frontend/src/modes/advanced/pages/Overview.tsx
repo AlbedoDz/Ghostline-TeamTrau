@@ -9,6 +9,7 @@ export function Overview() {
   const snap = useGhost((s) => s.snapshot);
   const latency = useGhost((s) => s.latency);
   const queries = useGhost((s) => s.queries);
+  const proxyStats = useGhost((s) => s.proxyStats);
   const uptime = useUptime(snap.since);
   const status = String(snap.status);
   const servers = snap.servers ?? [];
@@ -33,6 +34,19 @@ export function Overview() {
         <div className={css.panel}>
           <div className={css.panelTitle}>{t("overview.queries")}</div>
           <div className={css.big}>{(queries || snap.queries || 0).toLocaleString()}</div>
+        </div>
+        <div className={css.panel}>
+          <div className={css.panelTitle}>{t("overview.proxy")}</div>
+          {snap.proxy?.running ? (
+            <>
+              <div className={css.ok}>{snap.proxy.addr}</div>
+              <div className={css.dim}>
+                {t("proxy.stats.open", { count: proxyStats?.open ?? 0 })} · {t("proxy.stats.lan", { count: proxyStats?.lanClients ?? 0 })}
+              </div>
+            </>
+          ) : (
+            <span className={css.dim}>{t("common.off")}</span>
+          )}
         </div>
         <div className={css.panel}>
           <div className={css.panelTitle}>{t("overview.inUse")}</div>

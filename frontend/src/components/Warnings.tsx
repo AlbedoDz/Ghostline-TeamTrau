@@ -26,7 +26,12 @@ export function Warnings() {
           actions={
             w.code === "RESTORE_FAILED"
               ? [{ label: t("settings.restoreNow"), onClick: restore, primary: true }]
-              : [{ label: t("common.understood"), onClick: () => void Service.DismissWarning(w.code) }]
+              : w.code === "SYSPROXY_EXISTING"
+                ? [
+                    { label: t("errors.SYSPROXY_EXISTING.override"), onClick: () => void Service.AnswerSysProxyOverride(true), primary: true },
+                    { label: t("errors.SYSPROXY_EXISTING.keep"), onClick: () => void Service.AnswerSysProxyOverride(false) },
+                  ]
+                : [{ label: t("common.understood"), onClick: () => void Service.DismissWarning(w.code) }]
           }
         >
           {tCode(`errors.${w.code}.message`, w.params ?? undefined)}
