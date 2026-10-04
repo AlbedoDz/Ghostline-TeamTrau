@@ -121,3 +121,39 @@ func TestPicker_PickFreshIgnoresCacheAndExcludes(t *testing.T) { // review I3
 	require.Equal(t, []string{"s07", "s05"}, []string{got[0].ID, got[1].ID})
 	require.Positive(t, chk.calls.Load(), "a fresh scan must run")
 }
+
+// Pins are preferred even with pinned-only off: a pinned server that passes
+// is always used, even when the cache has faster unpinned ones.
+func TestPicker_PinnedPreferredWhenNotPinnedOnly(t *testing.T) {
+	chk := &fChecker{ok: map[string]time.Duration{"s08": 40, "s09": 30}}
+	s := store.DefaultSettings()
+	s.MaxUpstreams = 3
+	s.Pinned = []string{"s08", "s09", "s04"} // s04 is pinned but fails
+	p, _ := newPicker(chk, s)
+	p.Cache.Put("net1", p.Now().Add(-time.Hour), []scanner.Result{
+		{ServerID: "s01", OK: true, Latency: 5}, {ServerID: "s02", OK: true, Latency: 6}, {ServerID: "s03", OK: true, Latency: 7}})
+	got, err := p.Pick(context.Background(), nil)
+	require.NoError(t, err)
+	var ids []string
+	for _, g := range got {
+		ids = append(ids, g.ID)
+	}
+	require.Equal(t, []string{"s09", "s08", "s01"}, ids) // pinned (by latency) first, then the fastest others
+	require.Equal(t, int32(3), chk.calls.Load())         // only the pinned were checked; the cache filled the rest
+}
+
+// Pinned servers outside the include tags are still used.
+func TestPicker_PinnedOutsideTags(t *testing.T) {
+	chk := &fChecker{ok: map[string]time.Duration{"x1": 10, "s01": 20}}
+	s := store.DefaultSettings()
+	s.MaxUpstreams = 2
+	s.Pinned = []string{"x1"}
+	p, _ := newPicker(chk, s)
+	p.Catalog = func() []model.Server {
+		return append(catalog(2), model.Server{ID: "x1", Name: "AdBlocker", Tags: []string{"adblock"}})
+	}
+	got, err := p.Pick(context.Background(), nil)
+	require.NoError(t, err)
+	require.Equal(t, "x1", got[0].ID)
+	require.Equal(t, "s01", got[1].ID)
+}

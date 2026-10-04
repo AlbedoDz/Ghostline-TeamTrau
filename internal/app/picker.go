@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"errors"
 	"math/rand"
 	"slices"
 	"sync"
@@ -86,12 +87,58 @@ func (p *ScanPicker) pick(ctx context.Context, onProgress func(done, total int),
 	if want <= 0 {
 		want = defaultWants
 	}
-	pool := slices.DeleteFunc(p.pool(s), func(sv model.Server) bool { return slices.Contains(exclude, sv.ID) })
+	notExcluded := func(list []model.Server) []model.Server {
+		return slices.DeleteFunc(list, func(sv model.Server) bool { return slices.Contains(exclude, sv.ID) })
+	}
+	if s.PinnedOnly {
+		return p.pickFrom(ctx, notExcluded(p.pool(s)), want, false, onProgress, nil)
+	}
+
+	// Pinned servers are preferred: check them all first (they are few)
+	// and use every one that passes before filling the remaining slots.
+	var pins []model.Server
+	for _, sv := range p.Catalog() {
+		if slices.Contains(s.Pinned, sv.ID) {
+			pins = append(pins, sv)
+		}
+	}
+	pins = notExcluded(pins)
+	var chosen []model.Server
+	var pinRes []scanner.Result
+	if len(pins) > 0 {
+		pinRes = scanner.Scan(ctx, pins, p.Checker, scanner.Options{Workers: scanWorkers, Budget: quickBudget})
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		chosen = topOK(pinRes, pins, want)
+	}
+	if len(chosen) >= want {
+		return chosen, nil
+	}
+	rest := notExcluded(slices.DeleteFunc(p.pool(s), func(sv model.Server) bool { return slices.Contains(s.Pinned, sv.ID) }))
+	top, err := p.pickFrom(ctx, rest, want-len(chosen), useCache, onProgress, pinRes)
+	if err != nil {
+		if len(chosen) > 0 && ctx.Err() == nil {
+			return chosen, nil // the pinned servers that passed are enough
+		}
+		var ns *NoServersError
+		if errors.As(err, &ns) {
+			ns.Checked += len(pinRes)
+		}
+		return nil, err
+	}
+	return append(chosen, top...), nil
+}
+
+// pickFrom returns the want fastest working servers of pool, from a fresh
+// cache when allowed or a quick scan. extra results (the pinned check) are
+// saved into the scan cache together with the scan.
+func (p *ScanPicker) pickFrom(ctx context.Context, pool []model.Server, want int, useCache bool, onProgress func(done, total int), extra []scanner.Result) ([]model.Server, error) {
 	key := p.NetKey()
 	now := p.Now()
 
 	p.mu.Lock()
-	if useCache && !s.PinnedOnly {
+	if useCache {
 		if rs, ok := p.Cache.Fresh(key, now, cacheTTL); ok {
 			if top := topOK(rs, pool, want); len(top) >= want {
 				p.mu.Unlock()
@@ -115,7 +162,7 @@ func (p *ScanPicker) pick(ctx context.Context, onProgress func(done, total int),
 		return nil, err
 	}
 	p.mu.Lock()
-	p.Cache.Put(key, now, rs)
+	p.Cache.Put(key, now, append(slices.Clone(rs), extra...))
 	_ = p.SaveCache(p.Cache)
 	p.mu.Unlock()
 

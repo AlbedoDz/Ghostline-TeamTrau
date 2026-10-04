@@ -113,7 +113,8 @@ Every encrypted DNS server Ghostline knows about (several hundred), refreshed da
   - `family`: blocks adult content, good for children's computers.
   - **only ok:** show only servers that are currently working.
 - **Click a column header** (name, latency…) to sort.
-- **☆ Pin:** click the star to pin servers you like. Turn on **use pinned servers only** at the bottom so Ghostline picks only from those.
+- **☆ Pin:** click the star to pin servers you like. Pinned servers stay at the top of the table and are **preferred when connecting**: every pinned server that passes the check is used first, and the remaining slots go to the fastest others. Turn on **use pinned servers only** (next to the search box) to use nothing else.
+- **Search and bulk pin:** type in the search box (name, provider, protocol, address, IP or tag; several words must all match), then **★ pin all results**. The **★ pinned (N)** chip shows only pinned servers; **unpin all** clears them. If you change pins while connected, press **reconnect to apply**.
 - **+ add:** add your own servers. Paste URLs (`https://…`, `tls://…`, `quic://…`) or `sdns://…` stamps, one per line, or import them from a file. Servers you added have an **✕** button to remove them.
 - **state:** *in use* (receiving queries), *ok* (working), *not checked*.
 

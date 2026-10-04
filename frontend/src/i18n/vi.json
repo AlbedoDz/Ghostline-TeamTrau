@@ -109,7 +109,8 @@
     "unpinAll": "bỏ ghim tất cả",
     "pinsChanged": "đã đổi máy chủ ghim",
     "reconnect": "kết nối lại để áp dụng",
-    "pinnedOnlyEmpty": "chưa ghim máy chủ nào — kết nối sẽ báo lỗi"
+    "pinnedOnlyEmpty": "chưa ghim máy chủ nào — kết nối sẽ báo lỗi",
+    "pinnedPreferred": "máy chủ đã ghim được ưu tiên khi kết nối"
   },
   "dpi": {
     "title": "VƯỢT DPI",

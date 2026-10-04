@@ -141,6 +141,7 @@ export function Servers() {
           )}
           {pinnedIds.length > 0 && <Chip onClick={() => void pinMany(pinnedIds, false)}>{t("servers.unpinAll")}</Chip>}
           {settings?.pinnedOnly && pinnedIds.length === 0 && <span className={css.warn}>{t("servers.pinnedOnlyEmpty")}</span>}
+          {!settings?.pinnedOnly && pinnedIds.length > 0 && <span className={css.dim}>{t("servers.pinnedPreferred")}</span>}
         </div>
       )}
       {pinsChanged && connected && (

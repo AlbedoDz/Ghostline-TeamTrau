@@ -109,7 +109,8 @@
     "unpinAll": "unpin all",
     "pinsChanged": "pinned servers changed",
     "reconnect": "reconnect to apply",
-    "pinnedOnlyEmpty": "no pinned servers — connecting will fail"
+    "pinnedOnlyEmpty": "no pinned servers — connecting will fail",
+    "pinnedPreferred": "pinned servers are preferred when connecting"
   },
   "dpi": {
     "title": "DPI BYPASS",
