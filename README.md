@@ -19,9 +19,16 @@ English · [Tiếng Việt](README.vi.md)
 
 Ghostline runs a local DNS server on `127.0.0.1` / `::1`, points every network adapter at it, and forwards your queries over **DoH, DoT, DoQ or DNSCrypt** to the fastest healthy resolver. When your network blocks sites by SNI, it can also run **GoodbyeDPI**. Above all, it is built to **always give your original DNS back**, even if the app crashes or the machine loses power.
 
+<p align="center">
+  <img src="docs/screenshots/simple-en.png" height="360" alt="Simple mode">
+  &nbsp;
+  <img src="docs/screenshots/overview-en.png" height="360" alt="Advanced mode">
+</p>
+
 ## Table of contents
 
 - [Features](#features)
+- [Screenshots](#screenshots)
 - [Install](#install)
 - [Usage](#usage)
 - [How it works](#how-it-works)
@@ -43,6 +50,14 @@ Ghostline runs a local DNS server on `127.0.0.1` / `::1`, points every network a
 - **Simple and Advanced modes**, a tray icon, Vietnamese and English UI, and a neon-terminal look.
 - **Installer or portable:** the portable build keeps all data in a `data\` folder next to the exe.
 - **Update notifications only:** Ghostline tells you about a new version and never updates itself silently.
+
+## Screenshots
+
+| Servers | DPI bypass |
+| --- | --- |
+| ![Servers](docs/screenshots/servers-en.png) | ![DPI bypass](docs/screenshots/dpi-en.png) |
+| **Logs** | **Settings** |
+| ![Logs](docs/screenshots/logs-en.png) | ![Settings](docs/screenshots/settings-en.png) |
 
 ## Install
 

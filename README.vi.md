@@ -19,9 +19,16 @@
 
 Ghostline chạy một DNS server cục bộ trên `127.0.0.1` / `::1`, trỏ mọi card mạng về đó, rồi chuyển tiếp truy vấn qua **DoH, DoT, DoQ hoặc DNSCrypt** tới máy chủ nhanh nhất còn hoạt động. Khi nhà mạng chặn trang web theo SNI, Ghostline có thể chạy thêm **GoodbyeDPI**. Trên hết, Ghostline được thiết kế để **luôn trả lại DNS gốc của bạn**, kể cả khi app bị tắt đột ngột hay máy mất điện.
 
+<p align="center">
+  <img src="docs/screenshots/simple-vi.png" height="360" alt="Chế độ Đơn giản">
+  &nbsp;
+  <img src="docs/screenshots/overview-vi.png" height="360" alt="Chế độ Nâng cao">
+</p>
+
 ## Mục lục
 
 - [Tính năng](#tính-năng)
+- [Ảnh chụp màn hình](#ảnh-chụp-màn-hình)
 - [Cài đặt](#cài-đặt)
 - [Sử dụng](#sử-dụng)
 - [Cách hoạt động](#cách-hoạt-động)
@@ -42,6 +49,14 @@ Ghostline chạy một DNS server cục bộ trên `127.0.0.1` / `::1`, trỏ m�
 - **Chế độ Đơn giản và Nâng cao**, icon khay, giao diện tiếng Việt và tiếng Anh, phong cách neon-terminal.
 - **Bản cài đặt hoặc portable:** bản portable lưu mọi dữ liệu trong thư mục `data\` cạnh file exe.
 - **Chỉ thông báo khi có bản mới:** không bao giờ tự cập nhật ngầm.
+
+## Ảnh chụp màn hình
+
+| Máy chủ | Vượt DPI |
+| --- | --- |
+| ![Máy chủ](docs/screenshots/servers-vi.png) | ![Vượt DPI](docs/screenshots/dpi-vi.png) |
+| **Nhật ký** | **Cài đặt** |
+| ![Nhật ký](docs/screenshots/logs-vi.png) | ![Cài đặt](docs/screenshots/settings-vi.png) |
 
 ## Cài đặt
 
