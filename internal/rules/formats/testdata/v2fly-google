@@ -1,0 +1,7 @@
+# Synthetic sample in the style of v2fly/domain-list-community (MIT).
+include:google-ads
+google.example
+domain:g.example @cn
+full:www.full.example
+keyword:gstatic
+regexp:^gg[0-9]+\.example$

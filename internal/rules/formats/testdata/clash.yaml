@@ -1,0 +1,8 @@
+# Synthetic sample in the style of blackmatrix7/ios_rule_script (GPL-2.0).
+payload:
+  - 'DOMAIN-SUFFIX,google.example'
+  - DOMAIN,exact.example
+  - DOMAIN-KEYWORD,adservice
+  - 'IP-CIDR,1.0.0.0/8,no-resolve'
+  - PROCESS-NAME,chrome.exe
+  - '+.plus.example'

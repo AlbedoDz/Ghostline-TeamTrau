@@ -1,0 +1,1 @@
+{"version":1,"rules":[{"domain":["exact.example"],"domain_suffix":["suffix.example",".subonly.example"],"domain_keyword":["kw"],"domain_regex":["^r[0-9]+$"],"ip_cidr":["10.0.0.0/8"]},{"type":"logical","mode":"and","rules":[]}]}

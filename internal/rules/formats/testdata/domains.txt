@@ -1,0 +1,6 @@
+# Synthetic sample in the style of hagezi/dns-blocklists domains (GPL-3.0).
+ads.example
+tracker.example
+*.wild.example
+metrics.example
+not a domain line

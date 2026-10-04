@@ -1,0 +1,9 @@
+# Synthetic sample in the style of StevenBlack/hosts (MIT). Not copied content.
+127.0.0.1 localhost
+0.0.0.0 0.0.0.0
+0.0.0.0 ads.example
+0.0.0.0 tracker.example  # inline comment
+127.0.0.1 metrics.example
+:: v6sink.example
+1.2.3.4 mirror.example
+0.0.0.0 a.example b.example

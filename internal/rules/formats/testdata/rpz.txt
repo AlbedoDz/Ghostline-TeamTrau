@@ -1,0 +1,8 @@
+; Synthetic sample in the style of hagezi rpz format.
+$TTL 300
+@ SOA localhost. root.localhost. 1 43200 3600 86400 300
+  NS  localhost.
+ads.example CNAME .
+*.ads.example CNAME .
+tracker.example CNAME .
+ok.example CNAME rpz-passthru.

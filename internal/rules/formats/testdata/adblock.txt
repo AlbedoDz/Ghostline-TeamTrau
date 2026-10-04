@@ -1,0 +1,9 @@
+[Adblock Plus 2.0]
+! Synthetic sample in the style of AdGuard DNS filter (GPL-3.0).
+||ads.example^
+||tracker.example^$important
+@@||ok.ads.example^
+||third.example^$third-party
+example.com##.banner
+||metrics.example^
+||all.example^$all

@@ -1,0 +1,7 @@
+# Synthetic sample in the style of Loyalsoldier/clash-rules .list
+DOMAIN-SUFFIX,google.example
+DOMAIN,exact.example
+DOMAIN-REGEX,^ad[0-9]+\.
+IP-CIDR6,2001:db8::/32
+GEOIP,CN
+DOMAIN-SUFFIX,yt.example,Proxy
