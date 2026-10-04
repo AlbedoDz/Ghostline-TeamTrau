@@ -146,7 +146,6 @@
     "scope": "phạm vi",
     "scopeAll": "mọi kết nối",
     "scopeBlacklist": "danh sách đen",
-    "edit": "sửa ›",
     "blacklistTitle": "Danh sách đen (mỗi dòng một domain)",
     "preview": "dòng lệnh",
     "fragment": "FRAGMENT DNS",
@@ -164,7 +163,10 @@
       "tls": "✕ TLS",
       "http": "✕ HTTP"
     },
-    "webFragmentNote": "Fragment web (trang Proxy) chỉ áp dụng cho ứng dụng đi qua proxy; GoodbyeDPI áp dụng cho mọi ứng dụng."
+    "webFragmentNote": "Fragment web (trang Proxy) chỉ áp dụng cho ứng dụng đi qua proxy; GoodbyeDPI áp dụng cho mọi ứng dụng.",
+    "blacklistSuggested": "gợi ý từ trang mẫu — sửa rồi bấm lưu để dùng",
+    "blacklistSaved": "đã lưu",
+    "blacklistSavedRestart": "đã lưu — GoodbyeDPI đã khởi động lại"
   },
   "logs": {
     "title": "NHẬT KÝ",
@@ -344,6 +346,10 @@
     "NO_PINNED_SERVERS": {
       "message": "chưa có máy chủ ghim nào dùng được ({{checked}} đã kiểm tra)",
       "action": "Ghim thêm máy chủ hoặc tắt \"chỉ dùng máy chủ đã ghim\""
+    },
+    "DPI_BLACKLIST_EMPTY": {
+      "message": "danh sách đen đang trống",
+      "action": "Thêm ít nhất một domain, hoặc chọn \"mọi kết nối\""
     }
   },
   "tray": {

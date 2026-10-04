@@ -146,7 +146,6 @@
     "scope": "scope",
     "scopeAll": "all connections",
     "scopeBlacklist": "blacklist",
-    "edit": "edit ›",
     "blacklistTitle": "Blacklist (one domain per line)",
     "preview": "command line",
     "fragment": "DNS FRAGMENT",
@@ -164,7 +163,10 @@
       "tls": "✕ TLS",
       "http": "✕ HTTP"
     },
-    "webFragmentNote": "Web fragmentation (Proxy page) only applies to apps that use the proxy; GoodbyeDPI applies to every app."
+    "webFragmentNote": "Web fragmentation (Proxy page) only applies to apps that use the proxy; GoodbyeDPI applies to every app.",
+    "blacklistSuggested": "suggested from the sample sites — edit, then save to use it",
+    "blacklistSaved": "saved",
+    "blacklistSavedRestart": "saved — GoodbyeDPI restarted"
   },
   "logs": {
     "title": "LOGS",
@@ -344,6 +346,10 @@
     "NO_PINNED_SERVERS": {
       "message": "no pinned server is usable ({{checked}} checked)",
       "action": "Pin more servers or turn off \"use pinned servers only\""
+    },
+    "DPI_BLACKLIST_EMPTY": {
+      "message": "the blacklist is empty",
+      "action": "Add at least one domain, or pick \"all connections\""
     }
   },
   "tray": {

@@ -38,6 +38,7 @@ const (
 	CodeListTooLarge      = "LIST_TOO_LARGE"
 	CodeUpstreamProxy     = "UPSTREAM_PROXY_FAILED"
 	CodeNoPinnedServers   = "NO_PINNED_SERVERS"
+	CodeDPIBlacklistEmpty = "DPI_BLACKLIST_EMPTY"
 )
 
 // AppError is a coded error the UI can translate.

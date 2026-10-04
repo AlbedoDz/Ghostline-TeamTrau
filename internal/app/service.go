@@ -168,6 +168,11 @@ func (s *Service) SaveSettings(n store.Settings) error {
 		}
 	}
 	old := s.x.Settings.Get()
+	if n.DPI.Scope == string(dpi.ScopeBlacklist) && old.DPI.Scope != n.DPI.Scope {
+		if txt, _ := s.GetDPIBlacklist(); dpi.BlacklistEntries(txt) == 0 {
+			return appErr(CodeDPIBlacklistEmpty, nil)
+		}
+	}
 	// Upstream proxies change only through SaveUpstreamProxy/
 	// DeleteUpstreamProxy: the UI's copy may be stale or carry masked
 	// passwords, so it never overwrites them. Pins likewise change only
@@ -182,6 +187,11 @@ func (s *Service) SaveSettings(n store.Settings) error {
 	}
 	if s.x.OnSettingsChanged != nil {
 		s.x.OnSettingsChanged(old, n)
+	}
+	if old.DPI.Preset != n.DPI.Preset || old.DPI.CustomArgs != n.DPI.CustomArgs || old.DPI.Scope != n.DPI.Scope {
+		if err := s.o.RestartDPI(context.Background()); err != nil {
+			return err
+		}
 	}
 	if proxyPhaseChanged(old.Proxy, n.Proxy) {
 		// May wait for the SYSPROXY_EXISTING answer: do not block the UI call.
@@ -423,12 +433,20 @@ func (s *Service) GetDPIBlacklist() (string, error) {
 	return string(b), err
 }
 
-// SaveDPIBlacklist writes the blacklist file.
+// SaveDPIBlacklist writes the blacklist file and restarts a running
+// GoodbyeDPI so the new list applies now. An empty list is refused:
+// GoodbyeDPI would then bypass nothing.
 func (s *Service) SaveDPIBlacklist(text string) error {
+	if dpi.BlacklistEntries(text) == 0 {
+		return appErr(CodeDPIBlacklistEmpty, nil)
+	}
 	if err := os.MkdirAll(s.x.Paths.DataDir, 0o755); err != nil {
 		return err
 	}
-	return os.WriteFile(s.x.Paths.DPIBlacklist, []byte(text), 0o644)
+	if err := os.WriteFile(s.x.Paths.DPIBlacklist, []byte(text), 0o644); err != nil {
+		return err
+	}
+	return s.o.RestartDPI(context.Background())
 }
 
 // PreviewDPIArgs shows the GoodbyeDPI command line for the given options.

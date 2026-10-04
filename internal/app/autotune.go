@@ -45,6 +45,23 @@ func (o *Orchestrator) connected() bool {
 	return st == StatusProtected || st == StatusDegraded
 }
 
+// RestartDPI restarts a running GoodbyeDPI so new options or a new
+// blacklist take effect. It does nothing when GoodbyeDPI is not running.
+func (o *Orchestrator) RestartDPI(ctx context.Context) error {
+	o.opMu.Lock()
+	defer o.opMu.Unlock()
+	if !o.d.DPI.Running() {
+		return nil
+	}
+	_ = o.d.DPI.Stop()
+	o.recordDPI(false, 0)
+	if err := o.startDPI(ctx, o.d.Settings()); err != nil {
+		o.update(func(sn *Snapshot) { sn.DPI.Running = false })
+		return err
+	}
+	return nil
+}
+
 // SetDPIEnabled turns GoodbyeDPI on or off. While disconnected it only
 // saves the setting; enabled DPI starts on the next connect.
 func (o *Orchestrator) SetDPIEnabled(ctx context.Context, on bool) error {

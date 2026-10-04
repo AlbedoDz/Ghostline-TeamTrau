@@ -8,6 +8,10 @@ import { Toggle } from "../../../components/neon/Toggle";
 import { Chip } from "../../../components/neon/Chip";
 import css from "../advanced.module.css";
 
+// entries counts domains in blacklist text the way Go does: one per line,
+// blank lines and # comments skipped.
+const entries = (text: string) => text.split("\n").filter((l) => l.trim() && !l.trim().startsWith("#")).length;
+
 const PRESETS = ["light", "medium", "high", "extreme", "mode1", "mode2", "mode3", "mode4", "mode5", "mode6", "custom"];
 
 export function Dpi() {
@@ -19,7 +23,13 @@ export function Dpi() {
   const [error, setError] = useState<string | null>(null);
   const [preview, setPreview] = useState<string[]>([]);
   const [probe, setProbe] = useState<ProbeResult[]>([]);
-  const [blacklist, setBlacklist] = useState<string | null>(null);
+  // saved: the blacklist file as stored; draft: the editor text. newList is
+  // true while a first list is being written: scope switches to blacklist
+  // only once it is saved.
+  const [saved, setSaved] = useState("");
+  const [draft, setDraft] = useState("");
+  const [newList, setNewList] = useState(false);
+  const [listNote, setListNote] = useState<string | null>(null);
   const [sites, setSites] = useState((settings?.probeSites ?? []).join("\n"));
 
   const dpi = settings?.dpi;
@@ -29,6 +39,14 @@ export function Dpi() {
       .then((a) => setPreview(a ?? []))
       .catch(() => setPreview([]));
   }, [dpi?.preset, dpi?.customArgs, dpi?.scope]);
+  useEffect(() => {
+    Service.GetDPIBlacklist()
+      .then((b) => {
+        setSaved(b ?? "");
+        setDraft((d) => d || (b ?? "")); // keep what was typed meanwhile
+      })
+      .catch(() => {});
+  }, []);
 
   if (!settings || !dpi) return null;
 
@@ -37,6 +55,50 @@ export function Dpi() {
   const setEnabled = (on: boolean) => {
     const s = useGhost.getState().settings;
     if (s) useGhost.getState().setSettings({ ...s, dpi: { ...s.dpi, enabled: on } });
+  };
+  const suggested = () => (settings.probeSites ?? []).map((s) => s + "\n").join("");
+  const showList = dpi.scope === "blacklist" || newList;
+  const pickScope = (sc: "all" | "blacklist") => {
+    setError(null);
+    setListNote(null);
+    if (sc === "all") {
+      setNewList(false);
+      if (dpi.scope !== "all") void save((s) => ({ ...s, dpi: { ...s.dpi, scope: "all" } }));
+      return;
+    }
+    if (dpi.scope === "blacklist") return;
+    if (entries(saved) > 0) {
+      void save((s) => ({ ...s, dpi: { ...s.dpi, scope: "blacklist" } }));
+      return;
+    }
+    if (entries(draft) === 0) setDraft(suggested());
+    setNewList(true);
+  };
+  const saveList = async () => {
+    setListNote(null);
+    if (entries(draft) === 0) {
+      setError(tCode("errors.DPI_BLACKLIST_EMPTY.message"));
+      return;
+    }
+    try {
+      await Service.SaveDPIBlacklist(draft);
+    } catch (e) {
+      setError(describeError(e));
+      return;
+    }
+    setError(null);
+    setSaved(draft);
+    if (newList) {
+      setNewList(false);
+      await save((s) => ({ ...s, dpi: { ...s.dpi, scope: "blacklist" } }));
+    }
+    setListNote(running ? t("dpi.blacklistSavedRestart") : t("dpi.blacklistSaved"));
+  };
+  const cancelList = () => {
+    setError(null);
+    setListNote(null);
+    setNewList(false);
+    setDraft(entries(saved) > 0 ? saved : suggested());
   };
   const toggleDPI = (on: boolean) => {
     setError(null);
@@ -88,14 +150,40 @@ export function Dpi() {
         <div className={css.setting}>
           <span>{t("dpi.scope")}</span>
           <span className={css.row}>
-            {(["all", "blacklist"] as const).map((sc) => (
-              <Chip key={sc} active={dpi.scope === sc} onClick={() => void save((s) => ({ ...s, dpi: { ...s.dpi, scope: sc } }))}>
-                {sc === "all" ? t("dpi.scopeAll") : t("dpi.scopeBlacklist")}
-              </Chip>
-            ))}
-            <Chip onClick={() => void Service.GetDPIBlacklist().then((b) => setBlacklist(b ?? ""))}>{t("dpi.edit")}</Chip>
+            <Chip active={!showList} onClick={() => pickScope("all")}>
+              {t("dpi.scopeAll")}
+            </Chip>
+            <Chip active={showList} onClick={() => pickScope("blacklist")}>
+              {entries(saved) > 0 ? `${t("dpi.scopeBlacklist")} (${entries(saved)})` : t("dpi.scopeBlacklist")}
+            </Chip>
           </span>
         </div>
+        {showList && (
+          <div className={css.blacklist}>
+            <textarea
+              aria-label={t("dpi.blacklistTitle")}
+              placeholder={t("dpi.blacklistTitle")}
+              title={t("dpi.blacklistTitle")}
+              style={{ width: "100%", minHeight: 96 }}
+              value={draft}
+              onChange={(e) => {
+                setDraft(e.target.value);
+                setListNote(null);
+              }}
+              spellCheck={false}
+            />
+            <div className={css.row}>
+              <Chip onClick={() => void saveList()} disabled={!newList && draft === saved}>
+                {t("common.save")}
+              </Chip>
+              <Chip onClick={cancelList} disabled={!newList && draft === saved}>
+                {t("common.cancel")}
+              </Chip>
+              {newList && <span className={css.dim}>{t("dpi.blacklistSuggested")}</span>}
+              {listNote && <span className={css.ok}>✓ {listNote}</span>}
+            </div>
+          </div>
+        )}
         {error && <div className={css.bad}>{error}</div>}
         {autotune && !autotune.running && autotune.error && <div className={css.bad}>{tCode(`errors.${autotune.error.code}.message`)}</div>}
         <div className={css.code} aria-label={t("dpi.preview")}>
@@ -107,17 +195,6 @@ export function Dpi() {
           <div className={css.dim}>○ {t(snap.status === "protected" || snap.status === "degraded" ? "dpi.starting" : "dpi.waiting")}</div>
         ) : null}
       </div>
-
-      {blacklist !== null && (
-        <div className={css.panel}>
-          <div className={css.panelTitle}>{t("dpi.blacklistTitle")}</div>
-          <textarea style={{ width: "100%", minHeight: 120 }} value={blacklist} onChange={(e) => setBlacklist(e.target.value)} spellCheck={false} />
-          <div className={css.row}>
-            <Chip onClick={() => void Service.SaveDPIBlacklist(blacklist).then(() => setBlacklist(null))}>{t("common.save")}</Chip>
-            <Chip onClick={() => setBlacklist(null)}>{t("common.cancel")}</Chip>
-          </div>
-        </div>
-      )}
 
       <div className={css.grid2}>
         <div className={css.panel}>

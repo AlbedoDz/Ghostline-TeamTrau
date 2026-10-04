@@ -88,6 +88,19 @@ var (
 
 // ValidateCustom tokenizes user-typed GoodbyeDPI arguments (double quotes
 // group words) and accepts only known, safe flags.
+// BlacklistEntries counts the domains in a blacklist file's text: one per
+// line, blank lines and # comments skipped.
+func BlacklistEntries(text string) int {
+	n := 0
+	for _, l := range strings.Split(text, "\n") {
+		l = strings.TrimSpace(l)
+		if l != "" && !strings.HasPrefix(l, "#") {
+			n++
+		}
+	}
+	return n
+}
+
 func ValidateCustom(s string) ([]string, error) {
 	toks, err := tokenize(s)
 	if err != nil {
