@@ -16,6 +16,7 @@ import (
 
 	"github.com/AdguardTeam/dnsproxy/proxy"
 	"github.com/AdguardTeam/dnsproxy/upstream"
+	"github.com/hashcott/ghostline/internal/rules"
 	"github.com/miekg/dns"
 )
 
@@ -33,7 +34,17 @@ type Config struct {
 	Upstreams    []upstream.Upstream
 	CacheEnabled bool
 	Logger       *slog.Logger
+	// Rules returns the current rules; nil means no rules.
+	Rules func() *rules.Compiled
+	// BlockMode is "zero" (0.0.0.0 / ::, default) or "nxdomain".
+	BlockMode string
 }
+
+// ErrNoAddress means a name resolved to no A or AAAA record.
+var ErrNoAddress = errors.New("engine: no address for host")
+
+// ruleTTL is the TTL of answers synthesised from rules.
+const ruleTTL = 60
 
 // QueryEvent describes one forwarded query (kept in RAM only by callers).
 type QueryEvent struct {
@@ -44,6 +55,7 @@ type QueryEvent struct {
 	Latency  time.Duration
 	Err      string
 	Cached   bool
+	Action   string // "" | "blocked" | "rewritten"
 }
 
 // UpstreamStat aggregates results per upstream address.
@@ -241,6 +253,10 @@ func (e *Engine) handle(ctx context.Context, p *proxy.Proxy, d *proxy.DNSContext
 			d.Res = m
 			return nil
 		}
+		if m := e.applyRules(d.Req, name); m != nil {
+			d.Res = m
+			return nil
+		}
 	}
 
 	started := time.Now()
@@ -286,4 +302,109 @@ func (e *Engine) record(d *proxy.DNSContext, started time.Time, err error) {
 	if e.onQuery != nil {
 		e.onQuery(ev)
 	}
+}
+
+// applyRules answers req from the rules, or returns nil to forward it.
+func (e *Engine) applyRules(req *dns.Msg, name string) *dns.Msg {
+	e.mu.Lock()
+	get, mode := e.cfg.Rules, e.cfg.BlockMode
+	e.mu.Unlock()
+	if get == nil {
+		return nil
+	}
+	dec := get().Match(strings.TrimSuffix(name, "."), netip.Addr{})
+	if !dec.Block && len(dec.IPs) == 0 {
+		return nil
+	}
+	q := req.Question[0]
+	m := new(dns.Msg).SetReply(req)
+	hdr := dns.RR_Header{Name: q.Name, Class: dns.ClassINET, Ttl: ruleTTL}
+	action := "rewritten"
+	switch {
+	case dec.Block && mode == "nxdomain":
+		m.Rcode = dns.RcodeNameError
+		action = "blocked"
+	case dec.Block:
+		action = "blocked"
+		switch q.Qtype {
+		case dns.TypeA:
+			hdr.Rrtype = dns.TypeA
+			m.Answer = []dns.RR{&dns.A{Hdr: hdr, A: net.IPv4zero.To4()}}
+		case dns.TypeAAAA:
+			hdr.Rrtype = dns.TypeAAAA
+			m.Answer = []dns.RR{&dns.AAAA{Hdr: hdr, AAAA: net.IPv6unspecified}}
+		}
+	default:
+		for _, ip := range dec.IPs {
+			switch {
+			case q.Qtype == dns.TypeA && ip.Is4():
+				h := hdr
+				h.Rrtype = dns.TypeA
+				m.Answer = append(m.Answer, &dns.A{Hdr: h, A: ip.AsSlice()})
+			case q.Qtype == dns.TypeAAAA && ip.Is6():
+				h := hdr
+				h.Rrtype = dns.TypeAAAA
+				m.Answer = append(m.Answer, &dns.AAAA{Hdr: h, AAAA: ip.AsSlice()})
+			}
+		}
+	}
+	if e.onQuery != nil {
+		e.onQuery(QueryEvent{Time: time.Now(), Domain: q.Name, Type: dns.TypeToString[q.Qtype], Action: action})
+	}
+	return m
+}
+
+// Resolve looks host up through the engine's own listener (so rules, cache
+// and the encrypted upstreams apply) and returns IPv4 addresses first, then
+// IPv6. It never uses the system resolver.
+func (e *Engine) Resolve(ctx context.Context, host string) ([]netip.Addr, error) {
+	e.mu.Lock()
+	running, addr := e.p != nil, e.addr
+	e.mu.Unlock()
+	if !running {
+		return nil, errors.New("engine: not running")
+	}
+	name := dns.Fqdn(strings.ToLower(host))
+	type res struct {
+		ips []netip.Addr
+		err error
+	}
+	ask := func(qt uint16, out chan<- res) {
+		c := &dns.Client{Timeout: 3 * time.Second}
+		r, _, err := c.ExchangeContext(ctx, new(dns.Msg).SetQuestion(name, qt), addr.String())
+		if err != nil {
+			out <- res{err: err}
+			return
+		}
+		var ips []netip.Addr
+		for _, rr := range r.Answer {
+			switch v := rr.(type) {
+			case *dns.A:
+				if qt == dns.TypeA {
+					if a, ok := netip.AddrFromSlice(v.A.To4()); ok {
+						ips = append(ips, a)
+					}
+				}
+			case *dns.AAAA:
+				if qt == dns.TypeAAAA {
+					if a, ok := netip.AddrFromSlice(v.AAAA); ok {
+						ips = append(ips, a)
+					}
+				}
+			}
+		}
+		out <- res{ips: ips}
+	}
+	c4, c6 := make(chan res, 1), make(chan res, 1)
+	go ask(dns.TypeA, c4)
+	go ask(dns.TypeAAAA, c6)
+	r4, r6 := <-c4, <-c6
+	ips := append(r4.ips, r6.ips...)
+	if len(ips) > 0 {
+		return ips, nil
+	}
+	if r4.err != nil {
+		return nil, fmt.Errorf("engine: resolve: %w", r4.err)
+	}
+	return nil, ErrNoAddress
 }
