@@ -16,7 +16,7 @@
   <Properties>
     <DisplayName>Ghostline</DisplayName>
     <PublisherDisplayName>Ghostline</PublisherDisplayName>
-    <Description>A ghostline application</Description>
+    <Description>Ghostline - Secure DNS client</Description>
     <Logo>Assets\StoreLogo.png</Logo>
   </Properties>
   
@@ -32,7 +32,7 @@
     <Application Id="io.github.hashcott.ghostline" Executable="ghostline.exe" EntryPoint="Windows.FullTrustApplication">
       <uap:VisualElements
         DisplayName="Ghostline"
-        Description="A ghostline application"
+        Description="Ghostline - Secure DNS client"
         BackgroundColor="transparent"
         Square150x150Logo="Assets\Square150x150Logo.png"
         Square44x44Logo="Assets\Square44x44Logo.png">

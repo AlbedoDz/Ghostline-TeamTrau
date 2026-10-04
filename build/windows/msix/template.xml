@@ -18,7 +18,7 @@
         PublisherName="CN=Ghostline"
         PublisherDisplayName="Ghostline"
         Version="0.1.0.0"
-        PackageDescription="A ghostline application">
+        PackageDescription="Ghostline - Secure DNS client">
         <Capabilities>
             <Capability Name="runFullTrust" />
             
@@ -26,7 +26,7 @@
         <Applications>
             <Application
                 Id="io.github.hashcott.ghostline"
-                Description="A ghostline application"
+                Description="Ghostline - Secure DNS client"
                 DisplayName="Ghostline"
                 ExecutableName="ghostline.exe"
                 EntryPoint="Windows.FullTrustApplication">
@@ -43,7 +43,7 @@
             <Framework>false</Framework>
             <DisplayName>Ghostline</DisplayName>
             <PublisherDisplayName>Ghostline</PublisherDisplayName>
-            <Description>A ghostline application</Description>
+            <Description>Ghostline - Secure DNS client</Description>
             <Logo>Assets\AppIcon.png</Logo>
         </Properties>
     </PackageInformation>

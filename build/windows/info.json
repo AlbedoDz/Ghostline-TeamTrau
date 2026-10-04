@@ -1,15 +1,16 @@
 {
 	"fixed": {
-		"file_version": "0.1.0"
+		"file_version": "0.1.0",
+		"product_version": "0.1.0"
 	},
 	"info": {
-		"0000": {
+		"0409": {
 			"ProductVersion": "0.1.0",
 			"CompanyName": "Ghostline",
-			"FileDescription": "A ghostline application",
-			"LegalCopyright": "© 2026, My Company",
+			"FileDescription": "Ghostline - Secure DNS client",
+			"LegalCopyright": "© 2026 Harry Nguyen. MIT License.",
 			"ProductName": "Ghostline",
-			"Comments": "This is a comment"
+			"Comments": "https://github.com/hashcott/ghostline"
 		}
 	}
 }
