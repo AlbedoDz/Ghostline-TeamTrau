@@ -43,10 +43,11 @@ func (system) IPv6Available() bool {
 type safety struct{ exe string }
 
 func (s safety) StartWatchdog(pid uint32, start time.Time) (func() error, error) {
-	cmd := winutil.HiddenCmd(s.exe, []string{"--watchdog", "--parent", strconv.FormatUint(uint64(pid), 10),
-		"--parent-start", strconv.FormatInt(start.UnixNano(), 10)}, "")
-	// Deliberately not in a job object: it must outlive us.
-	if err := cmd.Start(); err != nil {
+	// Deliberately not in our job object, and broken away from any job we
+	// inherited from a terminal or IDE: it must outlive us.
+	cmd, err := winutil.StartDetached(s.exe, []string{"--watchdog", "--parent", strconv.FormatUint(uint64(pid), 10),
+		"--parent-start", strconv.FormatInt(start.UnixNano(), 10)})
+	if err != nil {
 		return nil, err
 	}
 	go func() { _ = cmd.Wait() }()
