@@ -144,7 +144,7 @@ Integration tests change real system settings, so run them in an **admin** termi
 go test -tags integration ./internal/sysdns/... ./internal/startup/...
 ```
 
-Before a release, go through [`docs/release-checklist.md`](docs/release-checklist.md). Pushing a `v*` tag builds and publishes the release through GitHub Actions. The full release process (Vietnamese) is in [`docs/releasing.md`](docs/releasing.md).
+Before a release, go through [`docs/release-checklist.md`](docs/release-checklist.md). Pushing a `v*` tag builds and publishes the release through GitHub Actions.
 
 ## Project layout
 
