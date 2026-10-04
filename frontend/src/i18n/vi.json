@@ -153,7 +153,9 @@
     "copy": "copy",
     "save": "lưu file",
     "queries": "hiện truy vấn",
-    "queriesNote": "chỉ giữ trong RAM, tối đa 500 dòng, không ghi xuống đĩa"
+    "queriesNote": "chỉ giữ trong RAM, tối đa 500 dòng, không ghi xuống đĩa",
+    "proxy": "proxy",
+    "rules": "rules"
   },
   "log": {
     "CONNECTED": "đã kết nối với {{servers}} máy chủ",
@@ -385,5 +387,76 @@
     "hint": {
       "goodbyedpi": "{{count}} kết nối bị chặn kể cả khi fragment — thử bật GoodbyeDPI ở trang Vượt DPI"
     }
+  },
+  "rules": {
+    "title": "RULES",
+    "tabTable": "bảng",
+    "tabText": "text",
+    "textLabel": "rules text",
+    "lineError": "dòng {{line}}: {{msg}}",
+    "syntax": "cú pháp: <mẫu> <hành động…> · mẫu: domain, =domain, *.domain, ~keyword, /regexp/, CIDR · hành động: block, allow, ip=, fragment=auto|on|off, upstream=<id> · # chú thích · #! rule tắt",
+    "enableFor": "bật {{pattern}}",
+    "up": "lên {{pattern}}",
+    "down": "xuống {{pattern}}",
+    "delete": "xoá {{pattern}}",
+    "empty": "chưa có rule nào",
+    "needs2b": "cần giai đoạn 2B",
+    "pattern": "mẫu",
+    "actionLabel": "hành động",
+    "add": "+ thêm rule",
+    "actions": {
+      "block": "chặn",
+      "allow": "cho phép",
+      "fragment=on": "fragment: bật",
+      "fragment=off": "fragment: tắt",
+      "ip": "DNS giả (ip)",
+      "upstream": "upstream proxy"
+    },
+    "action": {
+      "block": "chặn",
+      "allow": "cho phép",
+      "ip": "DNS giả → {{ips}}",
+      "fragment": "fragment: {{mode}}",
+      "upstream": "upstream: {{id}}"
+    },
+    "frag": {
+      "auto": "tự động",
+      "on": "bật",
+      "off": "tắt"
+    },
+    "explain": {
+      "title": "thử tên miền",
+      "input": "thử tên miền",
+      "go": "thử",
+      "none": "không rule hay danh sách nào khớp — đi thẳng",
+      "direct": "đi thẳng",
+      "rule": "rule số {{n}}",
+      "list": "danh sách {{name}}, dòng {{line}}"
+    },
+    "lists": {
+      "title": "danh sách",
+      "quick": "thêm nhanh",
+      "refreshAll": "⟳ cập nhật tất cả",
+      "refreshFor": "cập nhật {{name}}",
+      "skipped": "{{count}} dòng bỏ qua",
+      "empty": "chưa có danh sách nào",
+      "link": "link danh sách",
+      "add": "+ thêm danh sách",
+      "addItem": "thêm {{name}}",
+      "addShort": "+ thêm",
+      "formats": "hỗ trợ: hosts, domain, AdBlock/AdGuard, dnsmasq, Unbound, RPZ, Clash/Surge, v2ray, sing-box (JSON), CIDR · link GitHub tự chuyển sang raw",
+      "actions": {
+        "block": "chặn",
+        "allow": "cho phép",
+        "fragment=on": "fragment: bật",
+        "fromFile": "theo file (hosts/dnsmasq)"
+      }
+    },
+    "blockMode": "chặn ở DNS trả về",
+    "blockModes": {
+      "zero": "0.0.0.0 / ::",
+      "nxdomain": "NXDOMAIN"
+    },
+    "blockModeNote": "áp dụng từ lần kết nối tiếp theo"
   }
 }

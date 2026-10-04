@@ -153,7 +153,9 @@
     "copy": "copy",
     "save": "save file",
     "queries": "show queries",
-    "queriesNote": "kept in RAM only, at most 500 lines, never written to disk"
+    "queriesNote": "kept in RAM only, at most 500 lines, never written to disk",
+    "proxy": "proxy",
+    "rules": "rules"
   },
   "log": {
     "CONNECTED": "connected to {{servers}} servers",
@@ -385,5 +387,76 @@
     "hint": {
       "goodbyedpi": "{{count}} connections were blocked even fragmented — try GoodbyeDPI on the DPI page"
     }
+  },
+  "rules": {
+    "title": "RULES",
+    "tabTable": "table",
+    "tabText": "text",
+    "textLabel": "rules text",
+    "lineError": "line {{line}}: {{msg}}",
+    "syntax": "syntax: <pattern> <action…> · patterns: domain, =domain, *.domain, ~keyword, /regexp/, CIDR · actions: block, allow, ip=, fragment=auto|on|off, upstream=<id> · # comment · #! disabled rule",
+    "enableFor": "enable {{pattern}}",
+    "up": "move up {{pattern}}",
+    "down": "move down {{pattern}}",
+    "delete": "remove {{pattern}}",
+    "empty": "no rules yet",
+    "needs2b": "needs phase 2B",
+    "pattern": "pattern",
+    "actionLabel": "action",
+    "add": "+ add rule",
+    "actions": {
+      "block": "block",
+      "allow": "allow",
+      "fragment=on": "fragment: on",
+      "fragment=off": "fragment: off",
+      "ip": "fake DNS (ip)",
+      "upstream": "upstream proxy"
+    },
+    "action": {
+      "block": "block",
+      "allow": "allow",
+      "ip": "fake DNS → {{ips}}",
+      "fragment": "fragment: {{mode}}",
+      "upstream": "upstream: {{id}}"
+    },
+    "frag": {
+      "auto": "auto",
+      "on": "on",
+      "off": "off"
+    },
+    "explain": {
+      "title": "test a domain",
+      "input": "test a domain",
+      "go": "test",
+      "none": "no rule or list matches — goes direct",
+      "direct": "direct",
+      "rule": "rule #{{n}}",
+      "list": "list {{name}}, line {{line}}"
+    },
+    "lists": {
+      "title": "lists",
+      "quick": "quick add",
+      "refreshAll": "⟳ update all",
+      "refreshFor": "update {{name}}",
+      "skipped": "{{count}} lines skipped",
+      "empty": "no lists yet",
+      "link": "list link",
+      "add": "+ add list",
+      "addItem": "add {{name}}",
+      "addShort": "+ add",
+      "formats": "supported: hosts, domains, AdBlock/AdGuard, dnsmasq, Unbound, RPZ, Clash/Surge, v2ray, sing-box (JSON), CIDR · GitHub links are turned into raw links",
+      "actions": {
+        "block": "block",
+        "allow": "allow",
+        "fragment=on": "fragment: on",
+        "fromFile": "from file (hosts/dnsmasq)"
+      }
+    },
+    "blockMode": "DNS block answer",
+    "blockModes": {
+      "zero": "0.0.0.0 / ::",
+      "nxdomain": "NXDOMAIN"
+    },
+    "blockModeNote": "applies from the next connect"
   }
 }

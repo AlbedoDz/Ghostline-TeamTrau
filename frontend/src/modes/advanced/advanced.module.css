@@ -242,3 +242,16 @@
 .sideBtn:hover {
   background: color-mix(in srgb, currentColor 12%, transparent);
 }
+
+.chipTab {
+  padding: 3px 10px;
+  border: 1px solid var(--line, rgba(0, 208, 255, 0.3));
+  color: var(--dim, #7a8a99);
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+}
+.chipTab[aria-selected="true"] {
+  color: var(--cyan);
+  border-color: var(--cyan);
+}

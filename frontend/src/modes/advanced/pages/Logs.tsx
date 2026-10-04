@@ -7,7 +7,7 @@ import { Chip } from "../../../components/neon/Chip";
 import { Toggle } from "../../../components/neon/Toggle";
 import css from "../advanced.module.css";
 
-const SOURCES = ["all", "engine", "dpi", "system"] as const;
+const SOURCES = ["all", "engine", "dpi", "proxy", "rules", "system"] as const;
 
 function message(e: LogEvent): string {
   const key = `log.${e.code}`;
