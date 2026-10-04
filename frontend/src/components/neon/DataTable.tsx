@@ -18,16 +18,22 @@ type Props<T> = {
   rowKey: (row: T) => string;
   initialSort?: Sort;
   highlight?: (row: T) => boolean;
+  // pinTop keeps matching rows above the rest, whatever the sort.
+  pinTop?: (row: T) => boolean;
 };
 
-export function DataTable<T>({ columns, rows, rowKey, initialSort, highlight }: Props<T>) {
+export function DataTable<T>({ columns, rows, rowKey, initialSort, highlight, pinTop }: Props<T>) {
   const [sort, setSort] = useState<Sort | undefined>(initialSort);
   const sorted = useMemo(() => {
     const col = columns.find((c) => c.key === sort?.key);
-    if (!col?.sort) return rows;
-    const out = [...rows].sort(col.sort);
-    return sort!.dir === "desc" ? out.reverse() : out;
-  }, [rows, columns, sort]);
+    let out = rows;
+    if (col?.sort) {
+      out = [...rows].sort(col.sort);
+      if (sort!.dir === "desc") out.reverse();
+    }
+    if (!pinTop) return out;
+    return [...out.filter(pinTop), ...out.filter((r) => !pinTop(r))];
+  }, [rows, columns, sort, pinTop]);
 
   const onHeader = (c: Column<T>) => {
     if (!c.sort) return;

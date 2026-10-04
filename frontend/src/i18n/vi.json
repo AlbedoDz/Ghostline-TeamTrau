@@ -103,7 +103,13 @@
     "searchHint": "tìm theo tên, IP, địa chỉ, nhãn…",
     "clearSearch": "xoá tìm kiếm",
     "noMatch": "không có máy chủ nào khớp",
-    "matched": "khớp {{count}}"
+    "matched": "khớp {{count}}",
+    "pinnedChip": "★ đã ghim ({{count}})",
+    "pinAllResults": "★ ghim tất cả kết quả ({{count}})",
+    "unpinAll": "bỏ ghim tất cả",
+    "pinsChanged": "đã đổi máy chủ ghim",
+    "reconnect": "kết nối lại để áp dụng",
+    "pinnedOnlyEmpty": "chưa ghim máy chủ nào — kết nối sẽ báo lỗi"
   },
   "dpi": {
     "title": "VƯỢT DPI",

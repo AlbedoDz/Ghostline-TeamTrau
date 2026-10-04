@@ -16,6 +16,7 @@ const rows = [
 const svc = vi.hoisted(() => ({
   ListServers: vi.fn(),
   SetPinned: vi.fn(() => Promise.resolve()),
+  SetPinnedMany: vi.fn(() => Promise.resolve()),
   ScanAll: vi.fn(() => Promise.resolve()),
   CancelScan: vi.fn(() => Promise.resolve()),
   AddServers: vi.fn(() => Promise.resolve([1, ["udp://1.1.1.1"]])),
@@ -40,7 +41,8 @@ const names = () => screen.getAllByRole("row").slice(1).map((r) => within(r).get
 test("servers table filters by protocol chip and only-ok", async () => {
   render(<Servers />);
   await waitFor(() => expect(names()).toHaveLength(4));
-  expect(names()[0]).toBe("Cloudflare"); // sorted by latency asc, unchecked last
+  expect(names()[0]).toBe("Quad9"); // pinned first, then latency asc, unchecked last
+  expect(names()[1]).toBe("Cloudflare");
   fireEvent.click(screen.getByRole("button", { name: "dot" }));
   expect(names()).not.toContain("Quad9");
   fireEvent.click(screen.getByRole("button", { name: "chỉ đạt" }));
@@ -141,12 +143,43 @@ test("search filters servers by name, address, IP and tag, and can be cleared", 
   // Combines with the chips.
   fireEvent.change(box, { target: { value: "o" } });
   fireEvent.click(screen.getByRole("button", { name: "chỉ đạt" }));
-  expect(names()).toEqual(["Cloudflare", "Quad9"]);
+  expect(names()).toEqual(["Quad9", "Cloudflare"]); // pinned first
 
   fireEvent.change(box, { target: { value: "nothing-matches" } });
   expect(screen.getByText("không có máy chủ nào khớp")).toBeInTheDocument();
 
   fireEvent.click(screen.getByRole("button", { name: "xoá tìm kiếm" }));
   expect((box as HTMLInputElement).value).toBe("");
-  expect(names()).toEqual(["Cloudflare", "Quad9"]);
+  expect(names()).toEqual(["Quad9", "Cloudflare"]); // pinned first
+});
+
+test("pinned servers: chip filter, pinned-only switch at the top, bulk pin and unpin", async () => {
+  render(<Servers />);
+  await waitFor(() => expect(names()).toHaveLength(4));
+  // The pinned-only switch sits above the table now.
+  const sw = screen.getByRole("switch", { name: "chỉ dùng máy chủ đã ghim" });
+  expect(sw.compareDocumentPosition(screen.getByRole("table")) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+
+  fireEvent.click(screen.getByRole("button", { name: "★ đã ghim (1)" }));
+  expect(names()).toEqual(["Quad9"]);
+  fireEvent.click(screen.getByRole("button", { name: "★ đã ghim (1)" }));
+  expect(names()).toHaveLength(4);
+
+  fireEvent.change(screen.getByRole("searchbox", { name: "tìm máy chủ" }), { target: { value: "doh" } });
+  fireEvent.click(screen.getByRole("button", { name: "★ ghim tất cả kết quả (2)" }));
+  await waitFor(() => expect(svc.SetPinnedMany).toHaveBeenCalledWith(["cf", "gg"], true));
+
+  fireEvent.click(screen.getByRole("button", { name: "bỏ ghim tất cả" }));
+  await waitFor(() => expect(svc.SetPinnedMany).toHaveBeenCalledWith(["q9"], false));
+});
+
+test("changing pins while connected offers a reconnect", async () => {
+  useGhost.getState().setSnapshot({ status: "protected", warnings: [], servers: ["Cloudflare"], dpi: {} } as any);
+  render(<Servers />);
+  await waitFor(() => expect(names()).toHaveLength(4));
+  expect(screen.queryByText(/đã đổi máy chủ ghim/)).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "ghim Google" }));
+  fireEvent.click(await screen.findByRole("button", { name: "kết nối lại để áp dụng" }));
+  await waitFor(() => expect(svc.Connect).toHaveBeenCalled());
+  expect(svc.Disconnect.mock.invocationCallOrder[0]).toBeLessThan(svc.Connect.mock.invocationCallOrder[0]);
 });

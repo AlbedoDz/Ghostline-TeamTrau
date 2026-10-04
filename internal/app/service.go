@@ -308,6 +308,27 @@ func (s *Service) SetPinned(id string, pinned bool) error {
 	return s.x.Settings.Save(st)
 }
 
+// SetPinnedMany pins or unpins several servers with one save (bulk pin
+// from search results, "unpin all"). Order is kept and duplicates dropped.
+func (s *Service) SetPinnedMany(ids []string, pinned bool) error {
+	st := s.x.Settings.Get()
+	cur := slices.Clone(st.Pinned)
+	if pinned {
+		for _, id := range ids {
+			if !slices.Contains(cur, id) {
+				cur = append(cur, id)
+			}
+		}
+	} else {
+		cur = slices.DeleteFunc(cur, func(p string) bool { return slices.Contains(ids, p) })
+	}
+	if cur == nil {
+		cur = []string{}
+	}
+	st.Pinned = cur
+	return s.x.Settings.Save(st)
+}
+
 // SetDPIEnabled turns GoodbyeDPI on or off.
 func (s *Service) SetDPIEnabled(on bool) error { return s.o.SetDPIEnabled(context.Background(), on) }
 

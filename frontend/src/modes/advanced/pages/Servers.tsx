@@ -35,6 +35,10 @@ export function Servers() {
   const [tags, setTags] = useState<string[]>(TAGS);
   const [onlyOk, setOnlyOk] = useState(false);
   const [query, setQuery] = useState("");
+  const [showPinned, setShowPinned] = useState(false);
+  const [pinsChanged, setPinsChanged] = useState(false);
+  const status = useGhost((s) => String(s.snapshot.status));
+  const connected = status === "protected" || status === "degraded";
   const [adding, setAdding] = useState(false);
 
   const load = useCallback(() => void Service.ListServers().then((r) => setRows(r ?? [])), []);
@@ -50,15 +54,36 @@ export function Servers() {
         const rtags = r.server.tags ?? [];
         if (r.server.source !== "custom" && rtags.length > 0 && !rtags.some((x) => tags.includes(x))) return false;
         if (onlyOk && !r.result?.ok) return false;
+        if (showPinned && !r.pinned) return false;
         return matches(r, query);
       }),
-    [rows, protocols, tags, onlyOk, query],
+    [rows, protocols, tags, onlyOk, query, showPinned],
   );
   const okCount = rows.filter((r) => r.result?.ok).length;
 
+  const pinnedIds = rows.filter((r) => r.pinned).map((r) => r.server.id);
+  const afterPinChange = () => {
+    if (connected) setPinsChanged(true);
+    load();
+  };
   const pin = async (r: ServerRow) => {
     await Service.SetPinned(r.server.id, !r.pinned);
-    load();
+    afterPinChange();
+  };
+  const pinMany = async (ids: string[], pinned: boolean) => {
+    await Service.SetPinnedMany(ids, pinned);
+    afterPinChange();
+  };
+  const setPinnedOnly = (v: boolean) => {
+    if (!settings) return;
+    const next = { ...settings, pinnedOnly: v };
+    useGhost.getState().setSettings(next);
+    void Service.SaveSettings(next).then(() => connected && setPinsChanged(true));
+  };
+  const reconnect = async () => {
+    setPinsChanged(false);
+    await Service.Disconnect();
+    await Service.Connect();
   };
 
   const onScan = () => (scan?.running ? void Service.CancelScan() : void Service.ScanAll());
@@ -106,12 +131,30 @@ export function Servers() {
           style={{ flex: 1 }}
         />
         {query && <Chip label={t("servers.clearSearch")} onClick={() => setQuery("")}>✕</Chip>}
+        <Chip active={showPinned} onClick={() => setShowPinned(!showPinned)}>{t("servers.pinnedChip", { count: pinnedIds.length })}</Chip>
+        <Toggle showLabel label={t("servers.pinnedOnly")} checked={!!settings?.pinnedOnly} onChange={setPinnedOnly} />
       </div>
+      {(query || pinnedIds.length > 0) && (
+        <div className={css.row}>
+          {query && visible.length > 0 && (
+            <Chip onClick={() => void pinMany(visible.map((r) => r.server.id), true)}>{t("servers.pinAllResults", { count: visible.length })}</Chip>
+          )}
+          {pinnedIds.length > 0 && <Chip onClick={() => void pinMany(pinnedIds, false)}>{t("servers.unpinAll")}</Chip>}
+          {settings?.pinnedOnly && pinnedIds.length === 0 && <span className={css.warn}>{t("servers.pinnedOnlyEmpty")}</span>}
+        </div>
+      )}
+      {pinsChanged && connected && (
+        <div className={css.row}>
+          <span className={css.warn}>{t("servers.pinsChanged")}</span>
+          <Chip onClick={() => void reconnect()}>{t("servers.reconnect")}</Chip>
+        </div>
+      )}
       {query && visible.length === 0 && <div className={css.dim}>{t("servers.noMatch")}</div>}
       <DataTable<ServerRow>
         rows={visible}
         rowKey={(r) => r.server.id}
         highlight={(r) => r.inUse}
+        pinTop={(r) => r.pinned}
         initialSort={{ key: "latency", dir: "asc" }}
         columns={[
           {
@@ -186,17 +229,6 @@ export function Servers() {
       />
       <div className={css.foot}>
         <span>{lastScan ? t("servers.scannedAt", { time: new Date(lastScan).toLocaleTimeString() }) : ""}</span>
-        <Toggle
-          showLabel
-          label={t("servers.pinnedOnly")}
-          checked={!!settings?.pinnedOnly}
-          onChange={(v) => {
-            if (!settings) return;
-            const next = { ...settings, pinnedOnly: v };
-            useGhost.getState().setSettings(next);
-            void Service.SaveSettings(next);
-          }}
-        />
       </div>
       {adding && (
         <AddServersDialog
