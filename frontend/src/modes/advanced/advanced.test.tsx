@@ -180,7 +180,7 @@ test("pinned servers: chip filter, pinned-only switch at the top, bulk pin and u
   expect(names()).toHaveLength(4);
 
   fireEvent.change(screen.getByRole("searchbox", { name: "tìm máy chủ" }), { target: { value: "doh" } });
-  fireEvent.click(screen.getByRole("button", { name: "★ ghim tất cả kết quả (2)" }));
+  fireEvent.click(screen.getByRole("button", { name: "★ ghim 2 kết quả" }));
   await waitFor(() => expect(svc.SetPinnedMany).toHaveBeenCalledWith(["cf", "gg"], true));
 
   fireEvent.change(screen.getByRole("searchbox", { name: "tìm máy chủ" }), { target: { value: "" } });

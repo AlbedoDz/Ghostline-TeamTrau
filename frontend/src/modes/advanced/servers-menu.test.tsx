@@ -153,3 +153,17 @@ test("double-click a row toggles its pin", async () => {
   fireEvent.doubleClick(await rowOf("Quad9"));
   await waitFor(() => expect(svc.SetPinned).toHaveBeenCalledWith("q9", false));
 });
+
+test("search ignores the base64 inside sdns:// stamps", async () => {
+  svc.ListServers.mockResolvedValue([
+    ...structuredClone(rows),
+    { server: { id: "st", name: "Circl Doh", protocol: "doh", address: "sdns://AgcAAAAAAAAADadgXyZ", tags: ["no-filter"], source: "dnscrypt" }, inUse: false, pinned: false },
+  ]);
+  render(<Servers />);
+  await rowOf("Circl Doh");
+  const box = screen.getByRole("searchbox", { name: "tìm máy chủ" });
+  fireEvent.change(box, { target: { value: "adg" } });
+  expect(screen.queryByText("Circl Doh")).not.toBeInTheDocument();
+  fireEvent.change(box, { target: { value: "sdns" } });
+  expect(screen.getByText("Circl Doh")).toBeInTheDocument();
+});

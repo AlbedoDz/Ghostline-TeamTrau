@@ -107,7 +107,7 @@
     "noMatch": "không có máy chủ nào khớp",
     "matched": "khớp {{count}}",
     "pinnedChip": "★ đã ghim ({{count}})",
-    "pinAllResults": "★ ghim tất cả kết quả ({{count}})",
+    "pinAllResults": "★ ghim {{count}} kết quả",
     "unpinAll": "bỏ ghim tất cả",
     "pinsChanged": "đã đổi máy chủ ghim",
     "reconnect": "kết nối lại để áp dụng",

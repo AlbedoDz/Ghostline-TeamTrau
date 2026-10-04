@@ -20,7 +20,9 @@ function matches(r: ServerRow, query: string): boolean {
   const words = query.toLowerCase().split(/\s+/).filter(Boolean);
   if (words.length === 0) return true;
   const s = r.server;
-  const hay = [prettyServerName(s), s.name, s.provider, String(s.protocol), s.address, ...(s.ips ?? []), ...(s.tags ?? [])].join(" ").toLowerCase();
+  // A DNSCrypt stamp is base64: searching inside it matches random letters.
+  const address = s.address.startsWith("sdns://") ? "sdns://" : s.address;
+  const hay = [prettyServerName(s), s.name, s.provider, String(s.protocol), address, ...(s.ips ?? []), ...(s.tags ?? [])].join(" ").toLowerCase();
   return words.every((w) => hay.includes(w));
 }
 
@@ -131,7 +133,7 @@ export function Servers() {
             placeholder={t("servers.searchHint")}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            style={{ width: 260 }}
+            className={css.search}
           />
           {query && <Chip label={t("servers.clearSearch")} onClick={() => setQuery("")}>✕</Chip>}
           {query && visible.length > 0 && (

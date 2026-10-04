@@ -107,7 +107,7 @@
     "noMatch": "no servers match",
     "matched": "{{count}} match",
     "pinnedChip": "★ pinned ({{count}})",
-    "pinAllResults": "★ pin all results ({{count}})",
+    "pinAllResults": "★ pin {{count}} results",
     "unpinAll": "unpin all",
     "pinsChanged": "pinned servers changed",
     "reconnect": "reconnect to apply",

@@ -166,6 +166,7 @@
 
 /* ---------- Chip ---------- */
 .chip {
+  white-space: nowrap; /* a chip never breaks into two lines */
   border: 1px solid rgba(0, 255, 163, 0.3);
   color: var(--text);
   padding: 0 6px;

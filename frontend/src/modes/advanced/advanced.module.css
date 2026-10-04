@@ -26,7 +26,9 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
   gap: 10px;
+  white-space: nowrap;
   color: var(--text-strong);
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -34,6 +36,9 @@
 
 .head .tools {
   display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   gap: 6px;
   font-weight: 400;
   letter-spacing: 0;
@@ -255,4 +260,17 @@
 .chipTab[aria-selected="true"] {
   color: var(--cyan);
   border-color: var(--cyan);
+}
+
+/* Search box sized like the chips next to it; no native clear button
+   (the page has its own ✕). */
+.search {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 220px;
+  padding: 0 6px;
+  line-height: 1.6;
+}
+.search::-webkit-search-cancel-button {
+  display: none;
 }
