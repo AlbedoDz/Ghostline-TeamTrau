@@ -39,6 +39,10 @@ function App() {
               useGhost.getState().setPage("logs");
               onMode("advanced");
             }}
+            onOpenServers={() => {
+              useGhost.getState().setPage("servers");
+              onMode("advanced");
+            }}
           />
         ) : (
           <AdvancedView />

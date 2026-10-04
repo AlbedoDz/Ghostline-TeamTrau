@@ -208,6 +208,10 @@ func Run(o Options) error {
 		Protect:      winutil.ProtectString,
 		TestUpstream: pw.testUpstream,
 		CheckUpdate:  checker.checkNow,
+		CheckServer: func(ctx context.Context, id string) error {
+			_, err := picker.CheckOne(ctx, id)
+			return err
+		},
 	})
 	ui.svc = svc
 	if recovered, err := app.LoadRules(svc); err != nil || recovered {

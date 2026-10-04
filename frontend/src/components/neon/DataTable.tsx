@@ -20,9 +20,11 @@ type Props<T> = {
   highlight?: (row: T) => boolean;
   // pinTop keeps matching rows above the rest, whatever the sort.
   pinTop?: (row: T) => boolean;
+  // onRowMenu opens a row's context menu (right click, Menu key, Shift+F10).
+  onRowMenu?: (row: T, x: number, y: number) => void;
 };
 
-export function DataTable<T>({ columns, rows, rowKey, initialSort, highlight, pinTop }: Props<T>) {
+export function DataTable<T>({ columns, rows, rowKey, initialSort, highlight, pinTop, onRowMenu }: Props<T>) {
   const [sort, setSort] = useState<Sort | undefined>(initialSort);
   const sorted = useMemo(() => {
     const col = columns.find((c) => c.key === sort?.key);
@@ -64,7 +66,30 @@ export function DataTable<T>({ columns, rows, rowKey, initialSort, highlight, pi
       </thead>
       <tbody>
         {sorted.map((r) => (
-          <tr key={rowKey(r)} data-highlight={highlight?.(r) ?? false}>
+          <tr
+            key={rowKey(r)}
+            data-highlight={highlight?.(r) ?? false}
+            tabIndex={onRowMenu ? 0 : undefined}
+            onContextMenu={
+              onRowMenu
+                ? (e) => {
+                    e.preventDefault();
+                    onRowMenu(r, e.clientX, e.clientY);
+                  }
+                : undefined
+            }
+            onKeyDown={
+              onRowMenu
+                ? (e) => {
+                    if (e.key === "ContextMenu" || (e.key === "F10" && e.shiftKey)) {
+                      e.preventDefault();
+                      const b = e.currentTarget.getBoundingClientRect();
+                      onRowMenu(r, b.left + 24, b.bottom);
+                    }
+                  }
+                : undefined
+            }
+          >
             {columns.map((c) => (
               <td key={c.key} style={{ textAlign: c.align ?? "left" }}>
                 {c.render(r)}

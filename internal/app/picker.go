@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"errors"
+	"fmt"
 	"math/rand"
 	"slices"
 	"sync"
@@ -91,7 +92,16 @@ func (p *ScanPicker) pick(ctx context.Context, onProgress func(done, total int),
 		return slices.DeleteFunc(list, func(sv model.Server) bool { return slices.Contains(exclude, sv.ID) })
 	}
 	if s.PinnedOnly {
-		return p.pickFrom(ctx, notExcluded(p.pool(s)), want, false, onProgress, nil)
+		pool := notExcluded(p.pool(s))
+		if len(pool) == 0 {
+			return nil, &NoPinnedError{}
+		}
+		top, err := p.pickFrom(ctx, pool, want, false, onProgress, nil)
+		var ns *NoServersError
+		if errors.As(err, &ns) {
+			return nil, &NoPinnedError{Checked: ns.Checked}
+		}
+		return top, err
 	}
 
 	// Pinned servers are preferred: check them all first (they are few)
@@ -171,6 +181,39 @@ func (p *ScanPicker) pickFrom(ctx context.Context, pool []model.Server, want int
 		return nil, &NoServersError{Checked: len(rs), Elapsed: time.Since(start)}
 	}
 	return top, nil
+}
+
+// CheckOne re-tests one server and records the result in the current
+// network's cached scan (without making the rest of the cache look fresh).
+func (p *ScanPicker) CheckOne(ctx context.Context, id string) (scanner.Result, error) {
+	var srv *model.Server
+	for _, sv := range p.Catalog() {
+		if sv.ID == id {
+			sv := sv
+			srv = &sv
+			break
+		}
+	}
+	if srv == nil {
+		return scanner.Result{}, fmt.Errorf("app: no server %q", id)
+	}
+	r := p.Checker.Check(ctx, *srv)
+	key := p.NetKey()
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	if p.Cache.Entries == nil {
+		p.Cache.Entries = map[string]scanner.CacheEntry{}
+	}
+	e := p.Cache.Entries[key]
+	i := slices.IndexFunc(e.Results, func(x scanner.Result) bool { return x.ServerID == id })
+	if i >= 0 {
+		e.Results[i] = r
+	} else {
+		e.Results = append(e.Results, r)
+	}
+	p.Cache.Entries[key] = e
+	_ = p.SaveCache(p.Cache)
+	return r, nil
 }
 
 // Rescan checks every eligible server and caches the results.

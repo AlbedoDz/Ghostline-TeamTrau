@@ -37,6 +37,7 @@ const (
 	CodeListUnsupported   = "LIST_UNSUPPORTED_FORMAT"
 	CodeListTooLarge      = "LIST_TOO_LARGE"
 	CodeUpstreamProxy     = "UPSTREAM_PROXY_FAILED"
+	CodeNoPinnedServers   = "NO_PINNED_SERVERS"
 )
 
 // AppError is a coded error the UI can translate.
@@ -65,6 +66,16 @@ func appErr(code string, cause error, kv ...any) *AppError {
 		}
 	}
 	return e
+}
+
+// NoPinnedError means "use pinned servers only" is on but no pinned server
+// is usable (none pinned, or none passed the check).
+type NoPinnedError struct {
+	Checked int
+}
+
+func (e *NoPinnedError) Error() string {
+	return fmt.Sprintf("no usable pinned server (%d checked)", e.Checked)
 }
 
 // NoServersError is returned by a Picker that found no working server.

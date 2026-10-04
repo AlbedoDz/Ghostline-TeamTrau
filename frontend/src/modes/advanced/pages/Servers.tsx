@@ -5,6 +5,7 @@ import { useGhost } from "../../../app/store";
 import { Chip } from "../../../components/neon/Chip";
 import { DataTable } from "../../../components/neon/DataTable";
 import { Toggle } from "../../../components/neon/Toggle";
+import { ContextMenu, type MenuItem } from "../../../components/neon/ContextMenu";
 import { AddServersDialog } from "../AddServersDialog";
 import { prettyServerName, serverDetail } from "../../../app/format";
 import css from "../advanced.module.css";
@@ -37,6 +38,7 @@ export function Servers() {
   const [query, setQuery] = useState("");
   const [showPinned, setShowPinned] = useState(false);
   const [pinsChanged, setPinsChanged] = useState(false);
+  const [menu, setMenu] = useState<{ row: ServerRow; x: number; y: number } | null>(null);
   const status = useGhost((s) => String(s.snapshot.status));
   const connected = status === "protected" || status === "degraded";
   const [adding, setAdding] = useState(false);
@@ -65,6 +67,8 @@ export function Servers() {
   const afterPinChange = () => {
     if (connected) setPinsChanged(true);
     load();
+    // Go may turn "pinned only" off when nothing is left pinned.
+    void Service.GetSettings().then((st) => st && useGhost.getState().setSettings(st));
   };
   const pin = async (r: ServerRow) => {
     await Service.SetPinned(r.server.id, !r.pinned);
@@ -84,6 +88,30 @@ export function Servers() {
     setPinsChanged(false);
     await Service.Disconnect();
     await Service.Connect();
+  };
+
+  const useOnly = async (r: ServerRow) => {
+    const others = pinnedIds.filter((id) => id !== r.server.id);
+    if (others.length > 0 && !window.confirm(t("servers.menu.useOnlyConfirm", { name: prettyServerName(r.server), count: others.length }))) return;
+    await Service.UseOnlyServer(r.server.id);
+    load();
+    void Service.GetSettings().then((st) => st && useGhost.getState().setSettings(st));
+    if (connected) await reconnect();
+  };
+  const recheck = async (r: ServerRow) => {
+    const fresh = await Service.CheckServer(r.server.id);
+    if (fresh) setRows((rs) => rs.map((x) => (x.server.id === fresh.server.id ? fresh : x)));
+  };
+  const menuItems = (r: ServerRow): MenuItem[] => {
+    const items: MenuItem[] = [
+      { label: r.pinned ? t("servers.menu.unpin") : t("servers.menu.pin"), onSelect: () => void pin(r) },
+      { label: t("servers.menu.useOnly"), onSelect: () => void useOnly(r) },
+      { label: t("servers.menu.recheck"), onSelect: () => void recheck(r) },
+      { label: t("servers.menu.copyAddress"), onSelect: () => void navigator.clipboard?.writeText(r.server.address) },
+    ];
+    if (r.server.ips?.length) items.push({ label: t("servers.menu.copyIP"), onSelect: () => void navigator.clipboard?.writeText(r.server.ips!.join(", ")) });
+    if (r.server.source === "custom") items.push({ label: t("servers.menu.remove"), onSelect: () => void Service.RemoveCustomServer(r.server.id).then(load) });
+    return items;
   };
 
   const onScan = () => (scan?.running ? void Service.CancelScan() : void Service.ScanAll());
@@ -132,8 +160,9 @@ export function Servers() {
         />
         {query && <Chip label={t("servers.clearSearch")} onClick={() => setQuery("")}>✕</Chip>}
         <Chip active={showPinned} onClick={() => setShowPinned(!showPinned)}>{t("servers.pinnedChip", { count: pinnedIds.length })}</Chip>
-        <Toggle showLabel label={t("servers.pinnedOnly")} checked={!!settings?.pinnedOnly} onChange={setPinnedOnly} />
+        <Toggle showLabel label={t("servers.pinnedOnly")} checked={!!settings?.pinnedOnly} onChange={setPinnedOnly} disabled={pinnedIds.length === 0} />
       </div>
+      {pinnedIds.length === 0 && rows.length > 0 && <div className={css.dim}>{t("servers.pinnedOnlyNeedsPin")}</div>}
       {(query || pinnedIds.length > 0) && (
         <div className={css.row}>
           {query && visible.length > 0 && (
@@ -156,6 +185,7 @@ export function Servers() {
         rowKey={(r) => r.server.id}
         highlight={(r) => r.inUse}
         pinTop={(r) => r.pinned}
+        onRowMenu={(row, x, y) => setMenu({ row, x, y })}
         initialSort={{ key: "latency", dir: "asc" }}
         columns={[
           {
@@ -231,6 +261,7 @@ export function Servers() {
       <div className={css.foot}>
         <span>{lastScan ? t("servers.scannedAt", { time: new Date(lastScan).toLocaleTimeString() }) : ""}</span>
       </div>
+      {menu && <ContextMenu x={menu.x} y={menu.y} items={menuItems(menu.row)} onClose={() => setMenu(null)} />}
       {adding && (
         <AddServersDialog
           onClose={() => {

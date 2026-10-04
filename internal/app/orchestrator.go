@@ -5,7 +5,9 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"net/netip"
+	"net/url"
 	"sync"
 	"time"
 
@@ -220,12 +222,33 @@ func flatten(m map[string]any) []any {
 	return out
 }
 
+// serverNames lists server names for the UI; names that appear more than
+// once get the server's IP or host appended so they can be told apart.
 func serverNames(ss []model.Server) []string {
-	out := make([]string, 0, len(ss))
+	count := map[string]int{}
 	for _, s := range ss {
-		out = append(out, s.Name)
+		count[s.Name]++
+	}
+	out := make([]string, 0, len(ss))
+	for i, s := range ss {
+		if count[s.Name] < 2 {
+			out = append(out, s.Name)
+			continue
+		}
+		out = append(out, s.Name+" · "+serverDetail(s, i))
 	}
 	return out
+}
+
+// serverDetail is the server's first IP, its URL host, or its position.
+func serverDetail(s model.Server, i int) string {
+	if len(s.IPs) > 0 {
+		return s.IPs[0]
+	}
+	if u, err := url.Parse(s.Address); err == nil && u.Hostname() != "" && u.Scheme != "sdns" {
+		return u.Hostname()
+	}
+	return fmt.Sprintf("#%d", i+1)
 }
 
 func (o *Orchestrator) buildUpstreams(ss []model.Server) ([]upstream.Upstream, error) {
@@ -285,6 +308,10 @@ func (o *Orchestrator) connectSteps() []step {
 		{name: "pick", do: func(ctx context.Context) error {
 			ss, err := o.d.Picker.Pick(ctx, nil)
 			if err != nil {
+				var np *NoPinnedError
+				if errors.As(err, &np) {
+					return appErr(CodeNoPinnedServers, err, "checked", np.Checked)
+				}
 				var ns *NoServersError
 				if errors.As(err, &ns) {
 					return appErr(CodeNoServers, err, "checked", ns.Checked, "elapsed", int64(ns.Elapsed/time.Second))

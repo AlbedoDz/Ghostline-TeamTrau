@@ -6,11 +6,12 @@ import { isConnected, powerState, serverSummary, useUptime, useUpdate } from "..
 import { tCode } from "../../i18n";
 import { PowerButton } from "../../components/neon/PowerButton";
 import { TerminalPanel } from "../../components/neon/TerminalPanel";
-import { Banner, type BannerAction } from "../../components/neon/Banner";
+import { Banner } from "../../components/neon/Banner";
+import { ConnectError } from "../../components/ConnectError";
 import { Warnings } from "../../components/Warnings";
 import css from "./SimpleView.module.css";
 
-export function SimpleView({ onOpenLogs }: { onOpenLogs: () => void }) {
+export function SimpleView({ onOpenLogs, onOpenServers = () => {} }: { onOpenLogs: () => void; onOpenServers?: () => void }) {
   const { t } = useTranslation();
   const snap = useGhost((s) => s.snapshot);
   const settings = useGhost((s) => s.settings);
@@ -29,12 +30,6 @@ export function SimpleView({ onOpenLogs }: { onOpenLogs: () => void }) {
     else if (status !== "disconnecting") void Service.Connect();
   };
 
-  const enableFragment = async () => {
-    if (!settings) return;
-    await Service.SaveSettings({ ...settings, fragmentDns: { ...settings.fragmentDns, enabled: true } });
-    useGhost.getState().setSettings({ ...settings, fragmentDns: { ...settings.fragmentDns, enabled: true } });
-    void Service.Connect();
-  };
 
   const lastLatency = latency.length ? latency[latency.length - 1] : snap.latencyMs;
   const blocked = snap.blockedSites ?? [];
@@ -83,10 +78,6 @@ export function SimpleView({ onOpenLogs }: { onOpenLogs: () => void }) {
     );
   }
 
-  const errorActions: BannerAction[] = [{ label: t("common.retry"), onClick: () => void Service.Connect() }];
-  if (snap.error?.code === "NO_SERVERS" && !settings?.fragmentDns.enabled) {
-    errorActions.push({ label: t("simple.enableFragment"), onClick: () => void enableFragment() });
-  }
 
   return (
     <section className={css.view}>
@@ -105,11 +96,7 @@ export function SimpleView({ onOpenLogs }: { onOpenLogs: () => void }) {
         </div>
       </div>
       <div className={css.bottom}>
-        {status === "error" && snap.error && (
-          <Banner tone="err" actions={errorActions}>
-            {tCode(`errors.${snap.error.code}.message`, snap.error.params ?? undefined)}
-          </Banner>
-        )}
+        <ConnectError onOpenServers={onOpenServers} onOpenLogs={onOpenLogs} />
         {isConnected(status) && autotune?.running && (
           <Banner tone="warn">{t("simple.autotuning", { preset: autotune.preset, index: autotune.index, total: autotune.total })}</Banner>
         )}

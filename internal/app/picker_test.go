@@ -157,3 +157,40 @@ func TestPicker_PinnedOutsideTags(t *testing.T) {
 	require.Equal(t, "x1", got[0].ID)
 	require.Equal(t, "s01", got[1].ID)
 }
+
+// Pinned-only with nothing pinned (or no pinned server passing) is its own
+// error, not the generic NO_SERVERS.
+func TestPicker_PinnedOnlyNothingUsable(t *testing.T) {
+	s := store.DefaultSettings()
+	s.PinnedOnly = true
+	p, _ := newPicker(&fChecker{}, s)
+	_, err := p.Pick(context.Background(), nil)
+	var np *NoPinnedError
+	require.ErrorAs(t, err, &np)
+	require.Zero(t, np.Checked)
+
+	s.Pinned = []string{"s01", "gone"}
+	p, _ = newPicker(&fChecker{}, s)
+	_, err = p.Pick(context.Background(), nil)
+	require.ErrorAs(t, err, &np)
+	require.Equal(t, 1, np.Checked)
+}
+
+// CheckOne re-tests one server and updates the cached result shown in the UI.
+func TestPicker_CheckOneUpdatesCache(t *testing.T) {
+	chk := &fChecker{ok: map[string]time.Duration{"s02": 15}}
+	p, saves := newPicker(chk, store.DefaultSettings())
+	p.Cache.Put("net1", p.Now(), []scanner.Result{{ServerID: "s01", OK: true, Latency: 9}, {ServerID: "s02", Reason: "timeout"}})
+	r, err := p.CheckOne(context.Background(), "s02")
+	require.NoError(t, err)
+	require.True(t, r.OK)
+	byID := map[string]scanner.Result{}
+	for _, x := range p.Results() {
+		byID[x.ServerID] = x
+	}
+	require.True(t, byID["s02"].OK)
+	require.True(t, byID["s01"].OK)
+	require.Equal(t, 1, *saves)
+	_, err = p.CheckOne(context.Background(), "nope")
+	require.Error(t, err)
+}

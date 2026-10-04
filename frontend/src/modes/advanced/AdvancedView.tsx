@@ -4,6 +4,7 @@ import { useGhost, type Page } from "../../app/store";
 import { isConnected } from "../../app/format";
 import { Sidebar } from "../../components/neon/Sidebar";
 import { Warnings } from "../../components/Warnings";
+import { ConnectError } from "../../components/ConnectError";
 import { Overview } from "./pages/Overview";
 import { Servers } from "./pages/Servers";
 import { Dpi } from "./pages/Dpi";
@@ -57,6 +58,9 @@ export function AdvancedView() {
     <section className={css.view}>
       <Sidebar items={pages.map((p) => ({ id: p, label: t(`nav.${p}`) }))} active={page} onSelect={(id) => setPage(id as Page)} footer={footer} />
       <div className={css.content}>
+        <div style={{ padding: "0 14px" }}>
+          <ConnectError onOpenServers={() => setPage("servers")} onOpenLogs={() => setPage("logs")} />
+        </div>
         <Warnings />
         {page === "overview" && <Overview />}
         {page === "servers" && <Servers />}

@@ -17,6 +17,7 @@ const svc = vi.hoisted(() => ({
   ListServers: vi.fn(),
   SetPinned: vi.fn(() => Promise.resolve()),
   SetPinnedMany: vi.fn(() => Promise.resolve()),
+  GetSettings: vi.fn(() => Promise.resolve(null)),
   ScanAll: vi.fn(() => Promise.resolve()),
   CancelScan: vi.fn(() => Promise.resolve()),
   AddServers: vi.fn(() => Promise.resolve([1, ["udp://1.1.1.1"]])),

@@ -56,7 +56,9 @@
     "autotune": "AUTO-TUNE DPI BYPASS",
     "autotuning": "tuning: {{preset}} ({{index}}/{{total}})",
     "enableFragment": "ENABLE DNS FRAGMENT",
-    "proxy": "proxy"
+    "proxy": "proxy",
+    "openServers": "open servers",
+    "disablePinnedOnly": "turn off pinned-only"
   },
   "nav": {
     "overview": "overview",
@@ -110,7 +112,18 @@
     "pinsChanged": "pinned servers changed",
     "reconnect": "reconnect to apply",
     "pinnedOnlyEmpty": "no pinned servers — connecting will fail",
-    "pinnedPreferred": "pinned servers are preferred when connecting"
+    "pinnedPreferred": "pinned servers are preferred when connecting",
+    "pinnedOnlyNeedsPin": "pin at least one server to turn this on",
+    "menu": {
+      "pin": "★ pin",
+      "unpin": "☆ unpin",
+      "useOnly": "⚡ use only this server",
+      "recheck": "⟳ check again",
+      "copyAddress": "⧉ copy address",
+      "copyIP": "⧉ copy IP",
+      "remove": "✕ remove",
+      "useOnlyConfirm": "Use only {{name}} and unpin {{count}} other servers?"
+    }
   },
   "dpi": {
     "title": "DPI BYPASS",
@@ -328,6 +341,10 @@
     "UPSTREAM_PROXY_FAILED": {
       "message": "upstream proxy {{id}} is not usable",
       "action": "Check the address or re-enter the password"
+    },
+    "NO_PINNED_SERVERS": {
+      "message": "no pinned server is usable ({{checked}} checked)",
+      "action": "Pin more servers or turn off \"use pinned servers only\""
     }
   },
   "tray": {

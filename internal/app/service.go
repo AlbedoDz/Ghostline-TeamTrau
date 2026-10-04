@@ -99,6 +99,8 @@ type ServiceDeps struct {
 	TestUpstream func(ctx context.Context, id string) error
 	// CheckUpdate asks GitHub for the latest release now (manual check).
 	CheckUpdate func(ctx context.Context) (UpdateCheck, error)
+	// CheckServer re-tests one server and updates the cached scan.
+	CheckServer func(ctx context.Context, id string) error
 }
 
 // Service is bound to the frontend by Wails; its exported methods are the
@@ -168,8 +170,13 @@ func (s *Service) SaveSettings(n store.Settings) error {
 	old := s.x.Settings.Get()
 	// Upstream proxies change only through SaveUpstreamProxy/
 	// DeleteUpstreamProxy: the UI's copy may be stale or carry masked
-	// passwords, so it never overwrites them.
+	// passwords, so it never overwrites them. Pins likewise change only
+	// through SetPinned/SetPinnedMany.
 	n.Proxy.Upstreams = old.Proxy.Upstreams
+	n.Pinned = old.Pinned
+	if n.PinnedOnly && len(n.Pinned) == 0 {
+		n.PinnedOnly = false // nothing to use: would only fail to connect
+	}
 	if err := s.x.Settings.Save(n); err != nil {
 		return err
 	}
@@ -326,7 +333,39 @@ func (s *Service) SetPinnedMany(ids []string, pinned bool) error {
 		cur = []string{}
 	}
 	st.Pinned = cur
+	if len(cur) == 0 {
+		st.PinnedOnly = false
+	}
 	return s.x.Settings.Save(st)
+}
+
+// UseOnlyServer makes id the only pinned server and turns "use pinned
+// servers only" on, in one save.
+func (s *Service) UseOnlyServer(id string) error {
+	if id == "" {
+		return errors.New("app: empty server id")
+	}
+	st := s.x.Settings.Get()
+	st.Pinned, st.PinnedOnly = []string{id}, true
+	return s.x.Settings.Save(st)
+}
+
+// CheckServer re-tests one server and returns its updated row.
+func (s *Service) CheckServer(id string) (ServerRow, error) {
+	if s.x.CheckServer == nil {
+		return ServerRow{}, errors.New("app: server check unavailable")
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if err := s.x.CheckServer(ctx, id); err != nil {
+		return ServerRow{}, err
+	}
+	for _, r := range s.ListServers() {
+		if r.Server.ID == id {
+			return r, nil
+		}
+	}
+	return ServerRow{}, fmt.Errorf("app: no server %q", id)
 }
 
 // SetDPIEnabled turns GoodbyeDPI on or off.

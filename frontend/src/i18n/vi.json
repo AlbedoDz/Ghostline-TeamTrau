@@ -56,7 +56,9 @@
     "autotune": "TỰ DÒ VƯỢT DPI",
     "autotuning": "đang dò: {{preset}} ({{index}}/{{total}})",
     "enableFragment": "BẬT FRAGMENT DNS",
-    "proxy": "proxy"
+    "proxy": "proxy",
+    "openServers": "mở trang máy chủ",
+    "disablePinnedOnly": "tắt chỉ dùng máy chủ ghim"
   },
   "nav": {
     "overview": "tổng quan",
@@ -110,7 +112,18 @@
     "pinsChanged": "đã đổi máy chủ ghim",
     "reconnect": "kết nối lại để áp dụng",
     "pinnedOnlyEmpty": "chưa ghim máy chủ nào — kết nối sẽ báo lỗi",
-    "pinnedPreferred": "máy chủ đã ghim được ưu tiên khi kết nối"
+    "pinnedPreferred": "máy chủ đã ghim được ưu tiên khi kết nối",
+    "pinnedOnlyNeedsPin": "ghim ít nhất một máy chủ để bật",
+    "menu": {
+      "pin": "★ ghim",
+      "unpin": "☆ bỏ ghim",
+      "useOnly": "⚡ chỉ dùng máy chủ này",
+      "recheck": "⟳ kiểm tra lại",
+      "copyAddress": "⧉ sao chép địa chỉ",
+      "copyIP": "⧉ sao chép IP",
+      "remove": "✕ xoá",
+      "useOnlyConfirm": "Chỉ dùng {{name}} và bỏ ghim {{count}} máy chủ khác?"
+    }
   },
   "dpi": {
     "title": "VƯỢT DPI",
@@ -328,6 +341,10 @@
     "UPSTREAM_PROXY_FAILED": {
       "message": "upstream proxy {{id}} không dùng được",
       "action": "Kiểm tra địa chỉ hoặc nhập lại mật khẩu"
+    },
+    "NO_PINNED_SERVERS": {
+      "message": "chưa có máy chủ ghim nào dùng được ({{checked}} đã kiểm tra)",
+      "action": "Ghim thêm máy chủ hoặc tắt \"chỉ dùng máy chủ đã ghim\""
     }
   },
   "tray": {

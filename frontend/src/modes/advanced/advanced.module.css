@@ -235,7 +235,8 @@
   width: 100%;
   border: 1px solid currentColor;
   padding: 7px 0;
-  letter-spacing: 0.08em;
+  white-space: nowrap; /* "⏻ NGẮT KẾT NỐI" fits the sidebar on one line */
+  letter-spacing: 0.02em;
   font-weight: 700;
   text-align: center;
 }

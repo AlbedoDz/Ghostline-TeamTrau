@@ -234,3 +234,29 @@
   border-top: 1px solid var(--line);
   padding: 10px 14px 0;
 }
+
+/* ---------- ContextMenu ---------- */
+.menu {
+  position: fixed;
+  z-index: 50;
+  min-width: 220px;
+  padding: 4px;
+  background: var(--bg, #05070a);
+  border: 1px solid var(--cyan);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.6);
+  display: grid;
+  outline: none;
+}
+.menuItem {
+  text-align: left;
+  padding: 6px 10px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  border: 0;
+  cursor: pointer;
+}
+.menuItem[data-active="true"] {
+  background: color-mix(in srgb, var(--cyan) 18%, transparent);
+  color: var(--cyan);
+}
