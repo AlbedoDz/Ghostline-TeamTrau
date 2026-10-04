@@ -26,6 +26,7 @@ import (
 	"github.com/hashcott/ghostline/internal/startup"
 	"github.com/hashcott/ghostline/internal/store"
 	"github.com/hashcott/ghostline/internal/sysdns"
+	"github.com/hashcott/ghostline/internal/sysproxy"
 	"github.com/hashcott/ghostline/internal/upstreams"
 	"github.com/hashcott/ghostline/internal/watchdog"
 	"github.com/hashcott/ghostline/internal/winutil"
@@ -75,7 +76,10 @@ func Run(o Options) error {
 	states := store.NewStateStore(paths.State, lock)
 	dnsMgr := sysdns.NewManager(sysdns.NewWindowsAPI(), time.Sleep)
 	dpiMgr := dpi.NewManager(filepath.Join(paths.BinDir, "goodbyedpi"), o.DPIAssets, dpi.NewWindowsRunner(), dpi.NewWindowsServices(), time.Sleep)
-	recoverDeps := watchdog.Deps{States: states, DNS: dnsMgr, StopDPI: dpiMgr.Stop, Alive: winutil.ProcessAlive, Log: log}
+	recoverDeps := watchdog.Deps{States: states, DNS: dnsMgr, StopDPI: dpiMgr.Stop, Alive: winutil.ProcessAlive, Log: log,
+		RestoreSysProxy: sysproxy.Manager{API: sysproxy.NewWindowsAPI()}.RestoreIfOurs,
+		DeleteFirewall:  winutil.DeleteFirewallRule,
+	}
 
 	// Safety layer 3: restore whatever a dead previous run left behind.
 	startOut, startErr := watchdog.RestoreIfOrphaned(recoverDeps)

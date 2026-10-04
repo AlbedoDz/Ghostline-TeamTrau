@@ -10,6 +10,7 @@ import (
 	"github.com/hashcott/ghostline/internal/logx"
 	"github.com/hashcott/ghostline/internal/store"
 	"github.com/hashcott/ghostline/internal/sysdns"
+	"github.com/hashcott/ghostline/internal/sysproxy"
 	"github.com/hashcott/ghostline/internal/watchdog"
 	"github.com/hashcott/ghostline/internal/winutil"
 )
@@ -37,6 +38,9 @@ func runHeadless(mode cli.Mode) int {
 		StopDPI: stopDPI(paths),
 		Alive:   winutil.ProcessAlive,
 		Log:     logger,
+
+		RestoreSysProxy: sysproxy.Manager{API: sysproxy.NewWindowsAPI()}.RestoreIfOurs,
+		DeleteFirewall:  winutil.DeleteFirewallRule,
 	}
 	switch mode.Kind {
 	case cli.KindWatchdog:

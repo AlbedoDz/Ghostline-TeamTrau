@@ -28,6 +28,11 @@ type Deps struct {
 	Alive   func(pid uint32, start time.Time) bool
 	Log     *slog.Logger
 	Sleep   func(time.Duration) // default time.Sleep
+	// RestoreSysProxy puts the system proxy back if it is still Ghostline's
+	// (sysproxy.Manager.RestoreIfOurs); nil skips it.
+	RestoreSysProxy func(ours string, snap store.SysProxySnapshot) (bool, error)
+	// DeleteFirewall removes the LAN-sharing firewall rule; nil skips it.
+	DeleteFirewall func() error
 }
 
 // Outcome says what RestoreIfOrphaned did.
@@ -56,6 +61,10 @@ func RestoreIfOrphaned(d Deps) (Outcome, error) {
 		st, err := d.States.Load()
 		if errors.Is(err, store.ErrStateCorrupt) {
 			d.log().Warn("state.json corrupt; resetting loopback adapters to DHCP")
+			if d.DeleteFirewall != nil {
+				// Idempotent; there is no system proxy snapshot to restore.
+				_ = d.DeleteFirewall()
+			}
 			ads, lerr := d.DNS.LoopbackAdapters()
 			if lerr != nil {
 				return lerr
@@ -86,18 +95,37 @@ func RestoreIfOrphaned(d Deps) (Outcome, error) {
 			out = OwnerAlive
 			return nil
 		}
+		// Order: system proxy, firewall, DNS (spec 2A 6.5).
+		perr := restoreProxy(d, st)
 		rerr := joinRestore(d.DNS.Restore(stillOurs(d.DNS, st.Snapshot)))
 		if st.DPI.Running && d.StopDPI != nil {
 			_ = d.StopDPI()
 		}
 		out = Restored
-		if rerr != nil {
-			// Keep the snapshot so a later layer can retry.
-			return rerr
+		if err := errors.Join(perr, rerr); err != nil {
+			// Keep the state so a later layer can retry.
+			return err
 		}
 		return d.States.Write(store.CleanState())
 	})
 	return out, err
+}
+
+// restoreProxy undoes the proxy phase: the system proxy (unless never
+// applied or taken over by another app) and the firewall rule.
+func restoreProxy(d Deps, st store.State) error {
+	var errs []error
+	if sp := st.SysProxy; sp != nil && sp.Set && !sp.TakenOver && sp.Snapshot != nil && d.RestoreSysProxy != nil {
+		if _, err := d.RestoreSysProxy(sp.Ours, *sp.Snapshot); err != nil {
+			errs = append(errs, fmt.Errorf("watchdog: restore system proxy: %w", err))
+		}
+	}
+	if st.Firewall != nil && d.DeleteFirewall != nil {
+		if err := d.DeleteFirewall(); err != nil {
+			errs = append(errs, fmt.Errorf("watchdog: delete firewall rule: %w", err))
+		}
+	}
+	return errors.Join(errs...)
 }
 
 // stillOurs keeps the snapshots of adapters whose DNS still points at
