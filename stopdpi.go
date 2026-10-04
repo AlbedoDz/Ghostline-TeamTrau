@@ -8,7 +8,7 @@ import (
 	"github.com/hashcott/ghostline/internal/store"
 )
 
-func newDPIManager(paths store.Paths) *dpi.Manager {
+func newDPIManager(paths store.Paths) *dpi.Manager { // headless only
 	return dpi.NewManager(paths.BinDir+`\goodbyedpi`, goodbyedpi.FS, dpi.NewWindowsRunner(), dpi.NewWindowsServices(), time.Sleep)
 }
 

@@ -3,12 +3,11 @@ package main
 import (
 	"embed"
 	"fmt"
-	"log"
 	"os"
 
-	"github.com/hashcott/ghostline/internal/brand"
+	goodbyedpi "github.com/hashcott/ghostline/assets/goodbyedpi"
 	"github.com/hashcott/ghostline/internal/cli"
-	"github.com/wailsapp/wails/v3/pkg/application"
+	"github.com/hashcott/ghostline/internal/shell"
 )
 
 //go:embed all:frontend/dist
@@ -26,19 +25,11 @@ func main() {
 	case cli.KindWatchdog, cli.KindRestore:
 		os.Exit(runHeadless(mode))
 	}
-
-	app := application.New(application.Options{
-		Name:   brand.AppName,
-		Assets: application.AssetOptions{Handler: application.AssetFileServerFS(assets)},
-	})
-	app.Window.NewWithOptions(application.WebviewWindowOptions{
-		Title:            brand.AppName,
-		Width:            380,
-		Height:           580,
-		BackgroundColour: application.NewRGB(5, 7, 10),
-		URL:              "/",
-	})
-	if err := app.Run(); err != nil {
-		log.Fatal(err)
+	exe, err := os.Executable()
+	if err != nil {
+		os.Exit(1)
+	}
+	if err := shell.Run(shell.Options{Mode: mode, Assets: assets, DPIAssets: goodbyedpi.FS, Executable: exe}); err != nil {
+		os.Exit(1)
 	}
 }
