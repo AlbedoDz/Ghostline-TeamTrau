@@ -111,7 +111,6 @@
     "unpinAll": "bỏ ghim tất cả",
     "pinsChanged": "đã đổi máy chủ ghim",
     "reconnect": "kết nối lại để áp dụng",
-    "pinnedOnlyEmpty": "chưa ghim máy chủ nào — kết nối sẽ báo lỗi",
     "pinnedPreferred": "máy chủ đã ghim được ưu tiên khi kết nối",
     "pinnedOnlyNeedsPin": "ⓘ Chưa ghim máy chủ nào. Bấm ☆ hoặc double-click một dòng để ghim; cần có ít nhất một máy chủ ghim mới bật được \"chỉ dùng máy chủ đã ghim\".",
     "menu": {

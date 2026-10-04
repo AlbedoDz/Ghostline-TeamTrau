@@ -111,7 +111,7 @@ test("pinned-only switch is disabled with nothing pinned; unpin all turns it off
   const sw = screen.getByRole("switch", { name: "chỉ dùng máy chủ đã ghim" });
   expect(sw).toBeDisabled();
   const hint = "ⓘ Chưa ghim máy chủ nào. Bấm ☆ hoặc double-click một dòng để ghim; cần có ít nhất một máy chủ ghim mới bật được \"chỉ dùng máy chủ đã ghim\".";
-  expect(screen.getByText(hint)).toBeInTheDocument();
+  expect(screen.queryByText(hint)).not.toBeInTheDocument(); // tooltip only, no extra line
   expect(sw.closest("[title]")?.getAttribute("title")).toBe(hint);
 });
 

@@ -159,22 +159,19 @@ export function Servers() {
           style={{ flex: 1 }}
         />
         {query && <Chip label={t("servers.clearSearch")} onClick={() => setQuery("")}>✕</Chip>}
-        <Chip active={showPinned} onClick={() => setShowPinned(!showPinned)}>{t("servers.pinnedChip", { count: pinnedIds.length })}</Chip>
+      </div>
+      <div className={css.row} style={{ flexWrap: "wrap" }}>
+        <span title={pinnedIds.length > 0 && !settings?.pinnedOnly ? t("servers.pinnedPreferred") : undefined}>
+          <Chip active={showPinned} onClick={() => setShowPinned(!showPinned)}>{t("servers.pinnedChip", { count: pinnedIds.length })}</Chip>
+        </span>
         <span title={pinnedIds.length === 0 ? t("servers.pinnedOnlyNeedsPin") : undefined}>
           <Toggle showLabel label={t("servers.pinnedOnly")} checked={!!settings?.pinnedOnly} onChange={setPinnedOnly} disabled={pinnedIds.length === 0} />
         </span>
+        {query && visible.length > 0 && (
+          <Chip onClick={() => void pinMany(visible.map((r) => r.server.id), true)}>{t("servers.pinAllResults", { count: visible.length })}</Chip>
+        )}
+        {pinnedIds.length > 0 && <Chip onClick={() => void pinMany(pinnedIds, false)}>{t("servers.unpinAll")}</Chip>}
       </div>
-      {pinnedIds.length === 0 && rows.length > 0 && <div className={css.dim}>{t("servers.pinnedOnlyNeedsPin")}</div>}
-      {(query || pinnedIds.length > 0) && (
-        <div className={css.row}>
-          {query && visible.length > 0 && (
-            <Chip onClick={() => void pinMany(visible.map((r) => r.server.id), true)}>{t("servers.pinAllResults", { count: visible.length })}</Chip>
-          )}
-          {pinnedIds.length > 0 && <Chip onClick={() => void pinMany(pinnedIds, false)}>{t("servers.unpinAll")}</Chip>}
-          {settings?.pinnedOnly && pinnedIds.length === 0 && <span className={css.warn}>{t("servers.pinnedOnlyEmpty")}</span>}
-          {!settings?.pinnedOnly && pinnedIds.length > 0 && <span className={css.dim}>{t("servers.pinnedPreferred")}</span>}
-        </div>
-      )}
       {pinsChanged && connected && (
         <div className={css.row}>
           <span className={css.warn}>{t("servers.pinsChanged")}</span>

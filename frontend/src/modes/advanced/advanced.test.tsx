@@ -161,7 +161,10 @@ test("pinned servers: chip filter, pinned-only switch at the top, bulk pin and u
   const sw = screen.getByRole("switch", { name: "chỉ dùng máy chủ đã ghim" });
   expect(sw.compareDocumentPosition(screen.getByRole("table")) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
 
-  expect(screen.getByText("máy chủ đã ghim được ưu tiên khi kết nối")).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "★ đã ghim (1)" }).closest("[title]")?.getAttribute("title")).toBe("máy chủ đã ghim được ưu tiên khi kết nối");
+  // Pin controls sit on their own row under the search box.
+  const search = screen.getByRole("searchbox", { name: "tìm máy chủ" });
+  expect(search.parentElement).not.toContainElement(screen.getByRole("switch", { name: "chỉ dùng máy chủ đã ghim" }));
   fireEvent.click(screen.getByRole("button", { name: "★ đã ghim (1)" }));
   expect(names()).toEqual(["Quad9"]);
   fireEvent.click(screen.getByRole("button", { name: "★ đã ghim (1)" }));

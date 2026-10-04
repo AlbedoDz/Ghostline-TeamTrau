@@ -111,7 +111,6 @@
     "unpinAll": "unpin all",
     "pinsChanged": "pinned servers changed",
     "reconnect": "reconnect to apply",
-    "pinnedOnlyEmpty": "no pinned servers — connecting will fail",
     "pinnedPreferred": "pinned servers are preferred when connecting",
     "pinnedOnlyNeedsPin": "ⓘ No servers pinned yet. Click ☆ or double-click a row to pin one; \"use pinned servers only\" needs at least one pinned server.",
     "menu": {
