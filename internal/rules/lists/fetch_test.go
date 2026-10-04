@@ -311,8 +311,19 @@ func TestScheduler_DueAndJitter(t *testing.T) {
 
 func TestCatalog_Valid(t *testing.T) {
 	items := lists.Catalog()
-	require.Len(t, items, 6)
+	require.Len(t, items, 31)
+	seen := map[string]bool{}
+	perCat := map[string]int{}
 	for _, it := range items {
+		require.False(t, seen[it.ID], "duplicate id %s", it.ID)
+		seen[it.ID] = true
+		require.Contains(t, lists.Categories, it.Category, it.ID)
+		perCat[it.Category]++
+		if it.Category == "bypass" {
+			require.Equal(t, "fragment=on", it.Action, it.ID)
+		} else {
+			require.Equal(t, "block", it.Action, it.ID)
+		}
 		require.NotEmpty(t, it.ID)
 		require.NotEmpty(t, it.License, it.ID)
 		require.NotEmpty(t, it.Repo, it.ID)
@@ -321,5 +332,8 @@ func TestCatalog_Valid(t *testing.T) {
 		require.NoError(t, err, it.ID)
 		_, err = lists.ToListSet(lists.List{ID: it.ID, Action: it.Action}, lists.Result{})
 		require.NoError(t, err, it.ID)
+	}
+	for _, c := range lists.Categories {
+		require.Positive(t, perCat[c], "category %s is empty", c)
 	}
 }

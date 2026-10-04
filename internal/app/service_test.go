@@ -84,6 +84,9 @@ func newSvc(t *testing.T) *svcHarness {
 		RestoreNow:   func() error { return nil },
 		Info:         func() AppInfo { return AppInfo{Version: "test"} },
 	})
+	// Background work (list downloads, proxy re-apply) must finish before
+	// TempDir cleanup, or Windows refuses to delete files still in use.
+	t.Cleanup(sh.svc.waitBackground)
 	return sh
 }
 

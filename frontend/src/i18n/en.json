@@ -451,7 +451,10 @@
         "allow": "allow",
         "fragment=on": "fragment: on",
         "fromFile": "from file (hosts/dnsmasq)"
-      }
+      },
+      "all": "all",
+      "search": "search lists",
+      "added": "added"
     },
     "blockMode": "DNS block answer",
     "blockModes": {
@@ -459,5 +462,50 @@
       "nxdomain": "NXDOMAIN"
     },
     "blockModeNote": "applies from the next connect"
+  },
+  "catalog": {
+    "categories": {
+      "ads": "ads / trackers",
+      "security": "security",
+      "adult": "adult",
+      "gambling": "gambling",
+      "social": "social networks",
+      "telemetry": "device telemetry",
+      "vietnam": "Vietnam",
+      "bypass": "unblocking"
+    },
+    "items": {
+      "hagezi-light": "Basic protection: ads, trackers, metrics, telemetry. Small and safe.",
+      "hagezi-normal": "All-round protection against ads, tracking and badware.",
+      "hagezi-pro": "Extended protection: also phishing, malware, scams. Recommended by its author.",
+      "hagezi-pro-plus": "Maximum protection; may block a few legitimate sites.",
+      "hagezi-ultimate": "Aggressive protection; expect occasional false positives.",
+      "oisd-small": "Block. Don't break. Small edition.",
+      "oisd-big": "Block. Don't break. Full edition.",
+      "stevenblack-unified": "Classic unified hosts file: adware and malware.",
+      "adguard-dns": "AdGuard's DNS-level filter (AdBlock syntax).",
+      "adaway": "Mobile-focused ad blocking hosts file.",
+      "1hosts-lite": "Lightweight ads and tracking list.",
+      "hagezi-tif-mini": "Malware, phishing, scam and cryptojacking domains (compact).",
+      "hagezi-fake": "Fake shops, scams and rip-off sites.",
+      "urlhaus": "Hosts currently distributing malware.",
+      "phishing-army": "Phishing domains from several feeds.",
+      "hagezi-nsfw": "Adult content.",
+      "stevenblack-porn": "Adult content (hosts format).",
+      "hagezi-gambling-mini": "Gambling sites (compact).",
+      "stevenblack-gambling": "Gambling sites (hosts format).",
+      "stevenblack-social": "Social networks (Facebook, Instagram, TikTok, X…), e.g. for parental control.",
+      "hagezi-windows": "Windows and Office tracking and telemetry.",
+      "hagezi-tiktok": "TikTok tracking (the app keeps working).",
+      "hagezi-samsung": "Samsung device tracking.",
+      "hagezi-apple": "Apple device tracking.",
+      "hostsvn": "Ads and trackers common on Vietnamese sites.",
+      "v2fly-telegram": "Telegram domains: fragment through the proxy.",
+      "v2fly-discord": "Discord domains: fragment through the proxy.",
+      "v2fly-twitter": "X (Twitter) domains: fragment through the proxy.",
+      "v2fly-facebook": "Facebook domains: fragment through the proxy.",
+      "v2fly-youtube": "YouTube domains: fragment through the proxy.",
+      "v2fly-reddit": "Reddit domains: fragment through the proxy."
+    }
   }
 }

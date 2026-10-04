@@ -451,7 +451,10 @@
         "allow": "cho phép",
         "fragment=on": "fragment: bật",
         "fromFile": "theo file (hosts/dnsmasq)"
-      }
+      },
+      "all": "tất cả",
+      "search": "tìm danh sách",
+      "added": "đã thêm"
     },
     "blockMode": "chặn ở DNS trả về",
     "blockModes": {
@@ -459,5 +462,50 @@
       "nxdomain": "NXDOMAIN"
     },
     "blockModeNote": "áp dụng từ lần kết nối tiếp theo"
+  },
+  "catalog": {
+    "categories": {
+      "ads": "quảng cáo / tracker",
+      "security": "bảo mật",
+      "adult": "người lớn",
+      "gambling": "cờ bạc",
+      "social": "mạng xã hội",
+      "telemetry": "telemetry thiết bị",
+      "vietnam": "Việt Nam",
+      "bypass": "vượt chặn"
+    },
+    "items": {
+      "hagezi-light": "bảo vệ cơ bản: quảng cáo, tracker, đo lường, telemetry; nhỏ và an toàn",
+      "hagezi-normal": "bảo vệ toàn diện trước quảng cáo, theo dõi và phần mềm xấu",
+      "hagezi-pro": "bảo vệ mở rộng: thêm lừa đảo, mã độc; tác giả khuyên dùng",
+      "hagezi-pro-plus": "bảo vệ tối đa; có thể chặn nhầm vài trang",
+      "hagezi-ultimate": "chặn rất mạnh; đôi khi chặn nhầm",
+      "oisd-small": "chặn mà không làm hỏng trang; bản nhỏ",
+      "oisd-big": "chặn mà không làm hỏng trang; bản đầy đủ",
+      "stevenblack-unified": "file hosts tổng hợp kinh điển: quảng cáo và mã độc",
+      "adguard-dns": "bộ lọc DNS của AdGuard (cú pháp AdBlock)",
+      "adaway": "chặn quảng cáo, thiên về ứng dụng di động",
+      "1hosts-lite": "danh sách quảng cáo và theo dõi gọn nhẹ",
+      "hagezi-tif-mini": "domain mã độc, lừa đảo, scam, đào coin trái phép (bản gọn)",
+      "hagezi-fake": "shop giả, lừa đảo và trang chặt chém",
+      "urlhaus": "các host đang phát tán mã độc",
+      "phishing-army": "domain lừa đảo tổng hợp từ nhiều nguồn",
+      "hagezi-nsfw": "nội dung người lớn",
+      "stevenblack-porn": "nội dung người lớn (định dạng hosts)",
+      "hagezi-gambling-mini": "trang cờ bạc (bản gọn)",
+      "stevenblack-gambling": "trang cờ bạc (định dạng hosts)",
+      "stevenblack-social": "mạng xã hội (Facebook, Instagram, TikTok, X…), ví dụ để phụ huynh kiểm soát",
+      "hagezi-windows": "theo dõi và telemetry của Windows và Office",
+      "hagezi-tiktok": "theo dõi của TikTok (ứng dụng vẫn dùng được)",
+      "hagezi-samsung": "theo dõi trên thiết bị Samsung",
+      "hagezi-apple": "theo dõi trên thiết bị Apple",
+      "hostsvn": "quảng cáo và tracker hay gặp trên các trang Việt Nam",
+      "v2fly-telegram": "domain của Telegram: fragment qua proxy",
+      "v2fly-discord": "domain của Discord: fragment qua proxy",
+      "v2fly-twitter": "domain của X (Twitter): fragment qua proxy",
+      "v2fly-facebook": "domain của Facebook: fragment qua proxy",
+      "v2fly-youtube": "domain của YouTube: fragment qua proxy",
+      "v2fly-reddit": "domain của Reddit: fragment qua proxy"
+    }
   }
 }

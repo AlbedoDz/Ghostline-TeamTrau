@@ -129,3 +129,34 @@ test("domain tester explains the decision", async () => {
   expect(svc.Explain).toHaveBeenCalledWith("x.ads.com");
   expect(await screen.findByText("chặn — danh sách HaGeZi Light, dòng 120")).toBeInTheDocument();
 });
+
+const catalog3 = [
+  { id: "hostsvn", name: "hostsVN", description: "VN ads", category: "vietnam", repo: "https://github.com/bigdargon/hostsVN", license: "MIT",
+    url: "https://raw.githubusercontent.com/bigdargon/hostsVN/master/hosts", format: "hosts", action: "block" },
+  { id: "urlhaus", name: "URLhaus (abuse.ch)", description: "malware hosts", category: "security", repo: "https://urlhaus.abuse.ch", license: "CC0-1.0",
+    url: "https://urlhaus.abuse.ch/downloads/hostfile/", format: "hosts", action: "block" },
+  { id: "v2fly-telegram", name: "Telegram", description: "tg", category: "bypass", repo: "https://github.com/v2fly/domain-list-community", license: "MIT",
+    url: "https://raw.githubusercontent.com/v2fly/domain-list-community/master/data/telegram", format: "v2fly", action: "fragment=on" },
+];
+
+test("quick add filters by group and search, and marks lists already added", async () => {
+  svc.Catalog.mockResolvedValueOnce(catalog3 as any);
+  svc.GetRules.mockResolvedValue({ ...structuredClone(view), lists: [...view.lists, { ...view.lists[0], id: "tg", name: "Telegram", url: catalog3[2].url }] } as any);
+  render(<Rules />);
+  fireEvent.click(await screen.findByRole("button", { name: "thêm nhanh" }));
+  expect(await screen.findByText("hostsVN")).toBeInTheDocument();
+  // Translated description, not the English fallback.
+  expect(screen.getByText(/quảng cáo và tracker hay gặp trên các trang Việt Nam/)).toBeInTheDocument();
+
+  fireEvent.click(screen.getByRole("button", { name: "bảo mật" }));
+  expect(screen.queryByText("hostsVN")).not.toBeInTheDocument();
+  expect(screen.getByText("URLhaus (abuse.ch)")).toBeInTheDocument();
+
+  fireEvent.click(screen.getByRole("button", { name: "tất cả" }));
+  fireEvent.change(screen.getByRole("textbox", { name: "tìm danh sách" }), { target: { value: "tele" } });
+  const panel = screen.getByTestId("catalog");
+  expect(within(panel).queryByText("URLhaus (abuse.ch)")).not.toBeInTheDocument();
+  expect(within(panel).getByText("Telegram")).toBeInTheDocument();
+  expect(within(panel).getByText("đã thêm")).toBeInTheDocument();
+  expect(within(panel).queryByRole("button", { name: "thêm Telegram" })).not.toBeInTheDocument();
+});
