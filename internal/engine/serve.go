@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net"
+	"net/http"
 	"net/netip"
 	"sort"
 	"time"
@@ -81,13 +82,16 @@ func (e *Engine) Serve(ctx context.Context, sc ServeConfig) (ServeResult, error)
 		tcp = append(tcp, net.TCPAddrFromAddrPort(a))
 		res.Bound = append(res.Bound, a)
 	}
-	res.Bound = append(res.Bound, doh...)
+	tlsConf := &tls.Config{MinVersion: tls.VersionTLS12, NextProtos: []string{"h2", "http/1.1"}, GetCertificate: func(*tls.ClientHelloInfo) (*tls.Certificate, error) { return sc.Cert(), nil }}
+	// dnsproxy only answers DoH here (ServeHTTP); Ghostline runs the HTTPS
+	// listeners itself. dnsproxy's own DoH goroutine reads its server late
+	// and panics on a nil server when Shutdown comes first.
 	p, err := proxy.New(&proxy.Config{
 		Logger:         slog.New(slog.DiscardHandler),
 		UDPListenAddr:  udp,
 		TCPListenAddr:  tcp,
-		HTTPConfig:     &proxy.HTTPConfig{ListenAddresses: doh},
-		TLSConfig:      &tls.Config{MinVersion: tls.VersionTLS12, NextProtos: []string{"h2", "http/1.1"}, GetCertificate: func(*tls.ClientHelloInfo) (*tls.Certificate, error) { return sc.Cert(), nil }},
+		HTTPConfig:     &proxy.HTTPConfig{ListenAddresses: []netip.AddrPort{}},
+		TLSConfig:      tlsConf,
 		UpstreamConfig: &proxy.UpstreamConfig{Upstreams: []upstream.Upstream{unusedUpstream{}}},
 		RequestHandler: proxy.HandlerFunc(e.serveHandle),
 	})
@@ -97,22 +101,51 @@ func (e *Engine) Serve(ctx context.Context, sc ServeConfig) (ServeResult, error)
 	if err := p.Start(ctx); err != nil {
 		return res, fmt.Errorf("engine: serve: %w", err)
 	}
+	mux := http.NewServeMux()
+	for _, pat := range []string{"GET /{$}", "POST /{$}", "GET /dns-query", "POST /dns-query"} {
+		mux.Handle(pat, p)
+	}
+	var srvs []*http.Server
+	loop = false
+	for _, a := range doh {
+		ln, err := net.Listen("tcp", a.String())
+		if err != nil {
+			res.Skipped[a] = err.Error()
+			continue
+		}
+		srv := &http.Server{Handler: mux, TLSConfig: tlsConf.Clone(), ReadHeaderTimeout: 10 * time.Second, IdleTimeout: 2 * time.Minute}
+		go func() { _ = srv.ServeTLS(ln, "", "") }()
+		srvs = append(srvs, srv)
+		res.Bound = append(res.Bound, a)
+		loop = loop || a.Addr().IsLoopback()
+	}
+	if !loop {
+		_ = shutdownAll(ctx, srvs, p)
+		return res, ErrNoLoopbackDoH
+	}
 	e.mu.Lock()
-	e.serve = p
+	e.serve, e.serveDoH = p, srvs
 	e.mu.Unlock()
 	return res, nil
+}
+
+func shutdownAll(ctx context.Context, srvs []*http.Server, p *proxy.Proxy) error {
+	for _, s := range srvs {
+		_ = s.Shutdown(ctx)
+	}
+	return p.Shutdown(ctx)
 }
 
 // StopServe stops the extra listeners.
 func (e *Engine) StopServe(ctx context.Context) error {
 	e.mu.Lock()
-	p := e.serve
-	e.serve = nil
+	p, srvs := e.serve, e.serveDoH
+	e.serve, e.serveDoH = nil, nil
 	e.mu.Unlock()
 	if p == nil {
 		return nil
 	}
-	return p.Shutdown(ctx)
+	return shutdownAll(ctx, srvs, p)
 }
 
 // ServeStats returns the DNS server counters.

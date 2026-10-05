@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net"
+	"net/http"
 	"net/netip"
 	"strings"
 	"sync"
@@ -92,6 +93,7 @@ type Engine struct {
 
 	// DNS server for this PC and the LAN (serve.go).
 	serve        *proxy.Proxy
+	serveDoH     []*http.Server // Ghostline-run DoH listeners of serve
 	serveQueries uint64
 	clients      map[netip.Addr]time.Time
 	rates        map[netip.Addr]*rateWindow

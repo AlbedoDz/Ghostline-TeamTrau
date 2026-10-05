@@ -178,3 +178,15 @@ func TestServe_CertRotates(t *testing.T) {
 	l.reissue(t)
 	require.NotEqual(t, first, serial())
 }
+
+// Stopping right after starting must not crash: dnsproxy's own DoH
+// goroutine read its server after Shutdown had cleared it (nil Serve).
+func TestServe_StopRightAfterStart(t *testing.T) {
+	e := start(t, nil, &fakeUp{ip: net.IPv4(192, 0, 2, 80)})
+	l := newLANCert(t)
+	for range 300 {
+		_, err := e.Serve(context.Background(), engine.ServeConfig{DoH: []netip.AddrPort{netip.MustParseAddrPort("127.0.0.1:0")}, Cert: l.cur.Load})
+		require.NoError(t, err)
+		require.NoError(t, e.StopServe(context.Background()))
+	}
+}
