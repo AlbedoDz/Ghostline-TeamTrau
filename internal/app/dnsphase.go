@@ -21,6 +21,7 @@ const (
 	dohLeafLife     = 90 * 24 * time.Hour
 	dohLeafRenew    = 14 * 24 * time.Hour
 	dohName         = "dns." + certs.LANDomain
+	dnsRetryAfter   = time.Minute
 )
 
 // dnsState is what the DNS server phase changed; guarded by opMu.
@@ -30,6 +31,9 @@ type dnsState struct {
 	lan     []netip.Addr
 	ca      *certs.CA
 	leaf    atomic.Pointer[tls.Certificate]
+	// failedAt/failedLAN describe the last failed start, for retries.
+	failedAt  time.Time
+	failedLAN []netip.Addr
 }
 
 // dnsRules are the inbound rules for sharing the DNS server on the LAN.
@@ -149,9 +153,11 @@ func (o *Orchestrator) startDNSPhase(ctx context.Context) error {
 			sn.DNSServer = DNSServerStatus{Error: &AppError{Code: ae.Code, Params: ae.Params}, Skipped: skippedMap(res)}
 		})
 		o.addReason(reasonDNSServer)
+		o.dns.failedAt, o.dns.failedLAN = o.d.Now(), lan
 		o.log("dnsserver", ae.Code, flatten(ae.Params)...)
 		return err
 	}
+	o.dns.failedAt, o.dns.failedLAN = time.Time{}, nil
 	o.update(func(sn *Snapshot) {
 		sn.DNSServer = DNSServerStatus{Running: true, Addrs: boundDoH(res.Bound, doh), Skipped: skippedMap(res)}
 	})
@@ -208,10 +214,21 @@ func (o *Orchestrator) ReapplyDNSServer(ctx context.Context) error {
 func (o *Orchestrator) checkDNSHealth(ctx context.Context) {
 	o.opMu.Lock()
 	defer o.opMu.Unlock()
+	ds := o.d.Settings().DNSServer
 	if !o.dns.running {
+		// Failed start (spec 2B 11: retry, then stay degraded): try again
+		// after a minute, or at once when the LAN addresses change.
+		st := o.Snapshot().Status
+		connected := st == StatusProtected || st == StatusDegraded
+		if !connected || !ds.Enabled || o.dns.failedAt.IsZero() {
+			return
+		}
+		if o.d.Now().Sub(o.dns.failedAt) >= dnsRetryAfter || !sameAddrs(o.lanAddrs(ds.ShareLAN), o.dns.failedLAN) {
+			o.log("dnsserver", "DNSSERVER_RESTART")
+			_ = o.startDNSPhase(ctx)
+		}
 		return
 	}
-	ds := o.d.Settings().DNSServer
 	if lan := o.lanAddrs(ds.ShareLAN); !sameAddrs(lan, o.dns.lan) {
 		o.log("dnsserver", "DNSSERVER_RESTART")
 		o.stopDNSPhase(ctx)

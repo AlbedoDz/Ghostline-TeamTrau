@@ -253,3 +253,47 @@ func TestDisconnect_OrderWithDNSServer(t *testing.T) {
 	require.Nil(t, st.Firewall)
 	require.False(t, h.o.Snapshot().DNSServer.Running)
 }
+
+// A restart that fails once (address not ready yet after a Wi-Fi switch)
+// is retried: after a minute, or at once when the LAN addresses change.
+func TestPhaseD_RetriesAfterFailure(t *testing.T) {
+	h := newDNSHarness(t)
+	now := time.Now()
+	h.o.d.Now = func() time.Time { return now }
+	h.srv.err = engine.ErrNoLoopbackDoH
+	require.NoError(t, h.o.Connect(context.Background()))
+	require.Equal(t, StatusDegraded, h.o.Snapshot().Status)
+	h.srv.err = nil
+	n := len(h.srv.runs)
+
+	h.o.checkDNSHealth(context.Background())
+	require.Len(t, h.srv.runs, n, "not before the retry delay")
+
+	now = now.Add(61 * time.Second)
+	h.o.checkDNSHealth(context.Background())
+	require.Len(t, h.srv.runs, n+1)
+	require.True(t, h.o.Snapshot().DNSServer.Running)
+	require.Equal(t, StatusProtected, h.o.Snapshot().Status)
+}
+
+func TestPhaseD_RetriesWhenLANChanges(t *testing.T) {
+	h := newDNSHarness(t)
+	h.srv.err = engine.ErrNoLoopbackDoH
+	require.NoError(t, h.o.Connect(context.Background()))
+	h.srv.err = nil
+	n := len(h.srv.runs)
+	h.setLAN("192.168.1.7")
+	h.o.checkDNSHealth(context.Background())
+	require.Len(t, h.srv.runs, n+1)
+}
+
+func TestPhaseD_NoRetryWhenDisabled(t *testing.T) {
+	h := newDNSHarness(t)
+	h.srv.err = engine.ErrNoLoopbackDoH
+	require.NoError(t, h.o.Connect(context.Background()))
+	h.settings.DNSServer.Enabled = false
+	h.o.d.Now = func() time.Time { return time.Now().Add(time.Hour) }
+	n := len(h.srv.runs)
+	h.o.checkDNSHealth(context.Background())
+	require.Len(t, h.srv.runs, n)
+}
