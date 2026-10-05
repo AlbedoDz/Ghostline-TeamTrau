@@ -2,6 +2,8 @@ package app
 
 import (
 	"context"
+	"errors"
+	"net/netip"
 	"sync"
 	"testing"
 	"time"
@@ -11,7 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var happy = []string{"sys.admin", "sys.ports", "pick", "build", "engine.start", "engine.selftest", "dns.select", "dns.snapshot",
+var happy = []string{"sys.admin", "sys.listen", "pick", "build", "engine.start", "engine.selftest", "dns.select", "dns.snapshot",
 	"state.dns_set", "safety.watchdog", "safety.task.create", "dns.apply", "dns.flush", "engine.expect", "resolve", "engine.saw"}
 
 func TestConnect_HappyPathOrder(t *testing.T) {
@@ -170,6 +172,7 @@ func TestConnect_NotAdmin(t *testing.T) {
 
 func TestConnect_Port53Busy(t *testing.T) {
 	h := newHarness(t)
+	h.sys.listenErr = errors.New("bind: access denied")
 	h.sys.owners = []winutil.PortOwner{{PID: 1234, Name: "svchost.exe", Service: "SharedAccess", Proto: "udp"}}
 	require.Error(t, h.o.Connect(context.Background()))
 	e := h.o.Snapshot().Error
@@ -179,12 +182,41 @@ func TestConnect_Port53Busy(t *testing.T) {
 	require.Equal(t, "SharedAccess", e.Params["service"])
 }
 
+// Mobile Hotspot (SharedAccess) holds 0.0.0.0:53, yet 127.0.0.1:53 still
+// binds and gets every loopback query: an owner alone is no conflict.
+func TestConnect_Port53OwnerButLoopbackFree(t *testing.T) {
+	h := newHarness(t)
+	h.sys.owners = []winutil.PortOwner{{PID: 1892, Name: "svchost.exe", Service: "SharedAccess", Proto: "udp"}}
+	require.NoError(t, h.o.Connect(context.Background()))
+	require.Equal(t, happy, h.r.list())
+}
+
+func TestConnect_Port53BusyWithNoKnownOwner(t *testing.T) {
+	h := newHarness(t)
+	h.sys.listenErr = errors.New("bind: access denied")
+	require.Error(t, h.o.Connect(context.Background()))
+	e := h.o.Snapshot().Error
+	require.Equal(t, CodePort53Busy, e.Code)
+	require.Equal(t, "?", e.Params["name"])
+}
+
+func TestConnect_ProbesTheListenAddresses(t *testing.T) {
+	h := newHarness(t)
+	require.NoError(t, h.o.Connect(context.Background()))
+	require.Equal(t, []netip.AddrPort{netip.MustParseAddrPort("127.0.0.1:53"), netip.MustParseAddrPort("[::1]:53")}, h.sys.probed)
+
+	h = newHarness(t)
+	h.sys.noV6 = true
+	require.NoError(t, h.o.Connect(context.Background()))
+	require.Equal(t, []netip.AddrPort{netip.MustParseAddrPort("127.0.0.1:53")}, h.sys.probed)
+}
+
 func TestConnect_DirtyStateRecoversFirst(t *testing.T) {
 	h := newHarness(t)
 	require.NoError(t, h.states.s.Update(func(st *store.State) error { st.Phase = store.PhaseDNSSet; return nil }))
 	require.NoError(t, h.o.Connect(context.Background()))
 	calls := h.r.list()
-	require.Less(t, indexOf(calls, "recover"), indexOf(calls, "sys.ports"))
+	require.Less(t, indexOf(calls, "recover"), indexOf(calls, "sys.listen"))
 	require.Equal(t, 1, h.recovers)
 }
 

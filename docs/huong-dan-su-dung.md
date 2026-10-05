@@ -151,7 +151,7 @@ Dùng khi DNS đã được mã hoá nhưng kết nối tới một trang **vẫ
 
 **Fragment DNS**
 
-Chia nhỏ gói tin gửi tới máy chủ DoH để nhà mạng khó nhận ra. Chỉ cần khi **không tìm được máy chủ nào** (nhà mạng chặn cả kết nối DNS mã hoá). Khi GoodbyeDPI đang bật thì Fragment là thừa.
+Chia nhỏ gói tin gửi tới máy chủ DoH để nhà mạng khó nhận ra. Chỉ cần khi **không tìm được máy chủ nào** (nhà mạng chặn cả kết nối DNS mã hoá). Khi đang bật engine vượt DPI (zapret2 hoặc GoodbyeDPI) thì Fragment là thừa.
 
 - **Số mảnh:** chia thành bao nhiêu phần (2–20).
 - **Độ trễ (ms):** thời gian chờ giữa các mảnh.
@@ -320,7 +320,7 @@ Làm lần lượt, dừng lại khi trang đã mở được:
 | Thông báo | Nguyên nhân và cách xử lý |
 | --- | --- |
 | **Ghostline cần quyền quản trị (admin) để đổi DNS** | Bạn đã mở app không có quyền admin. Đóng lại, chuột phải → **Run as administrator** |
-| **Cổng 53 đang bị … chiếm** | Một chương trình khác đang chạy DNS trên máy (thường là Mobile Hotspot/ICS, WSL, Hyper-V, hoặc một phần mềm DNS khác). Tắt chương trình đó, hoặc dùng nút **Tạm dừng dịch vụ …** mà Ghostline đưa ra. Ghostline luôn hỏi trước khi dừng dịch vụ nào |
+| **Cổng 53 đang bị … chiếm** | Một chương trình khác đang chạy DNS trên 127.0.0.1 (thường là WSL, Hyper-V hoặc một phần mềm DNS khác; Mobile Hotspot không còn gây lỗi này). Tắt chương trình đó, hoặc dùng nút **Tạm dừng dịch vụ …** mà Ghostline đưa ra. Ghostline luôn hỏi trước khi dừng dịch vụ nào |
 | **Không tìm được máy chủ hoạt động** | Mạng đang mất kết nối, hoặc nhà mạng chặn cả DNS mã hoá. Kiểm tra mạng, rồi thử bật **Fragment DNS** |
 | **Truy vấn DNS không đi qua Ghostline** | Có VPN hoặc phần mềm khác đang chiếm DNS. Tắt chúng rồi kết nối lại |
 | **Không đặt được DNS cho …** | Card mạng đó không cho đổi DNS (thường là card ảo của VPN/máy ảo). Vào **Cài đặt → card mạng → chọn tay** và bỏ card đó ra |
@@ -365,4 +365,4 @@ Không. Không telemetry, không tài khoản, không ghi tên trang bạn truy 
 Không sao. Ghostline trả DNS về trước khi Windows tắt. Nếu máy mất điện đột ngột, lần đăng nhập sau tác vụ *Ghostline Recovery* sẽ tự khôi phục DNS, kể cả khi bạn không mở Ghostline.
 
 **Dùng chung với Mobile Hotspot được không?**
-Mobile Hotspot của Windows giữ cổng 53, nên hai thứ không chạy cùng lúc được. Ghostline sẽ báo lỗi *Cổng 53 đang bị chiếm* và đề nghị tạm dừng dịch vụ (chỉ khi bạn đồng ý).
+Được. Mobile Hotspot nghe cổng 53 trên mọi địa chỉ, nhưng Windows vẫn cho Ghostline dùng 127.0.0.1:53, nên bạn kết nối được ngay cả khi đang bật hotspot.

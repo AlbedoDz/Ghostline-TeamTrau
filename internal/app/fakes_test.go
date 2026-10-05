@@ -234,6 +234,8 @@ type fSystem struct {
 	owners      []winutil.PortOwner // port 53
 	proxyOwners []winutil.PortOwner // any other port
 	noV6        bool
+	listenErr   error            // returned by ListenFree
+	probed      []netip.AddrPort // what ListenFree was asked to bind
 }
 
 func (s *fSystem) IsAdmin() bool { _ = s.r.add("sys.admin"); return s.admin }
@@ -242,6 +244,13 @@ func (s *fSystem) PortOwners(port uint16) ([]winutil.PortOwner, error) {
 		return s.proxyOwners, nil
 	}
 	return s.owners, s.r.add("sys.ports")
+}
+func (s *fSystem) ListenFree(addrs []netip.AddrPort) error {
+	s.probed = addrs
+	if err := s.r.add("sys.listen"); err != nil {
+		return err
+	}
+	return s.listenErr
 }
 func (s *fSystem) SelfPID() (uint32, time.Time) { return 1234, time.Unix(100, 0) }
 func (s *fSystem) IPv6Available() bool          { return !s.noV6 }

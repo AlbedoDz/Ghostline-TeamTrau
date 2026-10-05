@@ -18,6 +18,6 @@ Only the latest release receives security fixes.
 - DNS leaks, or ways to bypass the encrypted path while Ghostline reports "protected".
 - Failure to restore the original DNS.
 - Privilege escalation through Ghostline, its watchdog or its scheduled tasks.
-- Bypassing the signature checks on the server list, the DNSCrypt list or the bundled GoodbyeDPI.
+- Bypassing the signature checks on the server list, the DNSCrypt list, the zapret2 strategy list, or the bundled zapret2 and GoodbyeDPI binaries.
 
-Vulnerabilities in upstream projects (dnsproxy, GoodbyeDPI, WinDivert, WebView2) should be reported to those projects. Please let us know as well if Ghostline needs to update.
+Vulnerabilities in upstream projects (dnsproxy, zapret2, GoodbyeDPI, WinDivert, WebView2) should be reported to those projects. Please let us know as well if Ghostline needs to update.

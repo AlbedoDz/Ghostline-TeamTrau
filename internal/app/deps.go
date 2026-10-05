@@ -61,6 +61,8 @@ type Safety interface {
 type System interface {
 	IsAdmin() bool
 	PortOwners(uint16) ([]winutil.PortOwner, error)
+	// ListenFree binds UDP and TCP on each address, then releases them.
+	ListenFree([]netip.AddrPort) error
 	SelfPID() (uint32, time.Time)
 	IPv6Available() bool
 }
