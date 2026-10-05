@@ -7,12 +7,16 @@
 <p>Trước khi cài gì, hãy so vân tay này với vân tay hiện trong Ghostline trên máy tính:</p>
 <p><code>{{.Fingerprint}}</code></p>
 <h2>iPhone / iPad</h2>
-{{if .HasProfile}}<p><a href="/ghostline.mobileconfig">Tải profile</a>, rồi mở <em>Cài đặt › Đã tải về hồ sơ</em> và cài.
+{{if .HasProfile}}<form action="/ghostline.mobileconfig" method="get">
+<label>Tên Wi-Fi nhà (đúng như trên điện thoại này)<br><input name="ssid" value="{{.SSID}}" maxlength="32" required autocapitalize="off" autocorrect="off" style="font:inherit;width:100%;margin:6px 0"></label>
+<button type="submit" style="font:inherit">Tải profile</button>
+</form>
+<p>Rồi mở <em>Cài đặt › Đã tải về hồ sơ</em> và cài.
 Sau đó bật chứng chỉ trong <em>Cài đặt › Cài đặt chung › Giới thiệu › Cài đặt tin cậy chứng chỉ</em> (Tin cậy hoàn toàn).
-DNS mã hoá chỉ được dùng khi ở Wi-Fi nhà.</p>
+DNS mã hoá chỉ được dùng khi ở Wi-Fi đó.</p>
 <p>Nếu máy tính tắt hoặc Ghostline ngắt kết nối khi bạn đang ở nhà, hãy tắt profile trong <em>Cài đặt › VPN và quản lý thiết bị</em>.</p>
-{{else}}<p>Chưa có profile iOS: hãy nhập tên Wi-Fi nhà trong Ghostline trước.
-Bạn cũng có thể vào <em>Cài đặt › Wi-Fi › (i) › Định cấu hình DNS › Thủ công</em> và nhập IP của máy tính. Cách này không cần chứng chỉ.</p>{{end}}
+{{else}}<p>Chưa có profile iOS.
+Bạn có thể vào <em>Cài đặt › Wi-Fi › (i) › Định cấu hình DNS › Thủ công</em> và nhập IP của máy tính. Cách này không cần chứng chỉ.</p>{{end}}
 <h2>Android</h2>
 <p>Tắt <em>DNS riêng tư</em>, rồi đặt DNS của Wi-Fi nhà là IP của máy tính (cài đặt IP tĩnh). Không cần chứng chỉ.</p>
 <h2>Steam Deck, TV, máy chơi game, router</h2>

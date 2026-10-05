@@ -16,10 +16,18 @@ import (
 
 // SetupFiles are what the phone setup page offers. All of it is public.
 type SetupFiles struct {
-	CRT          []byte // LAN CA, DER
-	MobileConfig []byte // nil when no home Wi-Fi name is set
-	Fingerprint  string // SHA-256 of the LAN CA, shown for comparison
+	CRT         []byte // LAN CA, DER
+	Fingerprint string // SHA-256 of the LAN CA, shown for comparison
+	// MobileConfig builds the iOS profile for a home Wi-Fi name; nil when
+	// no profile can be offered.
+	MobileConfig func(ssid string) ([]byte, error)
+	// SSID is the home Wi-Fi name saved in Ghostline, the default for the
+	// phone's form (the phone user may enter another one).
+	SSID string
 }
+
+// maxSSID is the longest Wi-Fi name (802.11: 32 bytes).
+const maxSSID = 32
 
 //go:embed setuppage_vi.html setuppage_en.html
 var pages embed.FS
@@ -57,8 +65,21 @@ func (p *SetupPage) Handler() http.Handler {
 			http.NotFound(w, r)
 			return
 		}
+		ssid := strings.TrimSpace(r.URL.Query().Get("ssid"))
+		if ssid == "" {
+			ssid = p.files.SSID
+		}
+		if ssid == "" || len(ssid) > maxSSID {
+			http.Error(w, "enter your home Wi-Fi name (up to 32 bytes)", http.StatusBadRequest)
+			return
+		}
+		b, err := p.files.MobileConfig(ssid)
+		if err != nil {
+			http.Error(w, "could not build the profile", http.StatusInternalServerError)
+			return
+		}
 		w.Header().Set("Content-Type", "application/x-apple-aspen-config")
-		_, _ = w.Write(p.files.MobileConfig)
+		_, _ = w.Write(b)
 	})
 	mux.HandleFunc("/{$}", func(w http.ResponseWriter, r *http.Request) {
 		name := "setuppage_en.html"
@@ -67,7 +88,7 @@ func (p *SetupPage) Handler() http.Handler {
 		}
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		_ = tmpl.ExecuteTemplate(w, name, map[string]any{
-			"Fingerprint": p.files.Fingerprint, "HasProfile": p.files.MobileConfig != nil,
+			"Fingerprint": p.files.Fingerprint, "HasProfile": p.files.MobileConfig != nil, "SSID": p.files.SSID,
 		})
 	})
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

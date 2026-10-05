@@ -36,17 +36,16 @@ func (o *Orchestrator) LANCA() *certs.CA {
 }
 
 // lanFiles builds what the phone setup page and "Save files…" offer.
+// The iOS profile is built per Wi-Fi name: the saved one by default, or
+// the one entered on the phone.
 func lanFiles(ca *certs.CA, lan []netip.Addr, dohPort int, ssid string) (dnsserver.SetupFiles, error) {
-	f := dnsserver.SetupFiles{CRT: ca.DER, Fingerprint: ca.Fingerprint()}
-	mc, err := certs.MobileConfig(certs.ProfileInput{CA: ca, Addrs: lan, Port: dohPort, SSID: ssid})
-	switch {
-	case errors.Is(err, certs.ErrNoSSID):
-	case err != nil:
-		return f, err
-	default:
-		f.MobileConfig = mc
-	}
-	return f, nil
+	lan = slices.Clone(lan)
+	return dnsserver.SetupFiles{
+		CRT: ca.DER, Fingerprint: ca.Fingerprint(), SSID: ssid,
+		MobileConfig: func(name string) ([]byte, error) {
+			return certs.MobileConfig(certs.ProfileInput{CA: ca, Addrs: lan, Port: dohPort, SSID: name})
+		},
+	}, nil
 }
 
 // OpenSetupPage opens the phone setup page on the LAN addresses for ten

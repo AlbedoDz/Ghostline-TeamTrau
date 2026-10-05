@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/netip"
+	"strings"
 	"testing"
 	"time"
 
@@ -31,7 +32,8 @@ func TestListenPlan(t *testing.T) {
 }
 
 func files() dnsserver.SetupFiles {
-	return dnsserver.SetupFiles{CRT: []byte("DER"), MobileConfig: []byte("<plist/>"), Fingerprint: "AB:CD:EF"}
+	return dnsserver.SetupFiles{CRT: []byte("DER"), Fingerprint: "AB:CD:EF", SSID: "Home",
+		MobileConfig: func(ssid string) ([]byte, error) { return []byte("<plist>" + ssid + "</plist>"), nil }}
 }
 
 func do(t *testing.T, h http.Handler, path, remote, lang string) *httptest.ResponseRecorder {
@@ -54,6 +56,7 @@ func TestSetupPage_ServesFiles(t *testing.T) {
 	require.Equal(t, "DER", r.Body.String())
 	r = do(t, h, "/ghostline.mobileconfig", "192.168.1.9:5000", "")
 	require.Equal(t, "application/x-apple-aspen-config", r.Header().Get("Content-Type"))
+	require.Equal(t, "<plist>Home</plist>", r.Body.String(), "the saved Wi-Fi name is the default")
 	r = do(t, h, "/", "192.168.1.9:5000", "en-US,en")
 	require.Contains(t, r.Body.String(), "AB:CD:EF")
 	require.Contains(t, r.Body.String(), "Full Trust")
@@ -67,12 +70,32 @@ func TestSetupPage_PrivateOnly(t *testing.T) {
 	require.Equal(t, http.StatusForbidden, do(t, h, "/ghostline-lan-ca.crt", "8.8.8.8:1", "").Code)
 }
 
-func TestSetupPage_NoMobileConfigWithoutSSID(t *testing.T) {
+func TestSetupPage_PhoneEntersWiFiName(t *testing.T) {
+	f := files()
+	f.SSID = ""
+	h := dnsserver.NewSetupPage(f, time.Now).Handler()
+	page := do(t, h, "/", "192.168.1.9:1", "en").Body.String()
+	require.Contains(t, page, `name="ssid"`)
+	require.Contains(t, page, "Wi-Fi name")
+
+	r := do(t, h, "/ghostline.mobileconfig?ssid=Nh%C3%A0+5G", "192.168.1.9:1", "")
+	require.Equal(t, http.StatusOK, r.Code)
+	require.Equal(t, "<plist>Nhà 5G</plist>", r.Body.String())
+
+	require.Equal(t, http.StatusBadRequest, do(t, h, "/ghostline.mobileconfig", "192.168.1.9:1", "").Code, "no name anywhere")
+	require.Equal(t, http.StatusBadRequest, do(t, h, "/ghostline.mobileconfig?ssid="+strings.Repeat("a", 33), "192.168.1.9:1", "").Code)
+}
+
+func TestSetupPage_PrefillsSavedWiFiName(t *testing.T) {
+	h := dnsserver.NewSetupPage(files(), time.Now).Handler()
+	require.Contains(t, do(t, h, "/", "192.168.1.9:1", "en").Body.String(), `value="Home"`)
+}
+
+func TestSetupPage_NoProfileBuilder(t *testing.T) {
 	f := files()
 	f.MobileConfig = nil
 	h := dnsserver.NewSetupPage(f, time.Now).Handler()
-	require.Equal(t, http.StatusNotFound, do(t, h, "/ghostline.mobileconfig", "192.168.1.9:1", "").Code)
-	require.Contains(t, do(t, h, "/", "192.168.1.9:1", "en").Body.String(), "Wi-Fi name")
+	require.Equal(t, http.StatusNotFound, do(t, h, "/ghostline.mobileconfig?ssid=x", "192.168.1.9:1", "").Code)
 }
 
 func TestSetupPage_ClosesAfterLife(t *testing.T) {

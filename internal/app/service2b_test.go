@@ -117,7 +117,10 @@ func TestOpenSetupPage_WritesStateFirstAndCleansUp(t *testing.T) {
 	require.Contains(t, h.r.list(), "firewall.add:"+winutil.RuleSetup) // fake asserts state first
 	require.Equal(t, []netip.AddrPort{netip.MustParseAddrPort("192.168.1.5:8053")}, h.page.addrs)
 	require.Equal(t, 10*time.Minute, h.page.life)
-	require.NotNil(t, h.page.files.MobileConfig)
+	require.Equal(t, "Home", h.page.files.SSID)
+	mc, err := h.page.files.MobileConfig("Home")
+	require.NoError(t, err)
+	require.Contains(t, string(mc), "<string>Home</string>")
 	require.NotEmpty(t, h.page.files.Fingerprint)
 	info := h.svc.GetDeviceInfo()
 	require.Equal(t, url, info.SetupURL)
@@ -135,7 +138,11 @@ func TestOpenSetupPage_NoSSIDNoProfile(t *testing.T) {
 	require.NoError(t, h.svc.Connect())
 	_, err := h.svc.OpenSetupPage()
 	require.NoError(t, err)
-	require.Nil(t, h.page.files.MobileConfig)
+	// No saved name: the phone enters it; the profile is built for that name.
+	require.Empty(t, h.page.files.SSID)
+	mc, err := h.page.files.MobileConfig("Phone Wi-Fi")
+	require.NoError(t, err)
+	require.Contains(t, string(mc), "<string>Phone Wi-Fi</string>")
 }
 
 func TestOpenSetupPage_NeedsSharedDNSServer(t *testing.T) {

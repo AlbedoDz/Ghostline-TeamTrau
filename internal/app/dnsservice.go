@@ -106,10 +106,14 @@ func (s *Service) SaveDeviceFiles() error {
 	if err := s.x.SaveFile("ghostline-lan-ca.crt", files.CRT); err != nil {
 		return err
 	}
-	if files.MobileConfig != nil {
-		return s.x.SaveFile("ghostline.mobileconfig", files.MobileConfig)
+	if files.SSID == "" {
+		return nil // no home Wi-Fi name: the certificate only
 	}
-	return nil
+	mc, err := files.MobileConfig(files.SSID)
+	if err != nil {
+		return err
+	}
+	return s.x.SaveFile("ghostline.mobileconfig", mc)
 }
 
 // ResetLANCA replaces the LAN CA; other devices must install it again.

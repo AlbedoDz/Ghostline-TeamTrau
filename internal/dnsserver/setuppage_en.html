@@ -7,12 +7,16 @@
 <p>Compare this fingerprint with the one shown in Ghostline on the computer before installing anything:</p>
 <p><code>{{.Fingerprint}}</code></p>
 <h2>iPhone / iPad</h2>
-{{if .HasProfile}}<p><a href="/ghostline.mobileconfig">Download the profile</a>, then open <em>Settings › Profile Downloaded</em> and install it.
+{{if .HasProfile}}<form action="/ghostline.mobileconfig" method="get">
+<label>Home Wi-Fi name (exactly as on this phone)<br><input name="ssid" value="{{.SSID}}" maxlength="32" required autocapitalize="off" autocorrect="off" style="font:inherit;width:100%;margin:6px 0"></label>
+<button type="submit" style="font:inherit">Download the profile</button>
+</form>
+<p>Then open <em>Settings › Profile Downloaded</em> and install it.
 Then turn the certificate on in <em>Settings › General › About › Certificate Trust Settings</em> (Full Trust).
-The encrypted DNS is used only on your home Wi-Fi.</p>
+The encrypted DNS is used only on that Wi-Fi.</p>
 <p>If the computer is off or Ghostline is disconnected while you are at home, turn the profile off in <em>Settings › VPN &amp; Device Management</em>.</p>
-{{else}}<p>The iOS profile is not ready yet: enter your home Wi-Fi name in Ghostline first.
-You can also open <em>Settings › Wi-Fi › (i) › Configure DNS › Manual</em> and enter this computer's IP address. No certificate is needed.</p>{{end}}
+{{else}}<p>The iOS profile is not available.
+You can open <em>Settings › Wi-Fi › (i) › Configure DNS › Manual</em> and enter this computer's IP address. No certificate is needed.</p>{{end}}
 <h2>Android</h2>
 <p>Turn off <em>Private DNS</em>, then set the DNS of your home Wi-Fi to this computer's IP address (static IP settings). No certificate is needed.</p>
 <h2>Steam Deck, TV, consoles, router</h2>
