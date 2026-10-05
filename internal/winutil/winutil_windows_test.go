@@ -156,3 +156,9 @@ func TestFindServices_FindsKnownDriver(t *testing.T) {
 	require.NoError(t, err)
 	require.Contains(t, names, "Tcpip")
 }
+
+func TestCurrentSSID_NoPanic(t *testing.T) {
+	ssid, err := CurrentSSID()
+	require.NoError(t, err)
+	require.LessOrEqual(t, len(ssid), 32)
+}
