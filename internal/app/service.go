@@ -8,7 +8,9 @@ import (
 	"log/slog"
 	"net/netip"
 	"os"
+	"path/filepath"
 	"slices"
+	"strings"
 	"sync"
 	"time"
 
@@ -162,10 +164,8 @@ func (s *Service) SaveSettings(n store.Settings) error {
 	if n.DNSBlockMode != "zero" && n.DNSBlockMode != "nxdomain" {
 		return fmt.Errorf("settings: dnsBlockMode must be zero or nxdomain")
 	}
-	if n.DPI.Preset == "custom" || n.DPI.CustomArgs != "" {
-		if _, err := dpi.ValidateCustom(n.DPI.CustomArgs); err != nil {
-			return err
-		}
+	if err := s.validateDPI(n.DPI); err != nil {
+		return err
 	}
 	old := s.x.Settings.Get()
 	if n.DPI.Scope == string(dpi.ScopeBlacklist) && old.DPI.Scope != n.DPI.Scope {
@@ -188,7 +188,7 @@ func (s *Service) SaveSettings(n store.Settings) error {
 	if s.x.OnSettingsChanged != nil {
 		s.x.OnSettingsChanged(old, n)
 	}
-	if old.DPI.Preset != n.DPI.Preset || old.DPI.CustomArgs != n.DPI.CustomArgs || old.DPI.Scope != n.DPI.Scope {
+	if dpiChanged(old.DPI, n.DPI) {
 		if err := s.o.RestartDPI(context.Background()); err != nil {
 			return err
 		}
@@ -398,8 +398,8 @@ func (s *Service) StartAutotune() error {
 			s.mu.Unlock()
 			cancel()
 		}()
-		err := s.o.Autotune(ctx, func(p string, i, n int) {
-			s.x.Bus.Emit(EventAutotune, AutotuneProgress{Preset: p, Index: i, Total: n, Running: true})
+		err := s.o.Autotune(ctx, func(engine, p string, i, n int) {
+			s.x.Bus.Emit(EventAutotune, AutotuneProgress{Engine: engine, Preset: p, Index: i, Total: n, Running: true})
 		})
 		final := AutotuneProgress{Running: false}
 		var ae *AppError
@@ -433,9 +433,9 @@ func (s *Service) GetDPIBlacklist() (string, error) {
 	return string(b), err
 }
 
-// SaveDPIBlacklist writes the blacklist file and restarts a running
-// GoodbyeDPI so the new list applies now. An empty list is refused:
-// GoodbyeDPI would then bypass nothing.
+// SaveDPIBlacklist writes the blacklist file and applies it now: zapret2
+// re-reads it by itself, GoodbyeDPI is restarted. An empty list is refused:
+// the engine would then bypass nothing.
 func (s *Service) SaveDPIBlacklist(text string) error {
 	if dpi.BlacklistEntries(text) == 0 {
 		return appErr(CodeDPIBlacklistEmpty, nil)
@@ -446,12 +446,115 @@ func (s *Service) SaveDPIBlacklist(text string) error {
 	if err := os.WriteFile(s.x.Paths.DPIBlacklist, []byte(text), 0o644); err != nil {
 		return err
 	}
-	return s.o.RestartDPI(context.Background())
+	return s.o.RefreshDPILists(context.Background())
 }
 
-// PreviewDPIArgs shows the GoodbyeDPI command line for the given options.
-func (s *Service) PreviewDPIArgs(preset, custom, scope string) ([]string, error) {
-	return dpi.Args(dpi.Preset(preset), custom, dpi.Scope(scope), s.x.Paths.DPIBlacklist)
+// validateDPI checks the engine and each engine's custom args.
+func (s *Service) validateDPI(d store.DPISettings) error {
+	if d.Engine != store.EngineGoodbyeDPI && d.Engine != store.EngineZapret2 {
+		return fmt.Errorf("settings: unknown DPI engine %q", d.Engine)
+	}
+	check := func(engine, custom string, used bool) error {
+		if !used && custom == "" {
+			return nil
+		}
+		e, ok := s.o.d.DPI.Get(engine)
+		if !ok {
+			return nil
+		}
+		if err := e.ValidateCustom(custom); err != nil {
+			return appErr(CodeDPICustomRejected, err, "engine", engine, "arg", err.Error())
+		}
+		return nil
+	}
+	if err := check(store.EngineGoodbyeDPI, d.CustomArgs, d.Preset == "custom"); err != nil {
+		return err
+	}
+	return check(store.EngineZapret2, d.Zapret2.CustomArgs, d.Zapret2.Strategy == "custom")
+}
+
+// dpiChanged reports a change that a running engine must restart for.
+func dpiChanged(a, b store.DPISettings) bool {
+	return a.Engine != b.Engine || a.Preset != b.Preset || a.CustomArgs != b.CustomArgs || a.Scope != b.Scope ||
+		a.Zapret2 != b.Zapret2
+}
+
+// DPIStrategies lists an engine's strategies in autotune order.
+func (s *Service) DPIStrategies(engine string) ([]dpi.Strategy, error) {
+	e, ok := s.o.d.DPI.Get(engine)
+	if !ok {
+		return nil, fmt.Errorf("%w: %q", dpi.ErrUnknownEngine, engine)
+	}
+	return e.Strategies(), nil
+}
+
+// PreviewDPIArgs shows the command line an engine would get for the given
+// options (list paths as stored in the data directory).
+func (s *Service) PreviewDPIArgs(engine, strategy, custom, scope string, autoHostlist bool) ([]string, error) {
+	e, ok := s.o.d.DPI.Get(engine)
+	if !ok {
+		return nil, fmt.Errorf("%w: %q", dpi.ErrUnknownEngine, engine)
+	}
+	p := dpi.Plan{Strategy: strategy, Custom: custom, Scope: dpi.Scope(scope), Blacklist: s.x.Paths.DPIBlacklist}
+	if autoHostlist {
+		p.AutoHostlist = s.x.Paths.DPIAutoHostlist
+	}
+	return e.Args(p)
+}
+
+// GetDPIAutoHostlist returns the sites zapret2 detected as blocked, sorted.
+func (s *Service) GetDPIAutoHostlist() ([]string, error) {
+	b, err := os.ReadFile(s.o.d.AutoHostlistPath)
+	if errors.Is(err, fs.ErrNotExist) {
+		return []string{}, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return cleanDomains(strings.Split(string(b), "\n")), nil
+}
+
+// SaveDPIAutoHostlist replaces the auto-detected sites (the user removed
+// some) and restarts a running zapret2: it keeps its own copy and would
+// write the removed sites back.
+func (s *Service) SaveDPIAutoHostlist(domains []string) error {
+	text := strings.Join(cleanDomains(domains), "\n")
+	if text != "" {
+		text += "\n"
+	}
+	if s.o.d.DPI.Engine() == store.EngineZapret2 {
+		_ = s.o.d.DPI.Stop() // copies the engine's list out first
+	}
+	if err := os.MkdirAll(filepath.Dir(s.o.d.AutoHostlistPath), 0o755); err != nil {
+		return err
+	}
+	if err := os.WriteFile(s.o.d.AutoHostlistPath, []byte(text), 0o644); err != nil {
+		return err
+	}
+	if s.o.connected() && s.x.Settings.Get().DPI.Enabled && !s.o.d.DPI.Running() {
+		s.o.opMu.Lock()
+		err := s.o.startDPI(context.Background(), s.x.Settings.Get())
+		s.o.opMu.Unlock()
+		return err
+	}
+	return nil
+}
+
+// RetryZapret2 restarts DPI with the configured engine after a fallback.
+func (s *Service) RetryZapret2() error { return s.o.RestartDPI(context.Background()) }
+
+// cleanDomains trims, lower-cases, drops blanks and comments, dedupes and
+// sorts.
+func cleanDomains(in []string) []string {
+	out := []string{}
+	for _, d := range in {
+		d = strings.ToLower(strings.TrimSpace(d))
+		if d != "" && !strings.HasPrefix(d, "#") && !slices.Contains(out, d) {
+			out = append(out, d)
+		}
+	}
+	slices.Sort(out)
+	return out
 }
 
 // DismissWarning hides a warning. RESTORE_FAILED cannot be dismissed: only

@@ -202,7 +202,7 @@ func TestDisconnect_Order(t *testing.T) {
 	h := newProxyHarness(t, true)
 	h.settings.DPI.Enabled = true
 	require.NoError(t, h.o.Connect(context.Background()))
-	h.dpi.setRunning(true)
+	h.dpi.setRunning("goodbyedpi")
 	n := len(h.r.list())
 	require.NoError(t, h.o.Disconnect(context.Background()))
 	requireOrder(t, h.r.list()[n:], "sysproxy.restore", "firewall.delete", "proxy.stop", "dns.restore", "dpi.stop", "engine.stop", "state.clean")

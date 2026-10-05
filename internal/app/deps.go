@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/AdguardTeam/dnsproxy/upstream"
+	"github.com/hashcott/ghostline/internal/dpi"
 	"github.com/hashcott/ghostline/internal/engine"
 	"github.com/hashcott/ghostline/internal/model"
 	"github.com/hashcott/ghostline/internal/probe"
@@ -36,11 +37,14 @@ type DNS interface {
 	Flush() error
 }
 
-// DPI runs GoodbyeDPI.
+// DPI runs one DPI bypass engine at a time (dpi.Manager).
 type DPI interface {
-	Start(context.Context, []string) (int, error)
+	Start(ctx context.Context, engine string, p dpi.Plan) (int, error)
 	Stop() error
 	Running() bool
+	Engine() string // engine running, "" when stopped
+	RefreshLists(p dpi.Plan) error
+	Get(engine string) (dpi.Engine, bool)
 }
 
 // Safety starts the watchdog and the logon recovery task.
@@ -141,6 +145,8 @@ type Deps struct {
 	// Ticker returns a tick channel and a stop func (health checks).
 	Ticker        func(time.Duration) (<-chan time.Time, func())
 	BlacklistPath string
+	// AutoHostlistPath is where zapret2's auto-detected sites are kept.
+	AutoHostlistPath string
 	// Proxy phase (phase 2A). A nil Proxy disables the phase.
 	Proxy    Proxy
 	SysProxy SysProxy

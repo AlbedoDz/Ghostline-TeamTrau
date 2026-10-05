@@ -555,12 +555,12 @@ func (o *Orchestrator) cancelBackground() {
 
 // recordDPI persists GoodbyeDPI's state while DNS is redirected, so the
 // watchdog and --restore also remove the WinDivert driver after a crash.
-func (o *Orchestrator) recordDPI(running bool, pid int) {
+func (o *Orchestrator) recordDPI(running bool, pid int, engine string) {
 	_ = o.d.States.Update(func(st *store.State) error {
 		if st.Phase != store.PhaseDNSSet {
 			return errNoChange
 		}
-		st.DPI = store.DPIState{Running: running, PID: pid}
+		st.DPI = store.DPIState{Running: running, PID: pid, Engine: engine}
 		return nil
 	})
 }

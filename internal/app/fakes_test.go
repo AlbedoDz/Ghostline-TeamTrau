@@ -10,6 +10,11 @@ import (
 	"time"
 
 	"github.com/AdguardTeam/dnsproxy/upstream"
+	builtinStrategies "github.com/hashcott/ghostline/assets/strategies"
+	"github.com/hashcott/ghostline/internal/dpi"
+	"github.com/hashcott/ghostline/internal/dpi/goodbyedpi"
+	"github.com/hashcott/ghostline/internal/dpi/zapret2"
+	"github.com/hashcott/ghostline/internal/dpi/zapret2/strategies"
 	"github.com/hashcott/ghostline/internal/engine"
 	"github.com/hashcott/ghostline/internal/model"
 	"github.com/hashcott/ghostline/internal/probe"
@@ -123,40 +128,94 @@ func (d *fDNS) Restore(s []model.AdapterSnapshot) []sysdns.RestoreError {
 }
 func (d *fDNS) Flush() error { return d.r.add("dns.flush") }
 
+// fDPI runs no process but builds argv with the real engines, so tests can
+// check what would be launched.
 type fDPI struct {
 	mu      sync.Mutex
 	r       *rec
-	running bool
-	startE  error
-	started []string
+	running string           // engine ID, "" when stopped
+	startE  error            // fails every start
+	failOn  map[string]error // fails starts of one engine
+	starts  []dpiStart
 	onStart func()
 }
 
-func (p *fDPI) Start(_ context.Context, args []string) (int, error) {
+type dpiStart struct {
+	engine string
+	plan   dpi.Plan
+}
+
+var testEngines = map[string]dpi.Engine{
+	"goodbyedpi": goodbyedpi.New(),
+	"zapret2": zapret2.New(func() strategies.List {
+		l, err := strategies.Parse(builtinStrategies.BuiltinJSON, zapret2.ValidateArgs)
+		if err != nil {
+			panic(err)
+		}
+		return l
+	}),
+}
+
+func (p *fDPI) Start(_ context.Context, engine string, plan dpi.Plan) (int, error) {
 	_ = p.r.add("dpi.start")
 	if p.onStart != nil {
 		p.onStart()
 	}
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.running = ""
+	p.starts = append(p.starts, dpiStart{engine, plan})
 	if p.startE != nil {
 		return 0, p.startE
 	}
-	p.mu.Lock()
-	p.running = true
-	p.started = args
-	p.mu.Unlock()
+	if err := p.failOn[engine]; err != nil {
+		return 0, err
+	}
+	e, ok := testEngines[engine]
+	if !ok {
+		return 0, dpi.ErrUnknownEngine
+	}
+	if _, err := e.Args(plan); err != nil {
+		return 0, err
+	}
+	p.running = engine
 	return 99, nil
 }
 func (p *fDPI) Stop() error {
-	p.setRunning(false)
+	p.setRunning("")
 	return p.r.add("dpi.stop")
 }
-func (p *fDPI) Running() bool { p.mu.Lock(); defer p.mu.Unlock(); return p.running }
-func (p *fDPI) setRunning(v bool) {
+func (p *fDPI) Running() bool  { p.mu.Lock(); defer p.mu.Unlock(); return p.running != "" }
+func (p *fDPI) Engine() string { p.mu.Lock(); defer p.mu.Unlock(); return p.running }
+func (p *fDPI) RefreshLists(dpi.Plan) error {
+	return p.r.add("dpi.refresh")
+}
+func (p *fDPI) Get(engine string) (dpi.Engine, bool) { e, ok := testEngines[engine]; return e, ok }
+func (p *fDPI) setRunning(v string) {
 	p.mu.Lock()
 	p.running = v
 	p.mu.Unlock()
 }
-func (p *fDPI) startedArgs() []string { p.mu.Lock(); defer p.mu.Unlock(); return p.started }
+
+// lastStart is the most recent Start call.
+func (p *fDPI) lastStart() dpiStart {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	if len(p.starts) == 0 {
+		return dpiStart{}
+	}
+	return p.starts[len(p.starts)-1]
+}
+
+// startedArgs is the argv of the last start, with absolute list paths.
+func (p *fDPI) startedArgs() []string {
+	s := p.lastStart()
+	if s.engine == "" {
+		return nil
+	}
+	a, _ := testEngines[s.engine].Args(s.plan)
+	return a
+}
 
 type fSafety struct{ r *rec }
 
@@ -267,6 +326,11 @@ type fSink struct {
 
 func (s *fSink) State(sn Snapshot) { s.mu.Lock(); s.states = append(s.states, sn); s.mu.Unlock() }
 func (s *fSink) Log(e LogEvent)    { s.mu.Lock(); s.logs = append(s.logs, e); s.mu.Unlock() }
+func (s *fSink) events() []LogEvent {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return append([]LogEvent(nil), s.logs...)
+}
 
 type fProber struct {
 	r     *rec
@@ -334,6 +398,14 @@ func (p *fProber) setBlock(v bool) {
 	p.mu.Unlock()
 }
 
+// goodbyeDefaults are the defaults with GoodbyeDPI, the engine most tests
+// were written for; zapret2 tests switch explicitly.
+func goodbyeDefaults() store.Settings {
+	s := store.DefaultSettings()
+	s.DPI.Engine = store.EngineGoodbyeDPI
+	return s
+}
+
 func newHarness(t *testing.T) *harness {
 	t.Helper()
 	r := &rec{fail: map[string]bool{}}
@@ -346,7 +418,7 @@ func newHarness(t *testing.T) *harness {
 		states:   &fStates{r: r, s: store.NewStateStore(filepath.Join(t.TempDir(), "state.json"), &memLock{})},
 		sink:     &fSink{},
 		prober:   &fProber{r: r},
-		settings: store.DefaultSettings(),
+		settings: goodbyeDefaults(),
 	}
 	h.o = New(Deps{
 		Engine: h.eng, DNS: h.dns, DPI: h.dpi, Safety: &fSafety{r: r}, System: h.sys, Picker: h.pick,

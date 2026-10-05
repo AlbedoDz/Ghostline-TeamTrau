@@ -193,13 +193,6 @@ func TestService_ScanAllEmitsProgress(t *testing.T) {
 	require.Eventually(t, func() bool { return s.em.count(EventScan) >= 2 }, time.Second, 5*time.Millisecond)
 }
 
-func TestService_PreviewDPIArgs(t *testing.T) {
-	s := newSvc(t)
-	a, err := s.svc.PreviewDPIArgs("light", "", "blacklist")
-	require.NoError(t, err)
-	require.Equal(t, s.paths.DPIBlacklist, a[len(a)-1])
-}
-
 func TestService_BlacklistRoundTrip(t *testing.T) {
 	s := newSvc(t)
 	txt, err := s.svc.GetDPIBlacklist()

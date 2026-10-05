@@ -16,12 +16,18 @@ const (
 	StatusError         Status = "error"
 )
 
-// DPIStatus summarises GoodbyeDPI for the UI.
+// DPIStatus summarises the DPI engine for the UI.
 type DPIStatus struct {
-	Enabled bool   `json:"enabled"`
-	Running bool   `json:"running"`
-	Preset  string `json:"preset"`
+	Enabled  bool   `json:"enabled"`
+	Running  bool   `json:"running"`
+	Engine   string `json:"engine"`   // engine actually running, "" when stopped
+	Preset   string `json:"preset"`   // strategy/preset actually running
+	Fallback bool   `json:"fallback"` // GoodbyeDPI runs because zapret2 could not
 }
+
+// ReasonDPIFallback marks the connection degraded while GoodbyeDPI stands
+// in for a blocked zapret2.
+const ReasonDPIFallback = "dpiFallback"
 
 // ProxyStatus summarises the local proxy for the UI.
 type ProxyStatus struct {

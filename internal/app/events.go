@@ -42,6 +42,7 @@ type ScanProgress struct {
 
 // AutotuneProgress reports DPI autotune.
 type AutotuneProgress struct {
+	Engine  string    `json:"engine"`
 	Preset  string    `json:"preset"`
 	Index   int       `json:"index"`
 	Total   int       `json:"total"`
