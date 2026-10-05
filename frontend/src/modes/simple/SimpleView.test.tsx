@@ -12,6 +12,7 @@ const svc = vi.hoisted(() => ({
   RestoreDNSNow: vi.fn(() => Promise.resolve()),
   DismissWarning: vi.fn(() => Promise.resolve()),
   SaveSettings: vi.fn(() => Promise.resolve()),
+  DPIStrategies: vi.fn(() => Promise.resolve([{ id: "z-split", name: { vi: "Nhẹ", en: "Light" } }])),
 }));
 vi.mock("../../app/api", () => ({ Service: svc }));
 const browser = vi.hoisted(() => ({ OpenURL: vi.fn(() => Promise.resolve()) }));
@@ -136,4 +137,17 @@ test("a release remembered from an earlier check shows after restart", () => {
   useGhost.getState().setInfo({ version: "0.1.0", portable: false, updateTag: "v0.1.1", updateUrl: "https://example/v0.1.1" } as any);
   render(<SimpleView onOpenLogs={() => {}} />);
   expect(screen.getByRole("button", { name: /có bản mới v0\.1\.1/ })).toBeInTheDocument();
+});
+
+test("a running zapret2 strategy shows by name, not by id", async () => {
+  useGhost.getState().setSnapshot(snap({ status: "protected", dpi: { enabled: true, running: true, engine: "zapret2", preset: "z-split" } }));
+  render(<SimpleView onOpenLogs={() => {}} />);
+  expect(await screen.findByText("Nhẹ ✓")).toBeInTheDocument();
+  expect(svc.DPIStrategies).toHaveBeenCalledWith("zapret2");
+});
+
+test("a GoodbyeDPI preset shows its translated name", async () => {
+  useGhost.getState().setSnapshot(snap({ status: "protected", dpi: { enabled: true, running: true, engine: "goodbyedpi", preset: "mode3" } }));
+  render(<SimpleView onOpenLogs={() => {}} />);
+  expect(await screen.findByText("Mode 3 ✓")).toBeInTheDocument();
 });

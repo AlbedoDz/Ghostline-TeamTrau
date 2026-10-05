@@ -128,3 +128,8 @@ test("preview names the running engine's program", async () => {
   await waitFor(() => expect(svc.PreviewDPIArgs).toHaveBeenCalledWith("zapret2", "z-split", "", "all", false));
   expect(screen.getByLabelText("dòng lệnh").textContent).toMatch(/^winws2\.exe/);
 });
+
+test("the running line names the strategy, not its id", async () => {
+  render(<Dpi />);
+  expect(await screen.findByText(/zapret2 đã chạy \(preset Nhẹ\)/)).toBeInTheDocument();
+});

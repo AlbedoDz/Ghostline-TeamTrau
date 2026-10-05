@@ -4,6 +4,7 @@ import { useGhost } from "../../app/store";
 import { Browser } from "@wailsio/runtime";
 import { isConnected, powerState, serverSummary, useUptime, useUpdate } from "../../app/format";
 import { tCode } from "../../i18n";
+import { useStrategyName } from "../../app/strategies";
 import { PowerButton } from "../../components/neon/PowerButton";
 import { TerminalPanel } from "../../components/neon/TerminalPanel";
 import { Banner } from "../../components/neon/Banner";
@@ -18,6 +19,7 @@ export function SimpleView({ onOpenLogs, onOpenServers = () => {} }: { onOpenLog
   const latency = useGhost((s) => s.latency);
   const autotune = useGhost((s) => s.autotune);
   const bannerDismissed = useGhost((s) => s.bannerDismissed);
+  const strategyName = useStrategyName(snap.dpi?.engine || settings?.dpi?.engine || "goodbyedpi", snap.dpi?.preset);
   const dismissBanner = useGhost((s) => s.dismissBanner);
   const uptime = useUptime(snap.since);
   const update = useUpdate();
@@ -55,7 +57,7 @@ export function SimpleView({ onOpenLogs, onOpenServers = () => {} }: { onOpenLog
         rows={[
           { k: t("simple.server"), v: serverSummary(snap.servers) },
           { k: t("simple.latency"), v: t("common.ms", { value: lastLatency }) },
-          { k: t("simple.dpi"), v: snap.dpi.running ? `${snap.dpi.preset} ✓` : t("common.off"), tone: snap.dpi.running ? "ok" : "dim" },
+          { k: t("simple.dpi"), v: snap.dpi.running ? `${strategyName} ✓` : t("common.off"), tone: snap.dpi.running ? "ok" : "dim" },
           { k: t("simple.uptime"), v: uptime },
           ...(snap.proxy?.running ? [{ k: t("simple.proxy"), v: snap.proxy.addr }] : []),
         ]}

@@ -4,6 +4,7 @@ import { Service, type ProbeResult } from "../../../app/api";
 import { useGhost } from "../../../app/store";
 import { saveSettings } from "../../../app/settings";
 import { describeError, tCode } from "../../../i18n";
+import { useStrategyName } from "../../../app/strategies";
 import { Toggle } from "../../../components/neon/Toggle";
 import { Chip } from "../../../components/neon/Chip";
 import css from "../advanced.module.css";
@@ -39,6 +40,7 @@ export function Dpi() {
   const [strategies, setStrategies] = useState<Strategy[]>([]);
   const [autoSites, setAutoSites] = useState<string[]>([]);
   const [engineDir, setEngineDir] = useState("");
+  const runningName = useStrategyName(snap.dpi?.engine || engine, snap.dpi?.preset);
   const [error, setError] = useState<string | null>(null);
   const [preview, setPreview] = useState<string[]>([]);
   const [probe, setProbe] = useState<ProbeResult[]>([]);
@@ -301,7 +303,7 @@ export function Dpi() {
           {ENGINE_EXE[engine]} {preview.join(" ")}
         </div>
         {running ? (
-          <div className={css.ok}>● {t("log.DPI_STARTED", { engine: ENGINE_NAME[runningEngine], preset: snap.dpi.preset })}</div>
+          <div className={css.ok}>● {t("log.DPI_STARTED", { engine: ENGINE_NAME[runningEngine], preset: runningName })}</div>
         ) : dpi.enabled ? (
           <div className={css.dim}>○ {t(snap.status === "protected" || snap.status === "degraded" ? "dpi.starting" : "dpi.waiting")}</div>
         ) : null}
