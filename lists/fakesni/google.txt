@@ -1,0 +1,10 @@
+# ghostline-rules v1
+# Fake SNI preset: Google & YouTube.
+# Status: candidate. Each group is kept only after the test in
+# lists/fakesni/README.md passes on a network that blocks these sites.
+youtube.com              sni=www.google.com connect=www.google.com
+youtube-nocookie.com     sni=www.google.com connect=www.google.com
+youtu.be                 sni=www.google.com connect=www.google.com
+ytimg.com                sni=www.google.com connect=www.google.com
+ggpht.com                sni=www.google.com connect=www.google.com
+googlevideo.com          sni=www.google.com

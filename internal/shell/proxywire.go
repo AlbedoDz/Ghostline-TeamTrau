@@ -22,6 +22,7 @@ import (
 	"github.com/hashcott/ghostline/internal/store"
 	"github.com/hashcott/ghostline/internal/tlsfrag"
 	"github.com/hashcott/ghostline/internal/winutil"
+	builtinLists "github.com/hashcott/ghostline/lists"
 )
 
 // proxyWiring connects the proxy, rules, fragment cache and list
@@ -54,7 +55,7 @@ func newProxyWiring(box *app.SettingsBox, eng *engine.Engine, paths store.Paths,
 
 func (w *proxyWiring) fetcher() *lists.Fetcher {
 	return &lists.Fetcher{Client: &http.Client{Timeout: 30 * time.Second}, Dir: w.paths.ListsDir, Now: time.Now,
-		WriteFile: store.WriteFileAtomic, SigKey: serverListKey()}
+		WriteFile: store.WriteFileAtomic, SigKey: serverListKey(), Fallback: builtinLists.FakeSNIFallback}
 }
 
 // fragCache adapts store.FragCache to the dialer for the current network.

@@ -130,3 +130,24 @@ func TestCatalog_FakeSNIGroup(t *testing.T) {
 	require.GreaterOrEqual(t, n, 1)
 	require.Contains(t, lists.Categories, "fakesni")
 }
+
+func TestSignedList_EmbeddedFallbackWhenNeverFetched(t *testing.T) {
+	f, _, priv, l := signedSetup(t)
+	sig := servers.Sign([]byte(presetV1), priv)
+	f.Fallback = func(url string) ([]byte, []byte, bool) {
+		if url == l.URL {
+			return []byte(presetV1), sig, true
+		}
+		return nil, nil, false
+	}
+	r, err := f.LoadCached(*l)
+	require.NoError(t, err)
+	require.Equal(t, "youtube.com", r.Entries[0].Pattern.Value)
+}
+
+func TestSignedList_UnsignedFallbackRefused(t *testing.T) {
+	f, _, _, l := signedSetup(t)
+	f.Fallback = func(string) ([]byte, []byte, bool) { return []byte(presetV1), nil, true }
+	_, err := f.LoadCached(*l)
+	require.ErrorIs(t, err, lists.ErrSignatureInvalid)
+}

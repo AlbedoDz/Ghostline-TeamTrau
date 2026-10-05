@@ -37,6 +37,9 @@ type Fetcher struct {
 	WriteFile func(path string, data []byte) error // atomic write, injected
 	// SigKey verifies lists marked Signed (the servers.json key).
 	SigKey ed25519.PublicKey
+	// Fallback returns a built-in copy (and its signature) of a signed
+	// list by URL, used before the first successful download.
+	Fallback func(url string) (data, sig []byte, ok bool)
 }
 
 var safeName = regexp.MustCompile(`^[A-Za-z0-9._-]+$`)
@@ -267,13 +270,23 @@ func (f *Fetcher) includes(l *List, r *Result, names []string, depth int, seen m
 // LoadCached parses the cached copy of l (and its cached includes).
 func (f *Fetcher) LoadCached(l List) (Result, error) {
 	data, err := os.ReadFile(f.cachePath(l.ID, ""))
-	if err != nil {
-		return Result{}, err
-	}
-	if l.Signed {
+	switch {
+	case err == nil && l.Signed:
 		if err := f.verifyCached(l.ID, data); err != nil {
 			return Result{}, err
 		}
+	case err != nil && l.Signed && f.Fallback != nil:
+		// Never downloaded yet: the built-in copy, verified like a download.
+		fb, sig, ok := f.Fallback(l.URL)
+		if !ok {
+			return Result{}, err
+		}
+		if verr := f.verify(fb, sig); verr != nil {
+			return Result{}, verr
+		}
+		data = fb
+	case err != nil:
+		return Result{}, err
 	}
 	if l.Format == "" || l.Format == "auto" {
 		l.Format = l.Detected
