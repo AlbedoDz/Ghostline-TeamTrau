@@ -41,6 +41,7 @@
 - DoT (cổng 853) cho Android Private DNS: Android không tin CA người dùng cài cho Private DNS.
 - Chạy DNS server khi chưa Connect (không có engine mã hoá để chuyển truy vấn đi).
 - Lưu, xem hay sửa nội dung HTTP đã giải mã.
+- `certstore` cho macOS/Linux. Chỉ có interface sẵn sàng (mục 4.1). Không dùng `smallstep/truststore` cho Windows vì nó cài vào kho `CurrentUser` và hiện hộp thoại mỗi lần cài, không hợp với CA phiên cài mỗi lần Connect.
 
 ## 3. Các quyết định đã chốt
 
@@ -65,7 +66,7 @@
 | Package | Việc |
 |---|---|
 | `internal/certs` | Sinh CA (ECDSA P-256) với Name Constraints và EKU `serverAuth`, ký chứng chỉ lá (cache LRU theo tên, tối đa 1000, sống 7 ngày), tính vân tay, xuất DER/PEM, sinh `.mobileconfig`. Thuần Go, không gọi Win32 |
-| `internal/certstore` | Cài, gỡ, liệt kê chứng chỉ trong `LocalMachine\Root` theo thumbprint SHA-1 và theo tiền tố subject. Win32 (`CertOpenStore`, `CertAddEncodedCertificateToStore`, `CertFindCertificateInStore`, `CertDeleteCertificateFromStore`) nằm sau interface `API` để test được |
+| `internal/certstore` | Cài, gỡ, liệt kê chứng chỉ trong `LocalMachine\Root` theo thumbprint SHA-1 và theo tiền tố subject. Win32 (`CertOpenStore`, `CertAddEncodedCertificateToStore`, `CertFindCertificateInStore`, `CertDeleteCertificateFromStore`) nằm sau interface `API` để test được. Interface `Store` (`Install`, `Remove`, `List`) không mang kiểu Win32, để bản macOS/Linux sau này dùng `smallstep/truststore` mà không đổi `app` |
 | `internal/proxy/mitm` | Nhánh Fake SNI: bắt tay TLS tới server bằng SNI giả, kiểm tra chứng chỉ, rồi bắt tay TLS với client bằng chứng chỉ lá, khớp ALPN, trả về hai `net.Conn` cho `relay` |
 | `internal/dnsserver` | Phần không thuộc `dnsproxy`: chọn IP LAN để nghe, lọc nguồn, trang cài đặt tạm cho điện thoại (HTTP server 10 phút) |
 
@@ -257,7 +258,7 @@ Thẻ "Dùng cho thiết bị khác" (trang DNS server) hiện:
   - `ghostline-lan-ca.crt` (DER, `application/x-x509-ca-cert`) cho Windows, macOS, Android.
   - `ghostline.mobileconfig` cho iOS 14 trở lên (mục 7.3).
   - Vân tay CA để so với vân tay trên máy tính, phòng ai đó trong LAN tráo file.
-  - Hướng dẫn: iOS bật "Tin cậy hoàn toàn" trong *Cài đặt › Cài đặt chung › Giới thiệu › Cài đặt tin cậy chứng chỉ*; Android tắt Private DNS và đặt DNS tĩnh.
+  - Hướng dẫn: iOS bật "Tin cậy hoàn toàn" trong *Cài đặt › Cài đặt chung › Giới thiệu › Cài đặt tin cậy chứng chỉ*; Android tắt Private DNS và đặt DNS tĩnh; Steam Deck (SteamOS) đặt DNS thủ công **cho riêng mạng Wi-Fi nhà**. Mọi thiết bị đều dùng được DNS 53 mà không cài chứng chỉ; chứng chỉ chỉ cần cho DoH.
   - Trang chỉ phục vụ file công khai, không có form, không nhận dữ liệu.
 - **Nút "Lưu file…":** xuất `.crt` và `.mobileconfig` ra đĩa.
 
@@ -409,7 +410,7 @@ Phát triển theo TDD. Test cần Windows thật gắn build tag `integration`.
 | `app` | Pha D và pha S lỗi ở từng bước → đúng undo, DNS vẫn được bảo vệ, SUY_GIẢM đúng lý do. S2 trước S3 (thumbprint luôn có trong `state.json` trước khi cài). Xoay CA: thứ tự 5 bước, lỗi cài giữ CA cũ. Thứ tự Disconnect mới. Chạy lại pha P kéo theo pha S |
 | `watchdog` / `store` | Thứ tự khôi phục mới (CA phiên đầu tiên); `CERT_REMOVE_FAILED` giữ thumbprint; nâng `state.json` v2→v3 (`firewall.rule` → `rules`) và `settings.json` v3→v4; kill process giữa S2 và S3 → không còn gì sót |
 | Frontend | Trang cảnh báo bắt buộc (nút chỉ bật khi đã cuộn hết và tích), `ackVersion`; banner ở cả hai chế độ; trang DNS server (QR, đếm ngược, Public); parity `vi.json`/`en.json` |
-| Kiểm tra thủ công trước phát hành | iPhone cài `.mobileconfig`, DoH hoạt động ở mạng nhà, ra 4G vẫn có mạng; hành vi khi Ghostline Disconnect. Android đặt DNS tĩnh. Router/TV đặt DNS. Từng nhóm preset Fake SNI mở được trang khi vượt DPI (cả hai engine) tắt. `certlm.msc` không còn `Ghostline Fake SNI` sau Disconnect, `taskkill /F`, khởi động lại máy và gỡ app; không còn `Ghostline LAN CA` sau gỡ app. Chrome, Edge, Firefox với Fake SNI. Wireshark: không có DNS plain do DoH server, DNS LAN hay Fake SNI gây ra. |
+| Kiểm tra thủ công trước phát hành | iPhone cài `.mobileconfig`, DoH hoạt động ở mạng nhà, ra 4G vẫn có mạng; hành vi khi Ghostline Disconnect. Android đặt DNS tĩnh. Steam Deck đặt DNS thủ công (xác định đặt được ở Game Mode hay phải sang Desktop mode, cập nhật hướng dẫn cho đúng). Router/TV đặt DNS. Từng nhóm preset Fake SNI mở được trang khi vượt DPI (cả hai engine) tắt. `certlm.msc` không còn `Ghostline Fake SNI` sau Disconnect, `taskkill /F`, khởi động lại máy và gỡ app; không còn `Ghostline LAN CA` sau gỡ app. Chrome, Edge, Firefox với Fake SNI. Wireshark: không có DNS plain do DoH server, DNS LAN hay Fake SNI gây ra. |
 
 ## 13. Đóng gói và tài liệu
 
