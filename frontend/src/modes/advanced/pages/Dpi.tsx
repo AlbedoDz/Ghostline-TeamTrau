@@ -41,6 +41,7 @@ export function Dpi() {
   const [autoSites, setAutoSites] = useState<string[]>([]);
   const [engineDir, setEngineDir] = useState("");
   const runningName = useStrategyName(snap.dpi?.engine || engine, snap.dpi?.preset);
+  const tuneName = useStrategyName(autotune?.engine || engine, autotune?.preset);
   const [error, setError] = useState<string | null>(null);
   const [shown, setShown] = useState<{ engine: string; args: string[] }>({ engine: "", args: [] });
   const [probe, setProbe] = useState<ProbeResult[]>([]);
@@ -224,7 +225,7 @@ export function Dpi() {
               ))}
             </select>
             {autotune?.running ? (
-              <Chip onClick={() => void Service.CancelAutotune()}>{t("simple.autotuning", { preset: autotune.preset, index: autotune.index, total: autotune.total })}</Chip>
+              <Chip onClick={() => void Service.CancelAutotune()}>{t("simple.autotuning", { preset: tuneName, index: autotune.index, total: autotune.total })}</Chip>
             ) : (
               <Chip onClick={() => void Service.StartAutotune()}>{t("dpi.autotune")}</Chip>
             )}
@@ -305,6 +306,9 @@ export function Dpi() {
         )}
         {error && <div className={css.bad}>{error}</div>}
         {autotune && !autotune.running && autotune.error && <div className={css.bad}>{tCode(`errors.${autotune.error.code}.message`)}</div>}
+        {autotune && !autotune.running && !autotune.error && autotune.preset && (
+          <div className={css.ok}>{t("dpi.autotuneDone", { preset: tuneName, engine: ENGINE_NAME[autotune.engine] ?? autotune.engine })}</div>
+        )}
         <div className={css.code} aria-label={t("dpi.preview")}>
           {ENGINE_EXE[engine]} {preview.join(" ")}
         </div>

@@ -151,3 +151,13 @@ test("a GoodbyeDPI preset shows its translated name", async () => {
   render(<SimpleView onOpenLogs={() => {}} />);
   expect(await screen.findByText("Mode 3 ✓")).toBeInTheDocument();
 });
+
+test("auto-tune progress and result name the strategy", async () => {
+  useGhost.getState().setSnapshot(snap({ status: "protected", dpi: { enabled: true, running: true, engine: "zapret2", preset: "z-split" } }));
+  useGhost.getState().setAutotune({ running: true, engine: "zapret2", preset: "z-split", index: 1, total: 4 } as any);
+  const { rerender } = render(<SimpleView onOpenLogs={() => {}} />);
+  expect(await screen.findByText(/đang dò: Nhẹ \(1\/4\)/)).toBeInTheDocument();
+  useGhost.getState().setAutotune({ running: false, engine: "zapret2", preset: "z-split", index: 0, total: 0 } as any);
+  rerender(<SimpleView onOpenLogs={() => {}} />);
+  expect(await screen.findByText("✓ tự dò đã chọn Nhẹ (zapret2)")).toBeInTheDocument();
+});

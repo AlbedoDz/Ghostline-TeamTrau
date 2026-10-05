@@ -402,6 +402,10 @@ func (s *Service) StartAutotune() error {
 			s.x.Bus.Emit(EventAutotune, AutotuneProgress{Engine: engine, Preset: p, Index: i, Total: n, Running: true})
 		})
 		final := AutotuneProgress{Running: false}
+		if err == nil { // name what was picked, for the "done" message
+			d := s.o.Snapshot().DPI
+			final.Engine, final.Preset = d.Engine, d.Preset
+		}
 		var ae *AppError
 		if errors.As(err, &ae) {
 			final.Error = &AppError{Code: ae.Code, Params: ae.Params}

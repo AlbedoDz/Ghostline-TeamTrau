@@ -58,7 +58,7 @@ test("autotune progress renders preset steps", async () => {
   fireEvent.click(screen.getByRole("button", { name: "⚡ tự dò" }));
   expect(svc.StartAutotune).toHaveBeenCalled();
   act(() => useGhost.getState().setAutotune({ preset: "medium", index: 2, total: 4, running: true } as any));
-  expect(screen.getByText(/đang dò: medium \(2\/4\)/)).toBeInTheDocument();
+  expect(await screen.findByText(/đang dò: Vừa \(2\/4\)/)).toBeInTheDocument();
 });
 
 test("dpi toggle and probe", async () => {

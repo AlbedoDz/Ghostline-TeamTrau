@@ -139,6 +139,10 @@
   padding: 8px 10px;
   line-height: 1.5;
 }
+.banner[data-tone="ok"] {
+  border-color: rgba(0, 255, 156, 0.45);
+  background: rgba(0, 255, 156, 0.06);
+}
 .banner[data-tone="err"] {
   border-color: rgba(255, 77, 109, 0.55);
   background: rgba(255, 77, 109, 0.07);

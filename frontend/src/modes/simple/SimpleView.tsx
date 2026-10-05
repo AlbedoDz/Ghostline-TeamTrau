@@ -19,6 +19,7 @@ export function SimpleView({ onOpenLogs, onOpenServers = () => {} }: { onOpenLog
   const latency = useGhost((s) => s.latency);
   const autotune = useGhost((s) => s.autotune);
   const bannerDismissed = useGhost((s) => s.bannerDismissed);
+  const tuneName = useStrategyName(autotune?.engine || snap.dpi?.engine || settings?.dpi?.engine || "goodbyedpi", autotune?.preset);
   const strategyName = useStrategyName(snap.dpi?.engine || settings?.dpi?.engine || "goodbyedpi", snap.dpi?.preset);
   const dismissBanner = useGhost((s) => s.dismissBanner);
   const uptime = useUptime(snap.since);
@@ -100,7 +101,10 @@ export function SimpleView({ onOpenLogs, onOpenServers = () => {} }: { onOpenLog
       <div className={css.bottom}>
         <ConnectError onOpenServers={onOpenServers} onOpenLogs={onOpenLogs} />
         {isConnected(status) && autotune?.running && (
-          <Banner tone="warn">{t("simple.autotuning", { preset: autotune.preset, index: autotune.index, total: autotune.total })}</Banner>
+          <Banner tone="warn">{t("simple.autotuning", { preset: tuneName, index: autotune.index, total: autotune.total })}</Banner>
+        )}
+        {isConnected(status) && autotune && !autotune.running && !autotune.error && autotune.preset && (
+          <Banner tone="ok">{t("dpi.autotuneDone", { preset: tuneName, engine: autotune.engine === "goodbyedpi" ? "GoodbyeDPI" : autotune.engine })}</Banner>
         )}
         {isConnected(status) && autotune && !autotune.running && autotune.error && (
           <Banner tone="err">{tCode(`errors.${autotune.error.code}.message`)}</Banner>

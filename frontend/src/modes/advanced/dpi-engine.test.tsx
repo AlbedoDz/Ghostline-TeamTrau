@@ -13,22 +13,22 @@ const svc = vi.hoisted(() => ({
   PreviewDPIArgs: vi.fn(() => Promise.resolve([])),
   GetDPIBlacklist: vi.fn(() => Promise.resolve("youtube.com\n")),
   SaveDPIBlacklist: vi.fn(() => Promise.resolve()),
-  DPIStrategies: vi.fn((engine: string) =>
-    Promise.resolve(
-      engine === "zapret2"
-        ? [
-            { id: "z-split", name: { vi: "Nhẹ", en: "Light" } },
-            { id: "z-fake", name: { vi: "Gói giả", en: "Fake" } },
-          ]
-        : [{ id: "light", name: { vi: "Nhẹ", en: "Light" } }],
-    ),
-  ),
+  DPIStrategies: vi.fn(),
   GetDPIAutoHostlist: vi.fn(() => Promise.resolve(["a.com", "b.com"])),
   SaveDPIAutoHostlist: vi.fn(() => Promise.resolve()),
   RetryZapret2: vi.fn(() => Promise.resolve()),
   DPIEngineDir: vi.fn(() => Promise.resolve("C:\\Data\\bin\\zapret2")),
 }));
 vi.mock("../../app/api", () => ({ Service: svc }));
+const strategiesFor = (engine: string) =>
+  Promise.resolve(
+    engine === "zapret2"
+      ? [
+          { id: "z-split", name: { vi: "Nhẹ", en: "Light" } },
+          { id: "z-fake", name: { vi: "Gói giả", en: "Fake" } },
+        ]
+      : [{ id: "light", name: { vi: "Nhẹ", en: "Light" } }],
+  );
 
 const base = {
   version: 3, language: "vi", mode: "advanced", probeSites: ["youtube.com"],
@@ -47,6 +47,9 @@ const saved = () => { const c = svc.SaveSettings.mock.calls as any[][]; return c
 beforeAll(() => initI18n("vi"));
 beforeEach(() => {
   vi.clearAllMocks();
+  // tests may swap these for never-settling promises; start each one fresh
+  svc.DPIStrategies.mockImplementation(strategiesFor as any);
+  svc.PreviewDPIArgs.mockImplementation((() => Promise.resolve([])) as any);
   useGhost.getState().reset();
   withDPI({});
   snap({});
@@ -155,4 +158,13 @@ test("picking an engine by hand retires the 'try zapret2' hint", async () => {
   await waitFor(() => expect(svc.SaveSettings).toHaveBeenCalled());
   expect(saved().dpi.engine).toBe("zapret2");
   expect(saved().dpi.hideEngineHint).toBe(true);
+});
+
+test("auto-tune progress and result name the strategy", async () => {
+  useGhost.getState().setAutotune({ running: true, engine: "zapret2", preset: "z-fake", index: 2, total: 4 } as any);
+  const { rerender } = render(<Dpi />);
+  expect(await screen.findByRole("button", { name: "đang dò: Gói giả (2/4)" })).toBeInTheDocument();
+  useGhost.getState().setAutotune({ running: false, engine: "zapret2", preset: "z-fake", index: 0, total: 0 } as any);
+  rerender(<Dpi />);
+  expect(await screen.findByText("✓ tự dò đã chọn Gói giả (zapret2)")).toBeInTheDocument();
 });

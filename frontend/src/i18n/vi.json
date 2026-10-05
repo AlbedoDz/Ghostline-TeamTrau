@@ -190,7 +190,8 @@
       "removeOne": "xoá {{domain}}",
       "clear": "xoá hết"
     },
-    "blacklistSavedReload": "đã lưu — zapret2 đã nạp danh sách mới"
+    "blacklistSavedReload": "đã lưu — zapret2 đã nạp danh sách mới",
+    "autotuneDone": "✓ tự dò đã chọn {{preset}} ({{engine}})"
   },
   "logs": {
     "title": "NHẬT KÝ",
