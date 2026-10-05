@@ -95,6 +95,7 @@ func init() {
 	application.RegisterEvent[[]certstore.Cert](EventCertsChanged)
 	application.RegisterEvent[SetupCountdown](EventSetupCountdown)
 	application.RegisterEvent[AdvScanProgress](EventToolsScan)
+	application.RegisterEvent[CFProgress](EventToolsCFScan)
 }
 
 // Emitter sends events to the UI.

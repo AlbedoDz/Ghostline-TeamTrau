@@ -66,6 +66,7 @@ func newTools(t *testing.T) *toolsHarness {
 		return ipUp{ip: "10.10.34.35", delay: 100 * time.Millisecond}, nil
 	}
 	h.svc.x.ISPResolvers = func() []string { return []string{"203.162.4.191"} }
+	h.svc.x.RulesPath = h.paths.Rules
 	h.o.d.Scans = &fScans{results: []scanner.Result{
 		{ServerID: "slow", OK: true, Latency: 90 * time.Millisecond},
 		{ServerID: "cf", OK: true, Latency: 40 * time.Millisecond},

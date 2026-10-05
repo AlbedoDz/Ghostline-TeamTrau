@@ -2,10 +2,12 @@ package app
 
 import (
 	"context"
+	"crypto/x509"
 	"errors"
 	"fmt"
 	"io/fs"
 	"log/slog"
+	"net"
 	"net/netip"
 	"os"
 	"path/filepath"
@@ -118,8 +120,9 @@ type ServiceDeps struct {
 
 	// Phase 3 tools.
 	BuildUpstream func(model.Server) (upstream.Upstream, error)
-	PlainUpstream func(ip string) (upstream.Upstream, error) // plain UDP 53: Ghostline's own engine and the ISP lookup source only
-	ISPResolvers  func() []string                            // this PC's DNS before Ghostline took over
+	PlainUpstream func(ip string) (upstream.Upstream, error)                        // plain UDP 53: Ghostline's own engine and the ISP lookup source only
+	DialDirect    func(ctx context.Context, network, addr string) (net.Conn, error) // clean-IP scan: straight out, not via the proxy
+	ISPResolvers  func() []string                                                   // this PC's DNS before Ghostline took over
 }
 
 // Service is bound to the frontend by Wails; its exported methods are the
@@ -134,6 +137,9 @@ type Service struct {
 	// Phase 3 tools: one job per tool (guarded by mu).
 	advCancel  context.CancelFunc
 	adv        advJob
+	cfCancel   context.CancelFunc
+	cf         cfJob
+	cfRoots    *x509.CertPool // nil = system roots; tests inject a test CA
 	tuneCancel context.CancelFunc
 	overrideCh chan bool
 
