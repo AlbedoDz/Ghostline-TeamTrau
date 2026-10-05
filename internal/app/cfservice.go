@@ -228,8 +228,9 @@ func (s *Service) CFSuggestDomains() []string {
 	return out
 }
 
-// CreateCFRules adds "<pattern> ip=<ips>" for each domain pattern. Nothing
-// is written unless every pattern and IP is valid.
+// CreateCFRules sets ip=<ips> for each domain pattern: an existing rule for
+// the pattern gets the IPs (its other actions are kept), otherwise a new
+// rule is added. Nothing is written unless every pattern and IP is valid.
 func (s *Service) CreateCFRules(patterns []string, ips []string) []rules.LineError {
 	if len(ips) == 0 || len(ips) > maxRuleIPs {
 		return []rules.LineError{{Line: 0, Msg: fmt.Sprintf("choose 1 to %d IPs", maxRuleIPs)}}
@@ -257,7 +258,26 @@ func (s *Service) CreateCFRules(patterns []string, ips []string) []rules.LineErr
 	ids := s.upstreamIDs()
 	s.rmu.Lock()
 	defer s.rmu.Unlock()
-	out, _, errs := rules.AppendUserRules(s.rf.Rules, add, ids)
+	// The first rule for a pattern wins, so a new rule behind an existing
+	// one would never apply: put the IPs into the existing rule instead.
+	cur := slices.Clone(s.rf.Rules)
+	var fresh []rules.Rule
+	for i, r := range add {
+		j := slices.IndexFunc(cur, func(o rules.Rule) bool { return o.Pattern == r.Pattern })
+		if j < 0 {
+			fresh = append(fresh, r)
+			continue
+		}
+		if cur[j].Block || cur[j].Connect != "" {
+			errs = append(errs, rules.LineError{Line: i + 1, Msg: fmt.Sprintf("%q already has a block or connect= rule, which would win", r.Pattern)})
+			continue
+		}
+		cur[j].IPs, cur[j].Enabled = addrs, true
+	}
+	if len(errs) > 0 {
+		return errs
+	}
+	out, _, errs := rules.AppendUserRules(cur, fresh, ids)
 	if len(errs) > 0 {
 		return errs
 	}

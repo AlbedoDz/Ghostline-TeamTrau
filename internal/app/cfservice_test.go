@@ -12,6 +12,7 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"net/netip"
 	"syscall"
 	"testing"
 	"time"
@@ -188,4 +189,28 @@ func TestRecheckCF_RejectsOutOfRange(t *testing.T) {
 	e, ok := cfscan.LoadCache(h.paths.CFScanCache).Get("net1")
 	require.True(t, ok)
 	require.Equal(t, "104.16.1.1", e.Results[0].IP)
+}
+
+func TestCreateCFRules_UpdatesExistingRuleInsteadOfShadowing(t *testing.T) {
+	h := newCF(t, true)
+	require.Empty(t, h.svc.SaveRulesTable([]rules.Rule{
+		{Pattern: "a.com", Action: rules.Action{Fragment: rules.FragOn}, Enabled: true},
+		{Pattern: "b.com", Action: rules.Action{IPs: []netip.Addr{netip.MustParseAddr("104.16.9.9")}}, Enabled: false},
+		{Pattern: "c.com", Action: rules.Action{Block: true}, Enabled: true},
+	}))
+	require.Equal(t, []string{"a.com", "b.com", "c.com"}, h.svc.CFSuggestDomains())
+
+	require.Empty(t, h.svc.CreateCFRules([]string{"a.com", "b.com"}, []string{"104.16.1.1"}))
+	rs := h.svc.GetRules().Rules
+	require.Len(t, rs, 3, "no shadowed duplicate is appended")
+	require.Equal(t, rules.FragOn, rs[0].Fragment, "other actions are kept")
+	require.Equal(t, "104.16.1.1", rs[0].IPs[0].String())
+	require.Len(t, rs[1].IPs, 1)
+	require.Equal(t, "104.16.1.1", rs[1].IPs[0].String(), "stale clean IPs are replaced")
+	require.True(t, rs[1].Enabled)
+
+	errs := h.svc.CreateCFRules([]string{"c.com"}, []string{"104.16.1.1"})
+	require.Len(t, errs, 1, "a block rule for the same pattern would win")
+	require.Equal(t, 1, errs[0].Line)
+	require.True(t, h.svc.GetRules().Rules[2].Block)
 }
