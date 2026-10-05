@@ -66,13 +66,11 @@ func TestPlan_MatchesSNIRule(t *testing.T) {
 	require.False(t, ok)
 }
 
-func TestPlan_SkipsECHAndIP(t *testing.T) {
+func TestPlan_SkipsIP(t *testing.T) {
 	e := newEnv()
 	e.rules = "youtube.com sni=www.google.com"
 	d := e.dialer(t)
-	_, _, ok := d.Plan(wire.Target{Host: "youtube.com", Port: 443}, withECH(helloFor(t, "youtube.com")))
-	require.False(t, ok)
-	_, _, ok = d.Plan(wire.Target{IP: loopback, Port: 443}, helloFor(t, "127.0.0.1"))
+	_, _, ok := d.Plan(wire.Target{IP: loopback, Port: 443}, helloFor(t, "127.0.0.1"))
 	require.False(t, ok)
 	_, _, ok = d.Plan(wire.Target{Host: "youtube.com", Port: 443}, nil)
 	require.False(t, ok)
@@ -133,4 +131,15 @@ func TestOpenRaw_SSRFStillApplies(t *testing.T) {
 	_, err := d.OpenRaw(context.Background(), lanClient, wire.Target{Host: "youtube.com", Port: 443},
 		rules.Decision{Action: rules.Action{SNI: "x.test", Connect: "front.test"}})
 	require.Error(t, err)
+}
+
+// Chrome and Edge send a GREASE ECH extension in every ClientHello; with
+// real ECH the outer SNI is the CDN's public name, which no sni= rule
+// matches. Either way the extension alone must not disable Fake SNI.
+func TestPlan_GreaseECHStillIntercepted(t *testing.T) {
+	e := newEnv()
+	e.rules = "youtube.com sni=www.google.com"
+	_, host, ok := e.dialer(t).Plan(wire.Target{Host: "youtube.com", Port: 443}, withECH(helloFor(t, "youtube.com")))
+	require.True(t, ok)
+	require.Equal(t, "youtube.com", host)
 }

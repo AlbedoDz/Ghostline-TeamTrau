@@ -22,12 +22,14 @@ const (
 )
 
 // Plan says whether the connection whose ClientHello is hello should be
-// intercepted for Fake SNI: the hello names a host (not an IP), has no
-// ECH, and the rule matched on that name asks for sni=. It returns the
-// decision and the host from the hello.
+// intercepted for Fake SNI: the hello names a host (not an IP) and the
+// rule matched on that name asks for sni=. It returns the decision and the
+// host from the hello. An ECH extension is not a reason to skip: Chrome
+// and Edge send GREASE ECH in every hello, and with real ECH the outer SNI
+// is the CDN's public name, which sni= rules do not name.
 func (d *Dialer) Plan(t wire.Target, hello []byte) (rules.Decision, string, bool) {
 	host, ok := tlsfrag.SNI(hello)
-	if !ok || tlsfrag.HasECH(hello) {
+	if !ok {
 		return rules.Decision{}, "", false
 	}
 	if _, err := netip.ParseAddr(host); err == nil {
