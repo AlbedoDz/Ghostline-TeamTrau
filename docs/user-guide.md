@@ -149,7 +149,7 @@ Use this when DNS is encrypted but connections to a site are **still interfered 
 
 **DNS fragment**
 
-Splits the packets sent to DoH servers into pieces so the ISP has a harder time recognising them. You only need it when **no servers can be found** (your ISP blocks encrypted DNS itself). It is redundant while GoodbyeDPI is on.
+Splits the packets sent to DoH servers into pieces so the ISP has a harder time recognising them. You only need it when **no servers can be found** (your ISP blocks encrypted DNS itself). It is redundant while a DPI engine (zapret2 or GoodbyeDPI) is on.
 
 - **chunks:** how many pieces (2–20).
 - **delay (ms):** the pause between pieces.
@@ -282,7 +282,7 @@ Work through these in order and stop as soon as the site opens:
 | Message | Cause and fix |
 | --- | --- |
 | **Ghostline needs administrator rights to change DNS** | The app was opened without admin rights. Close it, then right-click → **Run as administrator** |
-| **Port 53 is held by …** | Another program is running DNS on this machine (usually Mobile Hotspot/ICS, WSL, Hyper-V or another DNS tool). Close it, or use the **Stop service …** button Ghostline offers. Ghostline always asks before stopping any service |
+| **Port 53 is held by …** | Another program is running DNS on 127.0.0.1 (usually WSL, Hyper-V or another DNS tool; Mobile Hotspot no longer gets in the way). Close it, or use the **Stop service …** button Ghostline offers. Ghostline always asks before stopping any service |
 | **No working servers found** | Your network is down, or your ISP blocks encrypted DNS too. Check your connection, then try turning on **DNS fragment** |
 | **DNS queries are not going through Ghostline** | A VPN or another tool owns DNS. Turn it off and connect again |
 | **Could not set DNS on …** | That adapter doesn't allow DNS changes (often a virtual adapter from a VPN or VM). Go to **Settings → adapters → manual** and leave it out |

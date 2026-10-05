@@ -18,7 +18,7 @@
 
 ---
 
-Ghostline chạy một DNS server cục bộ trên `127.0.0.1` / `::1`, trỏ mọi card mạng về đó, rồi chuyển tiếp truy vấn qua **DoH, DoT, DoQ hoặc DNSCrypt** tới máy chủ nhanh nhất còn hoạt động. Khi kết nối mã hoá bị can thiệp bằng cách soi gói tin (DPI), Ghostline có thể chạy thêm **GoodbyeDPI**. Trên hết, Ghostline được thiết kế để **luôn trả lại DNS gốc của bạn**, kể cả khi app bị tắt đột ngột hay máy mất điện.
+Ghostline chạy một DNS server cục bộ trên `127.0.0.1` / `::1`, trỏ mọi card mạng về đó, rồi chuyển tiếp truy vấn qua **DoH, DoT, DoQ hoặc DNSCrypt** tới máy chủ nhanh nhất còn hoạt động. Khi kết nối mã hoá bị can thiệp bằng cách soi gói tin (DPI), Ghostline có thể chạy thêm một engine vượt DPI: **zapret2** (khuyên dùng) hoặc **GoodbyeDPI**. Trên hết, Ghostline được thiết kế để **luôn trả lại DNS gốc của bạn**, kể cả khi app bị tắt đột ngột hay máy mất điện.
 
 <p align="center">
   <img src="docs/screenshots/simple-vi.png" height="360" alt="Chế độ Đơn giản">
@@ -49,7 +49,7 @@ Ghostline chạy một DNS server cục bộ trên `127.0.0.1` / `::1`, trỏ m�
 - **Tự chọn máy chủ:** quét song song, loại máy chủ trả kết quả bị đầu độc, và nhớ máy chủ tốt nhất cho từng mạng.
 - **Không bao giờ mất mạng:** chụp lại DNS gốc của từng card mạng trước khi đổi, với 4 lớp khôi phục: ngắt kết nối sạch, tiến trình watchdog, khôi phục khi mở lại app, và tác vụ chạy lúc đăng nhập.
 - **Xác minh không rò rỉ:** sau khi kết nối, Ghostline kiểm tra truy vấn thật sự đi qua nó.
-- **Vượt DPI:** đi kèm GoodbyeDPI 0.2.2 (được khoá mã băm), có preset, tự dò, danh sách đen, và chia nhỏ (fragment) truy vấn DoH.
+- **Vượt DPI với hai engine:** đi kèm [zapret2](https://github.com/bol-van/zapret2) v1.0.5.2 (gói giả, nhiều kiểu cắt, hỗ trợ QUIC cho YouTube/Google) và GoodbyeDPI 0.2.3rc3, đều được khoá mã băm. Chiến lược zapret2 lấy từ danh sách có chữ ký, cập nhật hằng ngày; có tự dò, danh sách đen, tự phát hiện trang bị chặn, và chia nhỏ (fragment) truy vấn DoH. Nếu antivirus chặn zapret2, Ghostline tạm chạy GoodbyeDPI và cho phép thử lại.
 - **Proxy cục bộ (HTTP / HTTPS / SOCKS4/5):** chạy cùng nút Connect, có thể đặt làm System Proxy của Windows, và chia sẻ cho điện thoại hay thiết bị khác cùng Wi-Fi (có mã QR). Tên miền luôn được phân giải qua DNS mã hoá của Ghostline.
 - **Fragment web không cần driver:** lưu lượng qua proxy được tự động cắt nhỏ ClientHello khi trang bị chặn theo SNI, và Ghostline ghi nhớ cách vượt cho từng mạng.
 - **Rules và danh sách cộng đồng:** chặn, cho phép, DNS giả, fragment hoặc đi qua upstream proxy theo domain, keyword, regexp hay CIDR. Import danh sách hosts, AdBlock/AdGuard, dnsmasq, Unbound, RPZ, Clash, v2ray, sing-box hoặc CIDR thẳng từ link GitHub, tự cập nhật theo lịch.
@@ -96,7 +96,7 @@ Get-FileHash .\Ghostline-0.1.0-portable.zip -Algorithm SHA256
 
 > [!NOTE]
 > Bản phát hành chưa được ký số, nên SmartScreen sẽ hiện "Windows protected your PC". Sau khi đã kiểm tra SHA-256, chọn **More info → Run anyway**.
-> Một số phần mềm diệt virus báo nhầm driver WinDivert mà GoodbyeDPI dùng. Ghostline kiểm tra mã băm của GoodbyeDPI trước mỗi lần chạy; nếu bị chặn, hãy thêm thư mục Ghostline vào danh sách loại trừ.
+> Một số phần mềm diệt virus báo nhầm driver WinDivert mà zapret2 và GoodbyeDPI dùng. Ghostline kiểm tra mã băm của engine trước mỗi lần chạy; nếu zapret2 bị chặn, Ghostline tạm chạy GoodbyeDPI và trang DPI hiện thư mục `bin\zapret2` để bạn thêm vào danh sách loại trừ.
 >
 > Nếu bạn nâng quyền UAC bằng **một tài khoản admin khác**, dữ liệu của Ghostline sẽ nằm trong `%APPDATA%` của tài khoản admin đó.
 
@@ -105,7 +105,7 @@ Get-FileHash .\Ghostline-0.1.0-portable.zip -Algorithm SHA256
 > 📖 Hướng dẫn chi tiết từng màn hình, cách xử lý khi không vào được trang và xử lý sự cố: **[docs/huong-dan-su-dung.md](docs/huong-dan-su-dung.md)**
 
 1. Mở Ghostline và bấm **Kết nối**. App tự chọn máy chủ, chuyển hướng DNS và kiểm tra rò rỉ.
-2. Nếu vẫn còn trang bị chặn, hoặc bật **proxy** (Nâng cao → Proxy → bật proxy + dùng cho máy này) để trình duyệt được fragment tự động, hoặc vào **Nâng cao → DPI**, bật **GoodbyeDPI** / bấm **tự dò**.
+2. Nếu vẫn còn trang bị chặn, hoặc bật **proxy** (Nâng cao → Proxy → bật proxy + dùng cho máy này) để trình duyệt được fragment tự động, hoặc vào **Nâng cao → DPI**, chọn engine (khuyên dùng **zapret2**), bật lên rồi bấm **tự dò**.
    Muốn chia sẻ cho thiết bị khác, bật **chia sẻ LAN** rồi quét mã QR bằng điện thoại (mạng phải là *Private*).
 3. Bấm **Ngắt kết nối** (hoặc thoát từ icon khay) để trả lại DNS gốc.
 
@@ -120,7 +120,7 @@ ghostline.exe --restore
 ```
 ứng dụng ──► DNS client của Windows ──► 127.0.0.1:53 (Ghostline / dnsproxy) ──► DoH · DoT · DoQ · DNSCrypt
                                                 │
-                       GoodbyeDPI (tuỳ chọn) biến đổi gói TLS/HTTP đi ra để né lọc SNI
+            zapret2 / GoodbyeDPI (tuỳ chọn) biến đổi gói TLS/HTTP/QUIC đi ra để né lọc SNI
 ```
 
 **Lưới an toàn.** Trước khi đổi DNS của một card mạng, Ghostline ghi lại DNS hiện tại của card đó vào `state.json`. Bốn lớp sau bảo đảm bản lưu này luôn được khôi phục:
@@ -142,7 +142,7 @@ Chi tiết thiết kế nằm trong [`docs/superpowers/specs`](docs/superpowers/
 ## Hạn chế đã biết
 
 - Nếu bạn duyệt UAC bằng **tài khoản admin khác**, `%APPDATA%` và System Proxy là của tài khoản đó, nên "dùng cho máy này" không áp dụng cho người dùng đang đăng nhập.
-- Fragment web chỉ giúp được ứng dụng đi qua proxy. Ứng dụng bỏ qua proxy của Windows (một số game, Firefox có cài đặt proxy riêng) cần dùng GoodbyeDPI.
+- Fragment web chỉ giúp được ứng dụng đi qua proxy. Ứng dụng bỏ qua proxy của Windows (một số game, Firefox có cài đặt proxy riêng) cần dùng engine vượt DPI.
 - Chia sẻ LAN chỉ hoạt động trên mạng được Windows đánh dấu **Private**; Ghostline không bao giờ tự đổi profile mạng.
 
 ## Build từ mã nguồn
@@ -201,7 +201,7 @@ Phần mềm được cung cấp "nguyên trạng", không kèm bất kỳ bảo
 
 Ghostline là phần mềm tự do, phát hành theo [giấy phép GNU GPL v3.0 (chỉ phiên bản 3)](LICENSE). Bạn được dùng, nghiên cứu, chia sẻ và sửa đổi; nếu phân phối bản đã sửa, bạn phải công khai mã nguồn của bản đó theo cùng giấy phép. Hai bản v0.1.0 và v0.1.1 đã phát hành theo giấy phép MIT.
 
-Dự án được xây dựng trên [dnsproxy](https://github.com/AdguardTeam/dnsproxy), [GoodbyeDPI](https://github.com/ValdikSS/GoodbyeDPI), [WinDivert](https://github.com/basil00/WinDivert) và [Wails](https://wails.io), và lấy cảm hứng từ [DNSveil / SecureDNSClient](https://github.com/msasanmh/SecureDNSClient). Giấy phép của các thành phần bên thứ ba được liệt kê trong [NOTICE](NOTICE).
+Dự án được xây dựng trên [dnsproxy](https://github.com/AdguardTeam/dnsproxy), [zapret2](https://github.com/bol-van/zapret2), [GoodbyeDPI](https://github.com/ValdikSS/GoodbyeDPI), [WinDivert](https://github.com/basil00/WinDivert) và [Wails](https://wails.io), và lấy cảm hứng từ [DNSveil / SecureDNSClient](https://github.com/msasanmh/SecureDNSClient). Giấy phép của các thành phần bên thứ ba được liệt kê trong [NOTICE](NOTICE).
 
 ## Ủng hộ
 

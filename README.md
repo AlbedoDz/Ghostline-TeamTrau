@@ -18,7 +18,7 @@ English · [Tiếng Việt](README.vi.md)
 
 ---
 
-Ghostline runs a local DNS server on `127.0.0.1` / `::1`, points every network adapter at it, and forwards your queries over **DoH, DoT, DoQ or DNSCrypt** to the fastest healthy resolver. When your network interferes with encrypted connections by inspecting packets (DPI), it can also run **GoodbyeDPI**. Above all, it is built to **always give your original DNS back**, even if the app crashes or the machine loses power.
+Ghostline runs a local DNS server on `127.0.0.1` / `::1`, points every network adapter at it, and forwards your queries over **DoH, DoT, DoQ or DNSCrypt** to the fastest healthy resolver. When your network interferes with encrypted connections by inspecting packets (DPI), it can also run a DPI bypass engine: **zapret2** (recommended) or **GoodbyeDPI**. Above all, it is built to **always give your original DNS back**, even if the app crashes or the machine loses power.
 
 <p align="center">
   <img src="docs/screenshots/simple-en.png" height="360" alt="Simple mode">
@@ -50,7 +50,7 @@ Ghostline runs a local DNS server on `127.0.0.1` / `::1`, points every network a
 - **Automatic server choice:** scans resolvers in parallel, rejects poisoned answers, and remembers the best servers per network.
 - **Never lose the internet:** each adapter's original DNS is snapshotted before any change, with four recovery layers: clean disconnect, a watchdog process, restore on next launch, and a logon recovery task.
 - **Leak verification:** after connecting, Ghostline checks that queries really go through it.
-- **DPI bypass:** bundled, hash-pinned GoodbyeDPI 0.2.2 with presets, auto-tune, a site blacklist, and DoH request fragmentation.
+- **DPI bypass with two engines:** bundled, hash-pinned [zapret2](https://github.com/bol-van/zapret2) v1.0.5.2 (fake packets, more split methods, QUIC for YouTube/Google) and GoodbyeDPI 0.2.3rc3. zapret2 strategies come from a signed list refreshed daily, with auto-tune, a site blacklist, automatic detection of blocked sites, and DoH request fragmentation. If antivirus blocks zapret2, Ghostline falls back to GoodbyeDPI and offers to retry.
 - **Local proxy (HTTP / HTTPS / SOCKS4/5):** runs with Connect, can become the Windows system proxy, and can be shared with phones and other devices on your Wi-Fi (QR code included). Names are always resolved through Ghostline's encrypted DNS.
 - **Web fragmentation without a driver:** traffic through the proxy gets its TLS ClientHello split automatically when a site is blocked by SNI, and the fix is remembered per network.
 - **Rules and community lists:** block, allow, fake DNS, fragment or route through an upstream proxy by domain, keyword, regexp or CIDR. Import hosts, AdBlock/AdGuard, dnsmasq, Unbound, RPZ, Clash, v2ray, sing-box or CIDR lists straight from a GitHub link, updated on a schedule.
@@ -97,14 +97,14 @@ Get-FileHash .\Ghostline-0.1.0-portable.zip -Algorithm SHA256
 
 > [!NOTE]
 > Releases are not code-signed yet, so SmartScreen shows "Windows protected your PC". After checking the SHA-256, choose **More info → Run anyway**.
-> Some antivirus products flag the WinDivert driver used by GoodbyeDPI. Ghostline verifies GoodbyeDPI's hash before every start; if your antivirus blocks it, add the Ghostline folder to its exclusions.
+> Some antivirus products flag the WinDivert driver used by zapret2 and GoodbyeDPI. Ghostline verifies the engine's hash before every start; if your antivirus blocks zapret2, Ghostline runs GoodbyeDPI for now and the DPI page shows the `bin\zapret2` folder to add to the exclusions.
 
 ## Usage
 
 > 📖 A detailed user guide covering every screen, unblocking sites and troubleshooting: **[docs/user-guide.md](docs/user-guide.md)** ([Tiếng Việt](docs/huong-dan-su-dung.md))
 
 1. Start Ghostline and press **Connect**. It picks a server, redirects DNS and verifies there is no leak.
-2. If some sites are still blocked, either turn on the **proxy** (Advanced → Proxy → enable proxy + use for this PC) so browsers get automatic fragmentation, or open **Advanced → DPI** and turn on **GoodbyeDPI** / press **auto-tune**.
+2. If some sites are still blocked, either turn on the **proxy** (Advanced → Proxy → enable proxy + use for this PC) so browsers get automatic fragmentation, or open **Advanced → DPI**, pick an engine (**zapret2** is recommended), turn it on and press **auto-tune**.
    To share with other devices, turn on **share on LAN** and scan the QR code on your phone (the network must be *Private*).
 3. Press **Disconnect** (or quit from the tray) to restore your original DNS.
 
@@ -119,7 +119,7 @@ ghostline.exe --restore
 ```
 apps ──► Windows DNS client ──► 127.0.0.1:53 (Ghostline / dnsproxy) ──► DoH · DoT · DoQ · DNSCrypt
                                          │
-                       GoodbyeDPI (optional) rewrites outgoing TLS/HTTP to dodge SNI filtering
+            zapret2 / GoodbyeDPI (optional) rewrites outgoing TLS/HTTP/QUIC to dodge SNI filtering
 ```
 
 **Safety net.** Before touching an adapter, Ghostline writes a snapshot (`state.json`) of its DNS. Four layers make sure that snapshot gets restored:
@@ -141,7 +141,7 @@ Design details live in [`docs/superpowers/specs`](docs/superpowers/specs).
 ## Known limitations
 
 - If you approve UAC with a **different administrator account**, `%APPDATA%` and the system proxy belong to that account, so "use for this PC" does not affect the signed-in user.
-- Web fragmentation only helps apps that go through the proxy. Apps that ignore the Windows proxy (some games, Firefox with its own proxy settings) need GoodbyeDPI instead.
+- Web fragmentation only helps apps that go through the proxy. Apps that ignore the Windows proxy (some games, Firefox with its own proxy settings) need the DPI engine instead.
 - LAN sharing works only on networks marked **Private** in Windows; Ghostline never changes the network profile itself.
 
 ## Building from source
@@ -180,7 +180,7 @@ Before a release, go through [`docs/release-checklist.md`](docs/release-checklis
 | `internal/engine` | Local DNS server built on dnsproxy |
 | `internal/sysdns` | Read, apply and restore adapter DNS (Win32 + netsh fallback) |
 | `internal/watchdog`, `internal/startup` | Watchdog process and scheduled tasks |
-| `internal/dpi` | GoodbyeDPI runner, presets, WinDivert service handling |
+| `internal/dpi` | DPI engines (zapret2, GoodbyeDPI), signed strategy list, WinDivert service handling |
 | `internal/scanner`, `internal/probe` | Server latency scan and blocked-site probes |
 | `internal/servers`, `internal/upstreams` | Signed server list and DNSCrypt list |
 | `internal/shell` | Window, tray and OS events (Wails) |
@@ -211,7 +211,7 @@ The software is provided "as is", without warranty of any kind. The authors are 
 
 Ghostline is free software, released under the [GNU General Public License v3.0 only](LICENSE). You may use, study, share and modify it; if you distribute a modified version, you must release its source code under the same license. Releases v0.1.0 and v0.1.1 were published under the MIT License.
 
-It stands on the shoulders of [dnsproxy](https://github.com/AdguardTeam/dnsproxy), [GoodbyeDPI](https://github.com/ValdikSS/GoodbyeDPI), [WinDivert](https://github.com/basil00/WinDivert) and [Wails](https://wails.io), and was inspired by [DNSveil / SecureDNSClient](https://github.com/msasanmh/SecureDNSClient). Third-party licenses are listed in [NOTICE](NOTICE).
+It stands on the shoulders of [dnsproxy](https://github.com/AdguardTeam/dnsproxy), [zapret2](https://github.com/bol-van/zapret2), [GoodbyeDPI](https://github.com/ValdikSS/GoodbyeDPI), [WinDivert](https://github.com/basil00/WinDivert) and [Wails](https://wails.io), and was inspired by [DNSveil / SecureDNSClient](https://github.com/msasanmh/SecureDNSClient). Third-party licenses are listed in [NOTICE](NOTICE).
 
 ## Donate
 

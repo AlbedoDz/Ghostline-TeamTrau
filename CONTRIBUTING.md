@@ -33,7 +33,7 @@ wails3 dev
 
 - Telemetry, or anything that writes visited domains to disk.
 - Code that stops or kills third-party processes or services without the user's explicit consent.
-- Changes to the bundled GoodbyeDPI binaries without updating their pinned hashes and NOTICE.
+- Changes to the bundled zapret2 or GoodbyeDPI binaries without updating their pinned hashes and NOTICE.
 - Lists, presets, default test sites or docs that target websites or services blocked by a competent authority (for example gambling, piracy, or platforms blocked by government order). Ghostline's purpose is privacy and protection against DNS spoofing, not reaching content that is prohibited by law.
 
 ## Issues about specific blocked sites
