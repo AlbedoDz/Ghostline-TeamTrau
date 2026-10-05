@@ -55,6 +55,8 @@ Ghostline chạy một DNS server cục bộ trên `127.0.0.1` / `::1`, trỏ m�
 - **Rules và danh sách cộng đồng:** chặn, cho phép, DNS giả, fragment hoặc đi qua upstream proxy theo domain, keyword, regexp hay CIDR. Import danh sách hosts, AdBlock/AdGuard, dnsmasq, Unbound, RPZ, Clash, v2ray, sing-box hoặc CIDR thẳng từ link GitHub, tự cập nhật theo lịch.
 - **DNS server cho mạng nhà:** DNS mã hoá cho điện thoại, TV, máy chơi game và router trong Wi-Fi: DNS cổng 53 (không cần chứng chỉ) hoặc DNS-over-HTTPS, có trang cài đặt qua mã QR và profile cho iOS.
 - **Fake SNI (nâng cao, mặc định tắt):** với trang nằm sau CDN cho phép domain fronting, proxy gửi ra mạng một tên miền khác được phép. Chỉ giải mã HTTPS của những tên miền bạn chọn, bằng chứng chỉ chỉ ký được cho đúng các tên miền đó và bị gỡ khi ngắt kết nối.
+- **Công cụ chẩn đoán:** tra DNS so sánh nhiều nguồn và phát hiện DNS bị đầu độc, Scanner nâng cao chấm server theo độ trễ, mất gói, DNSSEC, lọc quảng cáo và đầu độc, công cụ tìm IP Cloudflare sạch rồi tạo rule `ip=`, và công cụ đọc/tạo stamp DNS.
+- **Sao lưu và khôi phục:** xuất cài đặt, rule, danh sách và server tự thêm ra một file rồi nhập trên máy khác. Thông tin riêng tư và gắn với máy không bao giờ được xuất, và khi nhập không bao giờ tự bật Fake SNI hay chia sẻ trong LAN.
 - **Danh sách máy chủ có chữ ký:** cập nhật mỗi ngày, xác minh bằng ed25519; danh sách DNSCrypt được kiểm tra bằng minisign.
 - **Chế độ Đơn giản và Nâng cao**, icon khay, giao diện tiếng Việt và tiếng Anh, phong cách neon-terminal.
 - **Bản cài đặt hoặc portable:** bản portable lưu mọi dữ liệu trong thư mục `data\` cạnh file exe.

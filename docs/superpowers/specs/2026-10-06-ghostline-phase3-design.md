@@ -79,7 +79,7 @@ Giao diện chọn hướng **kết hợp**: mặc định hiện kết luận d
 
 | Package | Thay đổi |
 |---|---|
-| `app` | `ToolsService` mới (binding Wails riêng): Lookup, Scanner, IP Cloudflare, STAMP. `Service` thêm `ExportSettings`, `PreviewImport`, `ApplyImport`. Sự kiện mới `tools:scan`, `tools:cfscan` |
+| `app` | Các hàm mới gắn vào `*Service` hiện có (frontend chỉ có một module binding): Lookup, Scanner, IP Cloudflare, STAMP, `ExportSettings`, `PreviewImport`, `ApplyImport`. Sự kiện mới `tools:scan`, `tools:cfscan` |
 | `scanner` | Tách phần chung `queryOnce(ctx, u, name, qtype)` để `advanced` và `lookup` dùng lại. Hành vi của `DNSChecker` giữ nguyên |
 | `servers` | `FromStamp` gọi `stamps.Decode`, không đổi kết quả |
 | `store` | `settings.json` v5 (khối `tools`), đường dẫn `cfscan-cache.json`. Hàm `MigrateSettings(raw []byte) (Settings, error)` dùng chung cho đọc file và nhập |
@@ -126,7 +126,7 @@ Kết luận chung lấy mức nặng nhất: `poisoned` > `differs` > `match`. 
 
 - Mặc định: thẻ kết luận, bảng nguồn × (trạng thái, độ trễ, địa chỉ chính, AD).
 - "Chi tiết": mỗi nguồn một khối văn bản kiểu `dig` (header, flags, question, answer, authority, additional, TTL), nút sao chép.
-- Từ một hàng lỗi hoặc `poisoned`, có nút "Dùng nguồn khác cho tên miền này…": mở bảng rule với mẫu là tên miền và hành động `upstream=<id của một nguồn trả lời đúng>`.
+- Không có nút tạo rule từ kết quả Lookup: `upstream=` trong rule chỉ upstream proxy (socks/http), Ghostline chưa có rule chọn DNS server theo tên miền.
 
 ## 6. Advanced DNS Scanner
 

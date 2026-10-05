@@ -19,6 +19,8 @@ This guide is for anyone running Windows 10/11; no technical background is neede
    - [Rules and lists](#47-rules-and-lists)
    - [DNS server](#48-dns-server)
    - [Fake SNI](#49-fake-sni)
+   - [Tools](#410-tools)
+   - [Backup and moving to another PC](#411-backup-and-moving-to-another-pc)
 5. [The tray icon](#5-the-tray-icon)
 6. [When a site is still blocked](#6-when-a-site-is-still-blocked)
 7. [Troubleshooting](#7-troubleshooting)
@@ -375,6 +377,44 @@ An advanced feature for sites behind CDNs that allow *domain fronting*. The prox
 
 Lists from other sources can carry `sni=` rules only after you mark them **trust for Fake SNI**; Ghostline's own presets are signed.
 
+
+### 4.10. Tools
+
+Four diagnostic tools on one page.
+
+**Lookup** asks one domain through several sources at once and says whether the answers agree.
+
+1. Type a domain (a link pasted from the browser works too) and pick the record type. For **PTR**, type an IP.
+2. Tick the sources. By default you get Ghostline (when connected) and the fastest servers from the last scan.
+3. Click **look up**. The card on top reads:
+   - **DNS is poisoned:** a source answered a private IP, or said the domain does not exist while others found it. That is how ISPs block with DNS.
+   - **Answers differ:** different addresses. CDNs answer by location, so this alone does not mean blocking.
+   - **Answers match:** same addresses, or the same CDN.
+4. **details** shows each answer the way `dig` prints it, with TTLs and flags.
+
+The **ISP DNS** source is the only place Ghostline ever sends an unencrypted query: your ISP sees the domain you look up. It is never ticked for you; tick it only to compare. When the PC gets DNS from the router, Ghostline offers the router's address.
+
+**Scanner** grades many servers at once: latency over several rounds (median, p90, jitter), packet loss, whether the server validates DNSSEC, whether it filters ads, and whether it answers the test sites listed on the **DPI bypass** page with fake addresses. Scan the server list with filters, or paste up to 500 addresses. From the results you can pin servers, use only one, add pasted ones to your list, or export a CSV that opens in Excel.
+
+**Cloudflare IP** looks for Cloudflare addresses that work and are fast on your network.
+
+1. Click **scan**. Ghostline tries one address in each block of Cloudflare's network, over port 443 only, at most 200 new connections a second, straight out (not through Ghostline's proxy). It stops once 50 addresses work.
+2. The 10 fastest also get a download speed test.
+3. Select a few addresses, then **copy** them, or **create rule**: type the domains (for example `example.com` and `*.example.com`) and Ghostline adds an `ip=` rule on the **Rules** page.
+
+An `ip=` rule only affects apps that use Ghostline's DNS or proxy, and only works for domains that really are behind Cloudflare. Results are kept per network; **check again** retests the selected addresses. A clean address today may be blocked tomorrow: scan again when a site stops loading.
+
+**Stamp** reads and builds `sdns://` stamps. Paste stamps to see what is inside, or fill the form (or **fill from URL**) to build one, then **add to servers**. Relay and ODoH stamps can be read but Ghostline does not use them.
+
+### 4.11. Backup and moving to another PC
+
+In **Settings › Backup and move to another PC**:
+
+- **export settings…** saves a `.ghostline.json` file. Choose what goes in: settings, rules and lists, your servers, the DPI blacklist, the zapret2 learned list. It never contains your home Wi-Fi name, network adapters, proxy passwords, logs or certificates. Lists that point at a file on this PC are left out.
+- **import settings…** works only while disconnected. Ghostline shows what will change first, and asks before importing rules that redirect decrypted traffic (`sni=`, `connect=`). An import always turns off Fake SNI, the DNS server, sharing on the LAN and start with Windows, and lists from other sources are no longer trusted for Fake SNI: turn them on again on this PC if you need them. Proxy passwords must be typed again.
+- If writing fails halfway, every file is put back as it was. The files an import replaced are kept next to them as `*.bak-import`.
+
+`Ghostline.exe --export <file>` writes the same backup from the command line, for sending to someone who helps you.
 
 ## 5. The tray icon
 

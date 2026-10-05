@@ -65,6 +65,14 @@ Chạy trên Windows 11 x64, terminal **admin**. Đánh dấu từng mục; mụ
 - [ ] **Mạng Public:** thiết bị khác không vào được (kể cả khi đã bấm Allow ở hộp thoại firewall của Windows); có luật `Ghostline Block Public` khi đang chia sẻ, mất sau Disconnect; gợi ý đổi sang Private hiện ra.
 - [ ] **Cổng 53 bị ICS chiếm** (bật chia sẻ Internet): IP đó bị bỏ qua, các IP khác vẫn chạy.
 
+## Kiểm tra thủ công giai đoạn 3 (spec 3 §13)
+
+- [ ] **Dải IP Cloudflare:** chạy `go run ./tools/gencfranges`, xem lại diff của `internal/cfscan/ranges_v4.txt` rồi commit.
+- [ ] **Lookup đầu độc:** trên mạng Viettel, VNPT, FPT, tra một tên miền bị chặn qua DNS nhà mạng và qua Ghostline → thẻ **Bị đầu độc DNS**.
+- [ ] **IP Cloudflare:** có ≥ 10 IP dùng được trong ≤ 60 giây; một rule `ip=` tạo từ kết quả mở được một trang thật nằm sau Cloudflare.
+- [ ] **Chuyển máy:** xuất trên máy A, nhập trên máy B cài mới → rule, server, ghim, vượt DPI giống nhau; Fake SNI, DNS server cho LAN và chia sẻ proxy vẫn tắt; mật khẩu proxy upstream phải nhập lại.
+- [ ] **Tường lửa và antivirus:** quét IP Cloudflare ở mặc định không làm Windows Defender Firewall hay antivirus cảnh báo.
+- [ ] **`Ghostline.exe --export x.json`** ghi được file sao lưu và không mở cửa sổ (ghi lại có hiện hộp thoại UAC không).
 
 ## Cần xác minh trên máy thật (reviewer không kiểm chứng được)
 

@@ -56,6 +56,8 @@ Ghostline runs a local DNS server on `127.0.0.1` / `::1`, points every network a
 - **Rules and community lists:** block, allow, fake DNS, fragment or route through an upstream proxy by domain, keyword, regexp or CIDR. Import hosts, AdBlock/AdGuard, dnsmasq, Unbound, RPZ, Clash, v2ray, sing-box or CIDR lists straight from a GitHub link, updated on a schedule.
 - **DNS server for your home network:** encrypted DNS for phones, TVs, consoles and routers on your Wi-Fi: plain DNS on port 53 (no certificate needed) or DNS-over-HTTPS, with a QR-code setup page and an iOS profile.
 - **Fake SNI (advanced, off by default):** for sites behind CDNs that allow domain fronting, the proxy sends a different, allowed domain name to the network. It decrypts HTTPS only for domains you choose, with a certificate that can sign only those domains and is removed on disconnect.
+- **Diagnostic tools:** DNS lookup that compares sources and spots DNS poisoning, an advanced scanner that grades servers on latency, loss, DNSSEC, ad filtering and poisoning, a Cloudflare clean-IP finder that turns results into `ip=` rules, and a DNS stamp reader and builder.
+- **Backup and restore:** export settings, rules, lists and your servers to one file and import them on another PC. Private and machine-bound values are never exported, and an import never turns on Fake SNI or sharing on the LAN.
 - **Signed server list:** updated daily and verified with ed25519; the DNSCrypt list is checked with minisign.
 - **Simple and Advanced modes**, a tray icon, Vietnamese and English UI, and a neon-terminal look.
 - **Installer or portable:** the portable build keeps all data in a `data\` folder next to the exe.

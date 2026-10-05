@@ -19,6 +19,8 @@ Hướng dẫn này dành cho người dùng Windows 10/11, không cần biết 
    - [Rules và danh sách](#47-rules-và-danh-sách)
    - [DNS server](#48-dns-server)
    - [Fake SNI](#49-fake-sni)
+   - [Công cụ](#410-công-cụ)
+   - [Sao lưu và chuyển máy](#411-sao-lưu-và-chuyển-máy)
 5. [Icon ở khay hệ thống](#5-icon-ở-khay-hệ-thống)
 6. [Khi một trang web vẫn bị chặn](#6-khi-một-trang-web-vẫn-bị-chặn)
 7. [Xử lý sự cố](#7-xử-lý-sự-cố)
@@ -375,6 +377,44 @@ Tính năng nâng cao cho trang nằm sau CDN cho phép *domain fronting*. Proxy
 
 Danh sách từ nguồn khác chỉ được dùng rule `sni=` sau khi bạn bật **tin cho Fake SNI**; preset của Ghostline có chữ ký.
 
+
+### 4.10. Công cụ
+
+Bốn công cụ chẩn đoán trên một trang.
+
+**Lookup** tra một tên miền qua nhiều nguồn cùng lúc và cho biết các câu trả lời có khớp nhau không.
+
+1. Gõ tên miền (dán link từ trình duyệt cũng được) và chọn loại bản ghi. Với **PTR**, gõ một IP.
+2. Tích các nguồn. Mặc định có Ghostline (khi đã kết nối) và các server nhanh nhất từ lần quét gần nhất.
+3. Bấm **tra**. Thẻ ở trên cho biết:
+   - **Bị đầu độc DNS:** một nguồn trả về IP nội bộ, hoặc báo tên miền không tồn tại trong khi nguồn khác tìm thấy. Đó là cách nhà mạng chặn bằng DNS.
+   - **Kết quả khác nhau:** địa chỉ khác nhau. CDN trả IP theo vị trí, nên chỉ vậy thì chưa chắc là bị chặn.
+   - **Kết quả khớp nhau:** cùng địa chỉ, hoặc cùng một CDN.
+4. **chi tiết** hiện từng câu trả lời như `dig` in ra, có TTL và các cờ.
+
+Nguồn **DNS nhà mạng** là chỗ duy nhất Ghostline gửi truy vấn không mã hoá: nhà mạng thấy tên miền bạn tra. Ghostline không bao giờ tích sẵn nguồn này; chỉ tích khi cần so sánh. Khi máy nhận DNS từ router, Ghostline đưa ra địa chỉ của router.
+
+**Scanner** chấm nhiều server cùng lúc: độ trễ qua nhiều lượt (trung vị, p90, jitter), tỉ lệ mất gói, server có kiểm tra DNSSEC không, có lọc quảng cáo không, và có trả địa chỉ giả cho các trang mẫu ở trang **Vượt DPI** không. Quét danh sách server có lọc, hoặc dán tối đa 500 địa chỉ. Từ kết quả có thể ghim server, chỉ dùng một server, thêm server vừa dán vào danh sách, hoặc xuất CSV mở được bằng Excel.
+
+**IP Cloudflare** tìm các địa chỉ Cloudflare còn dùng được và nhanh trên mạng của bạn.
+
+1. Bấm **quét**. Ghostline thử một địa chỉ trong mỗi khối mạng của Cloudflare, chỉ qua cổng 443, tối đa 200 kết nối mới mỗi giây, đi thẳng ra mạng (không qua proxy của Ghostline). Đủ 50 địa chỉ dùng được thì dừng.
+2. 10 địa chỉ nhanh nhất được đo thêm tốc độ tải.
+3. Chọn vài địa chỉ rồi **sao chép**, hoặc **tạo rule**: gõ các domain (ví dụ `example.com` và `*.example.com`), Ghostline thêm rule `ip=` vào trang **Rules**.
+
+Rule `ip=` chỉ có tác dụng với ứng dụng dùng DNS hoặc proxy của Ghostline, và chỉ đúng với domain thật sự nằm sau Cloudflare. Kết quả được lưu theo từng mạng; **kiểm tra lại** thử lại các địa chỉ đang chọn. Địa chỉ dùng được hôm nay có thể bị chặn ngày mai: quét lại khi trang không vào được nữa.
+
+**Stamp** đọc và tạo stamp `sdns://`. Dán stamp để xem bên trong có gì, hoặc điền biểu mẫu (hay **điền từ URL**) để tạo stamp, rồi **thêm vào danh sách server**. Stamp relay và ODoH đọc được nhưng Ghostline không dùng.
+
+### 4.11. Sao lưu và chuyển máy
+
+Trong **Cài đặt › Sao lưu và chuyển máy**:
+
+- **xuất cài đặt…** lưu một file `.ghostline.json`. Chọn phần cần xuất: cài đặt, rule và danh sách, server tự thêm, danh sách đen vượt DPI, danh sách tự học của zapret2. File không bao giờ chứa tên Wi-Fi nhà, card mạng, mật khẩu proxy, nhật ký hay chứng chỉ. Danh sách trỏ tới một file trên máy này không được xuất.
+- **nhập cài đặt…** chỉ dùng được khi đã ngắt kết nối. Ghostline cho xem trước những gì sẽ thay đổi, và hỏi riêng trước khi nhập rule chuyển hướng lưu lượng đã giải mã (`sni=`, `connect=`). Khi nhập, Fake SNI, DNS server, chia sẻ trong LAN và khởi động cùng Windows luôn bị tắt, và danh sách từ nguồn khác không còn được tin cho Fake SNI: bật lại trên máy này nếu cần. Mật khẩu proxy phải nhập lại.
+- Nếu ghi lỗi giữa chừng, mọi file được trả về như cũ. File bị thay khi nhập được giữ lại bên cạnh với tên `*.bak-import`.
+
+`Ghostline.exe --export <file>` ghi cùng bản sao lưu đó từ dòng lệnh, để gửi cho người đang giúp bạn.
 
 ## 5. Icon ở khay hệ thống
 
