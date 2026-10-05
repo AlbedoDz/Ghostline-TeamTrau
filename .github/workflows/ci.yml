@@ -1,8 +1,10 @@
 name: ci
 
-# Docs-only changes don't touch the build, so they skip CI.
+# Docs-only changes don't touch the build, so they skip CI. Tags are left
+# to the release workflow, which runs the tests itself.
 on:
   push:
+    branches: ["**"]
     paths-ignore:
       - "**.md"
       - "docs/**"
