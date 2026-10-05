@@ -116,12 +116,12 @@ func TestSetDPIEnabled_OffClearsFallback(t *testing.T) {
 func TestAutotune_SwitchesEngineWhenZapret2Blocked(t *testing.T) {
 	h := zapretHarness(t)
 	h.dpi.failOn = map[string]error{"zapret2": dpi.ErrBlockedByAV}
-	h.prober.stage = func(string, int) probe.Stage {
+	h.prober.setStage(func(string, int) probe.Stage {
 		if h.dpi.Engine() == "goodbyedpi" {
 			return probe.StageOK
 		}
 		return probe.StageTLS
-	}
+	})
 	var seen []string
 	require.NoError(t, h.o.Autotune(context.Background(), func(engine, p string, i, n int) { seen = append(seen, engine+":"+p) }))
 	require.Equal(t, []string{"zapret2:z-split", "goodbyedpi:light"}, seen)
@@ -134,12 +134,12 @@ func TestAutotune_SwitchesEngineWhenZapret2Blocked(t *testing.T) {
 
 func TestAutotune_Zapret2SavesStrategy(t *testing.T) {
 	h := zapretHarness(t)
-	h.prober.stage = func(string, int) probe.Stage {
+	h.prober.setStage(func(string, int) probe.Stage {
 		if h.dpi.Running() && h.dpi.lastStart().plan.Strategy == "z-disorder" {
 			return probe.StageOK
 		}
 		return probe.StageTLS
-	}
+	})
 	var seen []string
 	require.NoError(t, h.o.Autotune(context.Background(), func(engine, p string, i, n int) {
 		seen = append(seen, p)
@@ -337,7 +337,7 @@ func TestAutotune_CancelRestoresPreviousEngine(t *testing.T) {
 	h.setSettings(func(s *store.Settings) { s.DPI.Zapret2.Strategy = "z-fake" })
 	require.NoError(t, h.o.RestartDPI(context.Background()))
 	ctx, cancel := context.WithCancel(context.Background())
-	h.prober.stage = func(string, int) probe.Stage { cancel(); return probe.StageTLS }
+	h.prober.setStage(func(string, int) probe.Stage { cancel(); return probe.StageTLS })
 	require.Error(t, h.o.Autotune(ctx, nil))
 	st := h.dpi.lastStart()
 	require.Equal(t, "zapret2", st.engine)
@@ -350,7 +350,7 @@ func TestAutotune_CancelRestoresPreviousEngine(t *testing.T) {
 func TestAutotune_NoPresetRestoresPreviousEngine(t *testing.T) {
 	h := zapretHarness(t)
 	require.NoError(t, h.o.SetDPIEnabled(context.Background(), true))
-	h.prober.stage = func(string, int) probe.Stage { return probe.StageTLS }
+	h.prober.setStage(func(string, int) probe.Stage { return probe.StageTLS })
 	requireCode(t, h.o.Autotune(context.Background(), nil), CodeAutotuneNoPreset)
 	require.True(t, h.dpi.Running())
 	require.Equal(t, "z-split", h.dpi.lastStart().plan.Strategy)
@@ -359,7 +359,7 @@ func TestAutotune_NoPresetRestoresPreviousEngine(t *testing.T) {
 
 func TestAutotune_NoPresetLeavesDPIOffWhenItWasOff(t *testing.T) {
 	h := zapretHarness(t)
-	h.prober.stage = func(string, int) probe.Stage { return probe.StageTLS }
+	h.prober.setStage(func(string, int) probe.Stage { return probe.StageTLS })
 	requireCode(t, h.o.Autotune(context.Background(), nil), CodeAutotuneNoPreset)
 	require.False(t, h.dpi.Running())
 	sn := h.o.Snapshot().DPI

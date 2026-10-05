@@ -350,13 +350,13 @@ func (p *fProber) ProbeAll(ctx context.Context, sites []string) []probe.Result {
 	}
 	p.mu.Lock()
 	p.calls++
-	call := p.calls
+	call, stage := p.calls, p.stage
 	p.mu.Unlock()
 	var out []probe.Result
 	for _, s := range sites {
 		st := probe.StageOK
-		if p.stage != nil {
-			st = p.stage(s, call)
+		if stage != nil {
+			st = stage(s, call)
 		}
 		out = append(out, probe.Result{Site: s, Stage: st})
 	}
@@ -390,6 +390,14 @@ func (h *harness) setSettings(fn func(s *store.Settings)) {
 	h.smu.Lock()
 	fn(&h.settings)
 	h.smu.Unlock()
+}
+
+// setStage changes the outcome while background probes may be running
+// (Connect starts one).
+func (p *fProber) setStage(f func(site string, call int) probe.Stage) {
+	p.mu.Lock()
+	p.stage = f
+	p.mu.Unlock()
 }
 
 func (p *fProber) setBlock(v bool) {
