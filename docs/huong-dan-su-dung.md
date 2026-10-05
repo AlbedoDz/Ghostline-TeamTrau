@@ -61,6 +61,9 @@ So mã hiện ra với dòng tương ứng trong file `SHA256SUMS` trên trang R
 ## 3. Bắt đầu nhanh: một nút bấm
 
 <p align="center"><img src="screenshots/simple-vi.png" width="320" alt="Chế độ Đơn giản"></p>
+<a href="videos/clips/connect-vi.mp4"><img src="videos/clips/connect-vi.webp" width="640" alt="Kết nối ở chế độ Đơn giản"></a>
+
+*Ảnh động được tua nhanh, không có tiếng; bấm vào để xem video có lồng tiếng.*
 
 Khi mở lần đầu, Ghostline ở chế độ **ĐƠN GIẢN**.
 
@@ -69,6 +72,10 @@ Khi mở lần đầu, Ghostline ở chế độ **ĐƠN GIẢN**.
 3. Khi vòng tròn sáng xanh và hiện **[ ĐÃ BẢO VỆ ]** là xong: mọi truy vấn DNS của máy đã được mã hoá.
 
 Muốn huỷ khi đang kết nối: bấm nút nguồn lần nữa. Muốn tắt bảo vệ: bấm nút nguồn khi đang ở trạng thái Đã bảo vệ, DNS được trả về như cũ.
+
+<a href="videos/clips/disconnect-vi.mp4"><img src="videos/clips/disconnect-vi.webp" width="640" alt="Ngắt kết nối"></a>
+
+*Ảnh động được tua nhanh, không có tiếng; bấm vào để xem video có lồng tiếng.*
 
 **Bảng thông tin bên dưới:**
 
@@ -106,6 +113,18 @@ Bấm **NÂNG CAO** ở góc trên bên trái để mở giao diện đầy đ�
 
 ![Máy chủ](screenshots/servers-vi.png)
 
+<a href="videos/clips/servers-vi.mp4"><img src="videos/clips/servers-vi.webp" width="640" alt="Quét, tìm và ghim máy chủ"></a>
+
+*Ảnh động được tua nhanh, không có tiếng; bấm vào để xem video có lồng tiếng.*
+
+**Từng bước: dùng máy chủ bạn thích**
+
+1. Mở **Máy chủ**, bấm **⟳ quét toàn bộ** và chờ quét xong.
+2. Gõ tên, nhà cung cấp hoặc giao thức vào ô tìm kiếm, ví dụ `cloudflare`.
+3. Bấm ngôi sao **☆** ở máy chủ muốn dùng, hoặc **★ ghim N kết quả** để ghim tất cả kết quả.
+4. Nếu đang kết nối, bấm **kết nối lại để áp dụng**.
+5. Muốn chỉ dùng máy chủ đã ghim, bật **chỉ dùng máy chủ đã ghim**.
+
 Danh sách toàn bộ máy chủ DNS mã hoá mà Ghostline biết (vài trăm máy chủ), được cập nhật mỗi ngày từ danh sách có chữ ký số.
 
 - **⟳ quét toàn bộ:** đo lại độ trễ của mọi máy chủ và loại các máy chủ trả kết quả sai (bị đầu độc). Ghostline tự quét khi cần; bạn chỉ bấm khi đổi sang mạng khác hoặc thấy chậm.
@@ -123,6 +142,18 @@ Danh sách toàn bộ máy chủ DNS mã hoá mà Ghostline biết (vài trăm m
 ### 4.3. Vượt DPI
 
 ![Vượt DPI](screenshots/dpi-vi.png)
+
+<a href="videos/clips/dpi-vi.mp4"><img src="videos/clips/dpi-vi.webp" width="640" alt="Trang Vượt DPI"></a>
+
+*Ảnh động được tua nhanh, không có tiếng; bấm vào để xem video có lồng tiếng.*
+
+**Từng bước: mở một trang đang bị chặn**
+
+1. Bấm **Kết nối** trước; engine chỉ chạy khi đang kết nối.
+2. Ở **Vượt DPI**, bật công tắc và giữ engine **zapret2**.
+3. Thêm trang đó vào **Trang mẫu** (mỗi dòng một trang) rồi bấm **⟳ thử lại**.
+4. Kết quả **✕ TLS** thường là do DPI: bấm **⚡ tự dò** và chờ. Ghostline giữ chiến lược nhẹ nhất mở được mọi trang mẫu.
+5. Nếu chỉ vài trang bị chặn, đặt **phạm vi** là **danh sách đen** và chỉ liệt kê các trang đó.
 
 Dùng khi DNS đã được mã hoá nhưng kết nối tới một trang **vẫn bị can thiệp**: thiết bị trên đường truyền soi tên trang trong gói tin (SNI) rồi ngắt kết nối.
 
@@ -203,6 +234,17 @@ Ghi lại các sự kiện: kết nối, đổi máy chủ, bật/tắt GoodbyeD
 
 ![Proxy](screenshots/proxy-vi.png)
 
+<a href="videos/clips/proxy-vi.mp4"><img src="videos/clips/proxy-vi.webp" width="640" alt="Bật và chia sẻ proxy"></a>
+
+*Ảnh động được tua nhanh, không có tiếng; bấm vào để xem video có lồng tiếng.*
+
+**Từng bước: dùng proxy cho máy này và cho điện thoại**
+
+1. Bật **bật proxy**. Proxy chạy khi bạn đang kết nối.
+2. Cho trình duyệt trên máy này: bật **dùng cho máy này**.
+3. Cho điện thoại: bật **chia sẻ LAN**. Trên điện thoại vào *Wi-Fi › mạng này › Proxy › Thủ công* và nhập địa chỉ hiện ra, hoặc quét mã QR.
+4. Nếu Ghostline báo mạng là *Public*, đổi sang *Private* trong Cài đặt Windows › Mạng.
+
 Ghostline có thể chạy một proxy cục bộ trên một cổng (mặc định `8080`), hiểu được **HTTP, HTTPS (CONNECT) và SOCKS4/4a/5**. Proxy bật và tắt cùng nút **Connect**, và luôn phân giải tên miền qua DNS mã hoá của Ghostline nên không bao giờ rò DNS plain.
 
 | Cài đặt | Ý nghĩa |
@@ -228,6 +270,17 @@ Nếu thống kê có kết nối *bị chặn dù đã fragment*, mạng đó c
 ### 4.7. Rules và danh sách
 
 ![Rules và danh sách](screenshots/rules-vi.png)
+
+<a href="videos/clips/rules-vi.mp4"><img src="videos/clips/rules-vi.webp" width="640" alt="Thêm rule và thử tên miền"></a>
+
+*Ảnh động được tua nhanh, không có tiếng; bấm vào để xem video có lồng tiếng.*
+
+**Từng bước: chặn một tên miền**
+
+1. Ở **Rules**, gõ mẫu như `ads.example.com` vào ô mẫu.
+2. Chọn hành động **chặn**, rồi bấm **+ thêm rule**.
+3. Gõ tên miền vào ô **thử tên miền** và bấm **thử**: Ghostline cho biết rule hay danh sách nào quyết định.
+4. Muốn xoá rule, bấm **✕** của nó.
 
 Rules quyết định cách xử lý một tên miền, cho cả DNS lẫn proxy. Rule đầu tiên khớp được dùng; nếu không rule nào khớp thì xét các danh sách theo thứ tự.
 
@@ -256,6 +309,12 @@ Sửa rules ở tab **bảng** hoặc chuyển sang **text** (mỗi dòng một 
 
 ### 4.8. DNS server
 
+![DNS server](screenshots/dnsserver-vi.png)
+
+<a href="videos/clips/dnsserver-vi.mp4"><img src="videos/clips/dnsserver-vi.webp" width="640" alt="Chia sẻ DNS server và mở trang cài đặt cho điện thoại"></a>
+
+*Ảnh động được tua nhanh, không có tiếng; bấm vào để xem video có lồng tiếng.*
+
 Chia sẻ DNS mã hoá của Ghostline cho trình duyệt trên máy này và cho thiết bị khác trong mạng nhà. DNS server chạy khi bạn đang kết nối.
 
 - **DoH cục bộ:** trình duyệt trên máy này có thể dùng `https://127.0.0.1/dns-query` làm DNS an toàn tuỳ chỉnh.
@@ -271,13 +330,38 @@ Chia sẻ DNS mã hoá của Ghostline cho trình duyệt trên máy này và ch
 | Steam Deck | đặt DNS thủ công cho riêng Wi-Fi nhà (không đặt cho mọi mạng) |
 | iPhone / iPad | *Cài đặt › Wi-Fi › (i) › Định cấu hình DNS › Thủ công* với IP máy tính — hoặc cài profile DoH bên dưới |
 
-**Profile DoH cho iPhone:** chọn hoặc nhập tên Wi-Fi nhà (Ghostline liệt kê các Wi-Fi máy biết; máy cắm dây có thể không có), bấm **mở trang cài đặt cho điện thoại** rồi quét mã QR. Trang mở trong 10 phút. So vân tay trên điện thoại với vân tay trong Ghostline, kiểm tra tên Wi-Fi trên trang (có thể nhập ngay ở đó), tải profile, cài, rồi **bật chứng chỉ** trong *Cài đặt › Cài đặt chung › Giới thiệu › Cài đặt tin cậy chứng chỉ* (Tin cậy hoàn toàn). Bước này bắt buộc: thiếu nó, iPhone không dùng được DNS và mất mạng ở Wi-Fi nhà. Cuối cùng kiểm tra *Cài đặt › Cài đặt chung › VPN và quản lý thiết bị › DNS* đang chọn **Ghostline DNS**. DNS mã hoá chỉ dùng khi ở Wi-Fi nhà; khi dùng 4G/5G hay mạng khác, iPhone dùng DNS như bình thường. **lưu file…** ghi chứng chỉ và profile ra đĩa thay vì mở trang.
+**Từng bước: profile DoH cho iPhone**
+
+1. Bấm **Kết nối**, rồi ở **DNS server** bật **bật DoH cục bộ** và **chia sẻ cho LAN** (mạng phải là *Private*).
+2. Chọn hoặc nhập **tên Wi-Fi nhà**, đúng như trên điện thoại. Ghostline liệt kê các Wi-Fi máy biết; máy cắm dây có thể không có, và điện thoại cũng nhập được trên trang.
+3. Bấm **mở trang cài đặt cho điện thoại** và quét mã QR bằng iPhone. Trang mở trong 10 phút.
+4. Trên điện thoại, so vân tay với vân tay trong Ghostline, bấm **Tải profile** rồi cài trong *Cài đặt › Đã tải về hồ sơ*.
+5. **Bắt buộc:** mở *Cài đặt › Cài đặt chung › Giới thiệu › Cài đặt tin cậy chứng chỉ* và bật **Ghostline LAN CA** (Tin cậy hoàn toàn). Thiếu bước này, iPhone mất mạng ở Wi-Fi nhà.
+6. Kiểm tra *Cài đặt › Cài đặt chung › VPN và quản lý thiết bị › DNS* đang chọn **Ghostline DNS**.
+
+DNS mã hoá chỉ dùng khi ở Wi-Fi nhà; khi dùng 4G/5G hay mạng khác, iPhone dùng DNS như bình thường. **lưu file…** ghi chứng chỉ và profile ra đĩa thay vì mở trang.
+
+<p align="center"><img src="screenshots/setuppage-vi.png" width="300" alt="Trang cài đặt trên điện thoại"></p>
 
 **Khi máy tính tắt hoặc ngắt kết nối,** mọi thiết bị dùng DNS của máy sẽ mất mạng ở mạng nhà. iOS không tự chuyển sang DNS khác. Để iPhone có mạng lại, mở *Cài đặt › Cài đặt chung › VPN và quản lý thiết bị › DNS* và chọn **Tự động** (hoặc xoá profile). Nếu máy tính hay tắt, hãy dùng cách đặt DNS thủ công ở trên thay cho profile: không cần chứng chỉ và đổi lại rất nhanh. Khi có thiết bị trong mạng dùng DNS server trong 10 phút gần nhất, nút **Ngắt kết nối** (trong app và trên khay) sẽ hỏi lại trước; tắt Windows và **Thoát** thì không hỏi.
 
 **CA LAN:** chứng chỉ mà thiết bị khác tin. Nó chỉ ký được cho IP nội bộ và `*.ghostline.lan`, nên không thể dùng để giả mạo trang web. **tạo lại** sinh CA mới (thiết bị phải cài lại); **gỡ** xoá CA và tắt DNS server.
 
 ### 4.9. Fake SNI
+
+![Fake SNI](screenshots/fakesni-vi.png)
+
+<a href="videos/clips/fakesni-vi.mp4"><img src="videos/clips/fakesni-vi.webp" width="640" alt="Bật Fake SNI"></a>
+
+*Ảnh động được tua nhanh, không có tiếng; bấm vào để xem video có lồng tiếng.*
+
+**Từng bước: bật Fake SNI**
+
+1. Bấm **Kết nối**. Ở **Proxy**, bật **bật proxy** và **dùng cho máy này**.
+2. Mở **Fake SNI**, đọc và cuộn cảnh báo tới cuối, tích **tôi đã hiểu**, rồi bấm **tiếp tục**.
+3. Bật **bật Fake SNI**, rồi bật một **nhóm preset** hoặc viết rule `sni=` ở trang **Rules**.
+4. Mở trang đó trong trình duyệt. Bộ đếm cho biết số kết nối đã giải mã hoặc phải quay về fragment.
+5. Xong thì bấm **tắt Fake SNI** trên dải tím.
 
 Tính năng nâng cao cho trang nằm sau CDN cho phép *domain fronting*. Proxy giải mã HTTPS của trình duyệt cho những tên miền bạn chọn và kết nối tới máy chủ bằng một tên khác được phép, nên nhà mạng thấy tên đó thay vì trang thật.
 

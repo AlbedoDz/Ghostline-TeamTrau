@@ -69,6 +69,8 @@ A 90-second walkthrough: one-click connect, scanning servers and the DPI bypass 
   <a href="docs/videos/guide-en.mp4"><img src="docs/videos/guide-en.webp" width="720" alt="Ghostline video guide (sped up); click for the full video"></a>
 </p>
 
+**Short narrated clips, one per feature:** [Connect](docs/videos/clips/connect-en.mp4) · [Servers](docs/videos/clips/servers-en.mp4) · [DPI bypass](docs/videos/clips/dpi-en.mp4) · [Proxy](docs/videos/clips/proxy-en.mp4) · [Rules](docs/videos/clips/rules-en.mp4) · [DNS server and iPhone](docs/videos/clips/dnsserver-en.mp4) · [Fake SNI](docs/videos/clips/fakesni-en.mp4) · [Disconnect](docs/videos/clips/disconnect-en.mp4). The [user guide](docs/user-guide.md) shows each one next to its step-by-step instructions.
+
 ## Screenshots
 
 | Servers | DPI bypass |
@@ -78,6 +80,8 @@ A 90-second walkthrough: one-click connect, scanning servers and the DPI bypass 
 | ![Proxy](docs/screenshots/proxy-en.png) | ![Rules](docs/screenshots/rules-en.png) |
 | **Logs** | **Settings** |
 | ![Logs](docs/screenshots/logs-en.png) | ![Settings](docs/screenshots/settings-en.png) |
+| **DNS server** | **Fake SNI** |
+| ![DNS server](docs/screenshots/dnsserver-en.png) | ![Fake SNI](docs/screenshots/fakesni-en.png) |
 
 ## Install
 

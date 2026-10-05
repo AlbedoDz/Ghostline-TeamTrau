@@ -61,6 +61,9 @@ Compare the result with the matching line in `SHA256SUMS` on the Releases page. 
 ## 3. Quick start: one button
 
 <p align="center"><img src="screenshots/simple-en.png" width="320" alt="Simple mode"></p>
+<a href="videos/clips/connect-en.mp4"><img src="videos/clips/connect-en.webp" width="640" alt="Connecting in Simple mode"></a>
+
+*The preview plays sped up and silent; click it for the narrated video.*
 
 Ghostline opens in **SIMPLE** mode.
 
@@ -69,6 +72,10 @@ Ghostline opens in **SIMPLE** mode.
 3. When the ring glows green and shows **[ PROTECTED ]**, you're done: every DNS query on the machine is encrypted.
 
 To cancel while connecting, click the power button again. To turn protection off, click the power button while protected; your DNS goes back to what it was.
+
+<a href="videos/clips/disconnect-en.mp4"><img src="videos/clips/disconnect-en.webp" width="640" alt="Disconnecting"></a>
+
+*The preview plays sped up and silent; click it for the narrated video.*
 
 **The info panel below:**
 
@@ -106,6 +113,18 @@ Click **ADVANCED** at the top left for the full interface, and **SIMPLE** to go 
 
 ![Servers](screenshots/servers-en.png)
 
+<a href="videos/clips/servers-en.mp4"><img src="videos/clips/servers-en.webp" width="640" alt="Scanning, searching and pinning servers"></a>
+
+*The preview plays sped up and silent; click it for the narrated video.*
+
+**Step by step: use the servers you like**
+
+1. Open **Servers** and click **⟳ scan all**. Wait until the scan finishes.
+2. Type a name, provider or protocol in the search box, for example `cloudflare`.
+3. Click the **☆** star on the servers you want, or **★ pin N results** to pin every result.
+4. If you are connected, click **reconnect to apply**.
+5. To use nothing else, turn on **use pinned servers only**.
+
 Every encrypted DNS server Ghostline knows about (several hundred), refreshed daily from a signed list.
 
 - **⟳ scan all:** re-measures every server's latency and drops servers that return wrong (poisoned) answers. Ghostline scans by itself when needed; click it after switching networks or when things feel slow.
@@ -123,6 +142,18 @@ Every encrypted DNS server Ghostline knows about (several hundred), refreshed da
 ### 4.3. DPI bypass
 
 ![DPI bypass](screenshots/dpi-en.png)
+
+<a href="videos/clips/dpi-en.mp4"><img src="videos/clips/dpi-en.webp" width="640" alt="The DPI bypass page"></a>
+
+*The preview plays sped up and silent; click it for the narrated video.*
+
+**Step by step: get a blocked site to open**
+
+1. Click **Connect** first; the engine only runs while you are connected.
+2. On **DPI bypass**, turn the switch on and keep the **zapret2** engine.
+3. Add the site to **Test sites** (one per line) and click **⟳ test again**.
+4. A **✕ TLS** result usually means DPI: click **⚡ auto-tune** and wait. Ghostline keeps the lightest strategy that opens every test site.
+5. If only a few sites are blocked, set **scope** to **blacklist** and list just those sites.
 
 Use this when DNS is encrypted but connections to a site are **still interfered with**: equipment on the path reads the site name inside your traffic (SNI) and resets the connection.
 
@@ -203,6 +234,17 @@ Records events: connecting, switching servers, GoodbyeDPI on/off, errors.
 
 ![Proxy](screenshots/proxy-en.png)
 
+<a href="videos/clips/proxy-en.mp4"><img src="videos/clips/proxy-en.webp" width="640" alt="Turning the proxy on and sharing it"></a>
+
+*The preview plays sped up and silent; click it for the narrated video.*
+
+**Step by step: use the proxy on this PC and on a phone**
+
+1. Turn on **enable proxy**. It runs while you are connected.
+2. For browsers on this PC, turn on **use for this PC**.
+3. For a phone, turn on **share on LAN**. On the phone, open *Wi-Fi › this network › Proxy › Manual* and enter the address shown, or scan the QR code.
+4. If Ghostline says the network is *Public*, switch it to *Private* in Windows Settings › Network.
+
 Ghostline can run a local proxy on one port (default `8080`) that speaks **HTTP, HTTPS (CONNECT) and SOCKS4/4a/5**. It starts and stops with **Connect**, and it always resolves names through Ghostline's encrypted DNS, so it never leaks plain DNS.
 
 | Setting | Meaning |
@@ -228,6 +270,17 @@ If the statistics show connections *blocked even fragmented*, that network needs
 ### 4.7. Rules and lists
 
 ![Rules and lists](screenshots/rules-en.png)
+
+<a href="videos/clips/rules-en.mp4"><img src="videos/clips/rules-en.webp" width="640" alt="Adding a rule and testing a domain"></a>
+
+*The preview plays sped up and silent; click it for the narrated video.*
+
+**Step by step: block a domain**
+
+1. On **Rules**, type a pattern such as `ads.example.com` in the pattern box.
+2. Pick the action **block**, then click **+ add rule**.
+3. Type the domain in **test a domain** and click **test**: Ghostline names the rule or list that decides it.
+4. To remove the rule, click its **✕**.
 
 Rules decide what happens to a domain, both for DNS and for the proxy. The first matching rule wins; if none matches, lists are checked in order.
 
@@ -256,6 +309,12 @@ Edit rules in the **table** or switch to **text** (one rule per line, `#` commen
 
 ### 4.8. DNS server
 
+![DNS server](screenshots/dnsserver-en.png)
+
+<a href="videos/clips/dnsserver-en.mp4"><img src="videos/clips/dnsserver-en.webp" width="640" alt="Sharing the DNS server and opening the phone setup page"></a>
+
+*The preview plays sped up and silent; click it for the narrated video.*
+
 Share Ghostline's encrypted DNS with this PC's browsers and with other devices on your home network. It runs while you are connected.
 
 - **Local DoH:** browsers on this PC can use `https://127.0.0.1/dns-query` as their custom secure DNS.
@@ -271,13 +330,38 @@ Share Ghostline's encrypted DNS with this PC's browsers and with other devices o
 | Steam Deck | set the DNS manually for your home Wi-Fi only (not for every network) |
 | iPhone / iPad | *Settings › Wi-Fi › (i) › Configure DNS › Manual* with this PC's IP — or install the DoH profile below |
 
-**iPhone DoH profile:** pick or type your home Wi-Fi name (Ghostline lists the networks this PC knows; a PC on Ethernet may list none), press **open the phone setup page** and scan the QR code. The page stays open for 10 minutes. Compare the fingerprint on the phone with the one in Ghostline, check the Wi-Fi name on the page (you can type it there too), download the profile, install it, then **turn the certificate on** in *Settings › General › About › Certificate Trust Settings* (Full Trust). This step is required: without it the iPhone cannot use the DNS and has no internet on your home Wi-Fi. Finally check that *Settings › General › VPN & Device Management › DNS* shows **Ghostline DNS**. The encrypted DNS is used only on your home Wi-Fi; on mobile data and other networks the iPhone uses its usual DNS. **save files…** writes the certificate and profile to disk instead.
+**Step by step: iPhone DoH profile**
+
+1. Click **Connect**, then on **DNS server** turn on **local DoH** and **share on the LAN** (the network must be *Private*).
+2. Pick or type your **home Wi-Fi name**, exactly as on the phone. Ghostline lists the networks this PC knows; a PC on Ethernet may list none, and the phone can also type it on the page.
+3. Click **open the phone setup page** and scan the QR code with the iPhone. The page stays open for 10 minutes.
+4. On the phone, compare the fingerprint with the one in Ghostline, then tap **Download the profile** and install it in *Settings › Profile Downloaded*.
+5. **Required:** open *Settings › General › About › Certificate Trust Settings* and turn on **Ghostline LAN CA** (Full Trust). Without this step the iPhone has no internet on your home Wi-Fi.
+6. Check *Settings › General › VPN & Device Management › DNS*: **Ghostline DNS** is selected.
+
+The encrypted DNS is used only on your home Wi-Fi; on mobile data and other networks the iPhone uses its usual DNS. **save files…** writes the certificate and profile to disk instead.
+
+<p align="center"><img src="screenshots/setuppage-en.png" width="300" alt="The phone setup page"></p>
 
 **When this PC is off or disconnected,** every device that uses it for DNS loses the internet on your home network. iOS does not fall back to another DNS server. To get the iPhone back online, open *Settings › General › VPN & Device Management › DNS* and choose **Automatic** (or remove the profile). If this PC is often off, use the manual DNS setting above instead of the profile: it needs no certificate and is quick to switch back. When LAN devices have used the DNS server in the last 10 minutes, **Disconnect** (in the app and in the tray) asks first; shutting Windows down and **Quit** do not ask.
 
 **LAN CA:** the certificate other devices trust. It can only sign private addresses and `*.ghostline.lan`, so it cannot be used to impersonate websites. **recreate** makes a new one (devices must install it again); **remove** deletes it and turns the DNS server off.
 
 ### 4.9. Fake SNI
+
+![Fake SNI](screenshots/fakesni-en.png)
+
+<a href="videos/clips/fakesni-en.mp4"><img src="videos/clips/fakesni-en.webp" width="640" alt="Turning Fake SNI on"></a>
+
+*The preview plays sped up and silent; click it for the narrated video.*
+
+**Step by step: turn Fake SNI on**
+
+1. Click **Connect**. On **Proxy**, turn on **enable proxy** and **use for this PC**.
+2. Open **Fake SNI**, read the warning and scroll it to the end, tick **I understand**, then click **continue**.
+3. Turn on **turn Fake SNI on**, and turn on a **preset group** or write `sni=` rules on the **Rules** page.
+4. Open the site in your browser. The counters show how many connections were decrypted or fell back to fragmentation.
+5. Click **turn Fake SNI off** in the violet banner when you are done.
 
 An advanced feature for sites behind CDNs that allow *domain fronting*. The proxy decrypts the browser's HTTPS for the domains you choose and connects to the server with a different, allowed name, so the network sees that name instead of the real site.
 

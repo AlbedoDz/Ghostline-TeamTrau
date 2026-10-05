@@ -68,6 +68,8 @@ Video 90 giây hướng dẫn kết nối bằng một nút bấm, quét máy ch
   <a href="docs/videos/guide-vi.mp4"><img src="docs/videos/guide-vi.webp" width="720" alt="Video hướng dẫn Ghostline (tua nhanh); bấm để xem bản đầy đủ"></a>
 </p>
 
+**Clip ngắn có lồng tiếng cho từng tính năng:** [Kết nối](docs/videos/clips/connect-vi.mp4) · [Máy chủ](docs/videos/clips/servers-vi.mp4) · [Vượt DPI](docs/videos/clips/dpi-vi.mp4) · [Proxy](docs/videos/clips/proxy-vi.mp4) · [Rules](docs/videos/clips/rules-vi.mp4) · [DNS server và iPhone](docs/videos/clips/dnsserver-vi.mp4) · [Fake SNI](docs/videos/clips/fakesni-vi.mp4) · [Ngắt kết nối](docs/videos/clips/disconnect-vi.mp4). [Hướng dẫn sử dụng](docs/huong-dan-su-dung.md) đặt mỗi clip cạnh các bước làm tương ứng.
+
 ## Ảnh chụp màn hình
 
 | Máy chủ | Vượt DPI |
@@ -77,6 +79,8 @@ Video 90 giây hướng dẫn kết nối bằng một nút bấm, quét máy ch
 | ![Proxy](docs/screenshots/proxy-vi.png) | ![Rules](docs/screenshots/rules-vi.png) |
 | **Nhật ký** | **Cài đặt** |
 | ![Nhật ký](docs/screenshots/logs-vi.png) | ![Cài đặt](docs/screenshots/settings-vi.png) |
+| **DNS server** | **Fake SNI** |
+| ![DNS server](docs/screenshots/dnsserver-vi.png) | ![Fake SNI](docs/screenshots/fakesni-vi.png) |
 
 ## Cài đặt
 
