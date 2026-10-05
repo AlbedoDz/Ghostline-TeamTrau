@@ -19,3 +19,13 @@ export async function saveSettings(patch: (s: Settings) => Settings): Promise<st
     return e instanceof Error ? e.message : String(e);
   }
 }
+
+/**
+ * refreshSettings reloads settings from Go after a binding changed them
+ * directly (Fake SNI, DNS server), so the UI's copy is never stale: every
+ * later save sends the whole copy.
+ */
+export async function refreshSettings(): Promise<void> {
+  const s = await Service.GetSettings();
+  if (s) useGhost.getState().setSettings(s);
+}

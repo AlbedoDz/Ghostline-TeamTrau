@@ -7,6 +7,7 @@ import { Toggle } from "../../../components/neon/Toggle";
 import { Chip } from "../../../components/neon/Chip";
 import { FakeSniWarning } from "./FakeSniWarning";
 import { actionText } from "./rulesFormat";
+import { refreshSettings } from "../../../app/settings";
 import css from "../advanced.module.css";
 
 const COUNTERS = [
@@ -34,7 +35,8 @@ export function FakeSni() {
 
   if (!settings || !view) return null;
 
-  const run = (p: Promise<unknown>) => p.then(() => { setError(null); reload(); }).catch((e) => setError(describeError(e)));
+  const run = (p: Promise<unknown>) =>
+    p.then(refreshSettings).then(() => { setError(null); reload(); }).catch((e) => setError(describeError(e)));
 
   if (!view.ack) {
     return (

@@ -216,3 +216,22 @@ func TestAddList_FakeSNIPresetKeepsFlags(t *testing.T) {
 	_, err = rh.svc.AddList(lists.List{Name: "x", Source: "url", URL: "https://example.com/x.txt", Format: "domains", Action: "perLine"})
 	require.Error(t, err, "per-line actions need the ghostline format")
 }
+
+// The UI saves its whole settings copy; a stale copy must not undo what
+// SetFakeSNI or SetDNSServer changed (they own those blocks).
+func TestSaveSettings_StaleCopyKeepsFakeSNIAndDNSServer(t *testing.T) {
+	h := newSvc2B(t)
+	require.NoError(t, h.svc.AckFakeSNIWarning())
+	require.NoError(t, h.svc.SetFakeSNI(true))
+	stale := h.box.Get() // the UI's copy: Fake SNI on, DNS server on
+	require.NoError(t, h.svc.SetFakeSNI(false))
+	require.NoError(t, h.svc.SetDNSServer(false, false, 8443))
+
+	stale.Language = "en" // an unrelated change from another page
+	require.NoError(t, h.svc.SaveSettings(stale))
+	got := h.box.Get()
+	require.Equal(t, "en", got.Language)
+	require.False(t, got.FakeSNI.Enabled, "a stale UI copy turned Fake SNI back on")
+	require.False(t, got.DNSServer.Enabled)
+	require.Equal(t, 8443, got.DNSServer.DoHPort)
+}

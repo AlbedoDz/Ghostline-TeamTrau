@@ -24,7 +24,7 @@ type FakeSNIView struct {
 func (s *Service) AckFakeSNIWarning() error {
 	st := s.x.Settings.Get()
 	st.FakeSNI.AckVersion = FakeSNIWarningVersion
-	return s.SaveSettings(st)
+	return s.saveSettings(st, true)
 }
 
 // SetFakeSNI turns Fake SNI on or off. Turning it on needs the warning
@@ -35,7 +35,7 @@ func (s *Service) SetFakeSNI(on bool) error {
 		return appErr(CodeFakeSNINotAcked, nil)
 	}
 	st.FakeSNI.Enabled = on
-	return s.SaveSettings(st)
+	return s.saveSettings(st, true)
 }
 
 // RetryFakeSNI re-runs the Fake SNI phase after an error.

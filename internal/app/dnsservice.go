@@ -59,14 +59,14 @@ func dohURL(a netip.Addr, port int) string {
 func (s *Service) SetDNSServer(enabled, shareLAN bool, dohPort int) error {
 	st := s.x.Settings.Get()
 	st.DNSServer.Enabled, st.DNSServer.ShareLAN, st.DNSServer.DoHPort = enabled, shareLAN, dohPort
-	return s.SaveSettings(st)
+	return s.saveSettings(st, true)
 }
 
 // SetIOSSSID saves the home Wi-Fi name used in the iOS profile.
 func (s *Service) SetIOSSSID(ssid string) error {
 	st := s.x.Settings.Get()
 	st.DNSServer.IOSSSID = ssid
-	return s.SaveSettings(st)
+	return s.saveSettings(st, true)
 }
 
 // OpenSetupPage opens the phone setup page and returns its URL (for the QR

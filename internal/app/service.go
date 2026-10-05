@@ -150,7 +150,12 @@ func (s *Service) CancelConnect() { s.o.Cancel() }
 func (s *Service) GetSettings() store.Settings { return s.x.Settings.Get() }
 
 // SaveSettings validates and stores settings.
-func (s *Service) SaveSettings(n store.Settings) error {
+func (s *Service) SaveSettings(n store.Settings) error { return s.saveSettings(n, false) }
+
+// saveSettings validates and stores n. The DNS server and Fake SNI blocks
+// change only through their own bindings (owned=true): the UI's copy of the
+// settings may be stale and must not undo them.
+func (s *Service) saveSettings(n store.Settings, owned bool) error {
 	if n.Language != "vi" && n.Language != "en" {
 		return fmt.Errorf("settings: language must be vi or en")
 	}
@@ -174,10 +179,13 @@ func (s *Service) SaveSettings(n store.Settings) error {
 	if err := s.validateDPI(n.DPI); err != nil {
 		return err
 	}
+	old := s.x.Settings.Get()
+	if !owned {
+		n.DNSServer, n.FakeSNI = old.DNSServer, old.FakeSNI
+	}
 	if err := store.ValidateDNSServer(n.DNSServer, n.Proxy.Port); err != nil {
 		return err
 	}
-	old := s.x.Settings.Get()
 	if n.FakeSNI.Enabled && n.FakeSNI.AckVersion < FakeSNIWarningVersion {
 		return appErr(CodeFakeSNINotAcked, nil)
 	}

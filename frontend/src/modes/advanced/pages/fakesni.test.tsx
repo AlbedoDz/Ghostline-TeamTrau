@@ -151,3 +151,25 @@ test("overview shows the Fake SNI card", async () => {
   render(<Overview />);
   expect(await screen.findByText(/4 tên miền/)).toBeInTheDocument();
 });
+
+test("turning Fake SNI off from the banner refreshes the settings copy", async () => {
+  svc.GetSettings.mockResolvedValue({ ...structuredClone(settings), fakeSni: { enabled: false, ackVersion: 1 } } as any);
+  useGhost.getState().setSettings({ ...structuredClone(settings), fakeSni: { enabled: true, ackVersion: 1 } } as any);
+  useGhost.getState().setSnapshot({ ...structuredClone(snap), fakeSni: { active: true, domains: 2, needsProxy: false, notAfter: "" } } as any);
+  render(<FakeSniBanner />);
+  fireEvent.click(screen.getByRole("button", { name: "tắt Fake SNI" }));
+  await waitFor(() => expect((useGhost.getState().settings as any).fakeSni.enabled).toBe(false));
+});
+
+test("the page switch reflects the saved state after a change", async () => {
+  svc.GetFakeSNIView.mockResolvedValue({ ...structuredClone(view), ack: true, enabled: true });
+  svc.GetSettings.mockResolvedValue({ ...structuredClone(settings), fakeSni: { enabled: false, ackVersion: 1 } } as any);
+  useGhost.getState().setSettings({ ...structuredClone(settings), fakeSni: { enabled: true, ackVersion: 1 } } as any);
+  render(<FakeSni />);
+  const sw = await screen.findByRole("switch", { name: "bật Fake SNI" });
+  svc.GetFakeSNIView.mockResolvedValue({ ...structuredClone(view), ack: true, enabled: false });
+  fireEvent.click(sw);
+  await waitFor(() => expect(svc.SetFakeSNI).toHaveBeenCalledWith(false));
+  await waitFor(() => expect((useGhost.getState().settings as any).fakeSni.enabled).toBe(false));
+  await waitFor(() => expect(screen.getByRole("switch", { name: "bật Fake SNI" })).toHaveAttribute("aria-checked", "false"));
+});
