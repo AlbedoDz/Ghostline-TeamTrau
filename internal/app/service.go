@@ -14,6 +14,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/AdguardTeam/dnsproxy/upstream"
 	"github.com/hashcott/ghostline/internal/dnsserver"
 	"github.com/hashcott/ghostline/internal/dpi"
 	"github.com/hashcott/ghostline/internal/engine"
@@ -114,6 +115,11 @@ type ServiceDeps struct {
 	WifiNames func() []string
 	// SaveFile asks where to save data (native dialog) and writes it.
 	SaveFile func(name string, data []byte) error
+
+	// Phase 3 tools.
+	BuildUpstream func(model.Server) (upstream.Upstream, error)
+	PlainUpstream func(ip string) (upstream.Upstream, error) // plain UDP 53: Ghostline's own engine and the ISP lookup source only
+	ISPResolvers  func() []string                            // this PC's DNS before Ghostline took over
 }
 
 // Service is bound to the frontend by Wails; its exported methods are the

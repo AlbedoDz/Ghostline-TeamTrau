@@ -58,6 +58,20 @@ const (
 	CodeFakeSNITooMany       = "FAKESNI_TOO_MANY"
 	CodeFakeSNISelfTest      = "FAKESNI_SELFTEST_FAILED"
 	CodeFakeSNINotAcked      = "FAKESNI_NOT_ACKED"
+
+	// Phase 3 (spec 3 section 12).
+	CodeToolBusy             = "TOOL_BUSY"
+	CodeLookupNotConnected   = "LOOKUP_NOT_CONNECTED"
+	CodeLookupBadName        = "LOOKUP_BAD_NAME"
+	CodeScanTooMany          = "SCAN_TOO_MANY"
+	CodeCFScanNoNetwork      = "CFSCAN_NO_NETWORK"
+	CodeCFScanHostInvalid    = "CFSCAN_HOST_INVALID"
+	CodeStampInvalid         = "STAMP_INVALID"
+	CodeImportInvalid        = "IMPORT_INVALID"
+	CodeImportWhileConnected = "IMPORT_WHILE_CONNECTED"
+	CodeImportExpired        = "IMPORT_EXPIRED"
+	CodeImportWriteFailed    = "IMPORT_WRITE_FAILED"
+	CodeExportWriteFailed    = "EXPORT_WRITE_FAILED"
 )
 
 // AppError is a coded error the UI can translate.
