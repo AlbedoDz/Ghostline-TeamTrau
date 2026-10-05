@@ -35,6 +35,16 @@ tasks:
     cmds:
       - wails3 dev -config ./build/config.yml -port {{.VITE_PORT}}
 
+  assets:goodbyedpi:
+    summary: Downloads the pinned GoodbyeDPI release into assets/goodbyedpi
+    cmds:
+      - go run ./tools/fetchdpi -what goodbyedpi -out assets/goodbyedpi
+
+  assets:zapret2:
+    summary: Downloads the pinned zapret2 release into assets/zapret2
+    cmds:
+      - go run ./tools/fetchdpi -what zapret2 -out assets/zapret2
+
   install:msix:tools:
     summary: Installs tools required for Windows MSIX packaging
     cmds:
