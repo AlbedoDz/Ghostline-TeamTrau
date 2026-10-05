@@ -14,33 +14,29 @@ import (
 	"time"
 )
 
-// Pinned SHA-256 of GoodbyeDPI 0.2.2 x86_64.
-var Pinned = map[string]string{
-	"goodbyedpi.exe":  "331ac6c1d22ba5a0a217f3f27d0d823051869cafc8b8ef7f2002fa2accebc74e",
-	"WinDivert.dll":   "a97859785a2df1d4462e7d48d33ccbd89fedd40dac4970f4afd89e63f59ee1ec",
-	"WinDivert64.sys": "53ab28ec00be6e6f8aefa9ee76fc2735e94d7f3f9dbc06eb2b7ac8cd3084a6af",
-}
-
 var (
-	ErrHashMismatch = errors.New("dpi: GoodbyeDPI files do not match the pinned hashes")
-	ErrStartFailed  = errors.New("dpi: GoodbyeDPI failed to start")
-	ErrBlockedByAV  = errors.New("dpi: GoodbyeDPI was blocked (antivirus?)")
+	ErrHashMismatch  = errors.New("dpi: DPI engine files do not match the pinned hashes")
+	ErrStartFailed   = errors.New("dpi: DPI engine failed to start")
+	ErrBlockedByAV   = errors.New("dpi: DPI engine was blocked (antivirus?)")
+	ErrUnknownEngine = errors.New("dpi: unknown engine")
 )
 
+// driverService is the WinDivert 2.x service name. WinDivert 1.x (shipped
+// with GoodbyeDPI 0.2.2) used a versioned name ("WinDivert1.4"), so cleanup
+// looks for the prefix.
 const driverService = "WinDivert"
 
-// Extract writes the binaries from src to dir and verifies them against Pinned.
-func Extract(src fs.FS, dir string) error { return extractWith(src, dir, Pinned) }
-
-// Verify checks the files in dir against the pinned hashes.
-func Verify(dir string) error { return verifyWith(dir, Pinned) }
+// List files are copied into the engine directory under these names: the
+// engines read argv as ANSI (GoodbyeDPI) or through Cygwin (winws2), so a
+// path with Vietnamese letters (C:\Users\Đức…) would be mangled.
+const (
+	blacklistName    = "blacklist.txt"
+	autoHostlistName = "autohostlist.txt"
+)
 
 func extractWith(src fs.FS, dir string, pins map[string]string) error {
-	if err := os.MkdirAll(dir, 0o755); err != nil {
-		return err
-	}
 	for name, want := range pins {
-		dst := filepath.Join(dir, name)
+		dst := filepath.Join(dir, filepath.FromSlash(name))
 		if fileHash(dst) == want {
 			continue
 		}
@@ -51,6 +47,9 @@ func extractWith(src fs.FS, dir string, pins map[string]string) error {
 		if hashOf(b) != want {
 			return fmt.Errorf("%w: embedded %s", ErrHashMismatch, name)
 		}
+		if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
+			return err
+		}
 		if err := os.WriteFile(dst, b, 0o644); err != nil {
 			return err
 		}
@@ -60,7 +59,7 @@ func extractWith(src fs.FS, dir string, pins map[string]string) error {
 
 func verifyWith(dir string, pins map[string]string) error {
 	for name, want := range pins {
-		if fileHash(filepath.Join(dir, name)) != want {
+		if fileHash(filepath.Join(dir, filepath.FromSlash(name))) != want {
 			return fmt.Errorf("%w: %s", ErrHashMismatch, name)
 		}
 	}
@@ -77,7 +76,7 @@ func fileHash(path string) string {
 	return hashOf(b)
 }
 
-// Process is a started GoodbyeDPI process.
+// Process is a started engine process.
 type Process interface {
 	PID() int
 	Exited() bool
@@ -97,45 +96,76 @@ type Services interface {
 	Delete(name string) error
 }
 
-// Manager runs at most one GoodbyeDPI process.
-type Manager struct {
-	dir    string
-	assets fs.FS
-	pins   map[string]string
-	runner Runner
-	svc    Services
-	sleep  func(time.Duration)
-
-	mu   sync.Mutex
-	proc Process
+// Installed pairs an engine with the embedded files it is extracted from.
+type Installed struct {
+	Engine Engine
+	Assets fs.FS
 }
 
-// NewManager manages GoodbyeDPI extracted into dir from assets.
-func NewManager(dir string, assets fs.FS, r Runner, s Services, sleep func(time.Duration)) *Manager {
+// Manager runs at most one engine process. Each engine lives in its own
+// directory under binDir.
+type Manager struct {
+	binDir  string
+	engines map[string]Installed
+	runner  Runner
+	svc     Services
+	sleep   func(time.Duration)
+
+	mu      sync.Mutex
+	proc    Process
+	running string // engine ID of proc
+	plan    Plan   // plan proc was started with (absolute paths)
+}
+
+// NewManager manages the given engines, extracted under binDir.
+func NewManager(binDir string, engines []Installed, r Runner, s Services, sleep func(time.Duration)) *Manager {
 	if sleep == nil {
 		sleep = time.Sleep
 	}
-	return &Manager{dir: dir, assets: assets, pins: Pinned, runner: r, svc: s, sleep: sleep}
+	m := &Manager{binDir: binDir, engines: map[string]Installed{}, runner: r, svc: s, sleep: sleep}
+	for _, e := range engines {
+		m.engines[e.Engine.ID()] = e
+	}
+	return m
 }
 
-// Start verifies (re-extracting if needed) and launches GoodbyeDPI. It is
-// running when, after 2s, the process is alive and the WinDivert driver is up.
-func (m *Manager) Start(ctx context.Context, args []string) (int, error) {
+// Get returns an engine by ID.
+func (m *Manager) Get(engine string) (Engine, bool) {
+	in, ok := m.engines[engine]
+	return in.Engine, ok
+}
+
+func (m *Manager) dir(engine string) string { return filepath.Join(m.binDir, engine) }
+
+// Start stops whatever runs, removes leftover WinDivert services, verifies
+// (re-extracting if needed) and launches the engine. It is running when,
+// after 2s, the process is alive and the WinDivert driver is up. p's list
+// paths are absolute.
+func (m *Manager) Start(ctx context.Context, engine string, p Plan) (int, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	if m.proc != nil && !m.proc.Exited() {
-		return 0, errors.New("dpi: already running")
+	in, ok := m.engines[engine]
+	if !ok {
+		return 0, fmt.Errorf("%w: %q", ErrUnknownEngine, engine)
 	}
-	if err := verifyWith(m.dir, m.pins); err != nil {
-		if err := extractWith(m.assets, m.dir, m.pins); err != nil {
+	if err := m.stopLocked(); err != nil {
+		return 0, fmt.Errorf("%w: cleanup: %v", ErrStartFailed, err)
+	}
+	dir, pins := m.dir(engine), in.Engine.Files()
+	if err := verifyWith(dir, pins); err != nil {
+		if err := extractWith(in.Assets, dir, pins); err != nil {
 			return 0, err
 		}
 	}
-	args, err := m.localBlacklist(args)
+	rel, err := copyLists(dir, p)
 	if err != nil {
-		return 0, fmt.Errorf("%w: blacklist: %v", ErrStartFailed, err)
+		return 0, fmt.Errorf("%w: lists: %v", ErrStartFailed, err)
 	}
-	p, err := m.runner.Start(filepath.Join(m.dir, "goodbyedpi.exe"), args, m.dir)
+	args, err := in.Engine.Args(rel)
+	if err != nil {
+		return 0, err
+	}
+	proc, err := m.runner.Start(filepath.Join(dir, filepath.FromSlash(in.Engine.Exe())), args, dir)
 	if err != nil {
 		if errors.Is(err, os.ErrPermission) || errors.Is(err, fs.ErrNotExist) || isAppControlBlock(err) {
 			return 0, fmt.Errorf("%w: %v", ErrBlockedByAV, err)
@@ -143,18 +173,58 @@ func (m *Manager) Start(ctx context.Context, args []string) (int, error) {
 		return 0, fmt.Errorf("%w: %v", ErrStartFailed, err)
 	}
 	m.sleep(2 * time.Second)
-	if p.Exited() {
-		if verifyWith(m.dir, m.pins) != nil {
+	if proc.Exited() {
+		if verifyWith(dir, pins) != nil {
 			return 0, ErrBlockedByAV // files vanished or changed: quarantined
 		}
 		return 0, ErrStartFailed
 	}
-	if !m.driverRunning() {
-		_ = p.Kill()
+	if ok, _ := m.svc.Running(driverService); !ok {
+		_ = proc.Kill()
 		return 0, fmt.Errorf("%w: WinDivert driver not running", ErrStartFailed)
 	}
-	m.proc = p
-	return p.PID(), nil
+	m.proc, m.running, m.plan = proc, engine, p
+	return proc.PID(), nil
+}
+
+// copyLists copies p's list files into dir and returns p with relative names.
+func copyLists(dir string, p Plan) (Plan, error) {
+	if p.Blacklist != "" {
+		b, err := os.ReadFile(p.Blacklist)
+		if err != nil {
+			return p, err
+		}
+		if err := os.WriteFile(filepath.Join(dir, blacklistName), b, 0o644); err != nil {
+			return p, err
+		}
+		p.Blacklist = blacklistName
+	}
+	if p.AutoHostlist != "" {
+		b, err := os.ReadFile(p.AutoHostlist)
+		if err != nil && !errors.Is(err, fs.ErrNotExist) {
+			return p, err
+		}
+		if err := os.WriteFile(filepath.Join(dir, autoHostlistName), b, 0o644); err != nil {
+			return p, err
+		}
+		p.AutoHostlist = autoHostlistName
+	}
+	return p, nil
+}
+
+// RefreshLists copies the blacklist into the running engine's directory, for
+// engines that re-read it by themselves.
+func (m *Manager) RefreshLists(p Plan) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.running == "" || p.Blacklist == "" {
+		return nil
+	}
+	b, err := os.ReadFile(p.Blacklist)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(filepath.Join(m.dir(m.running), blacklistName), b, 0o644)
 }
 
 func isAppControlBlock(err error) bool {
@@ -162,16 +232,26 @@ func isAppControlBlock(err error) bool {
 		bytes.Contains([]byte(err.Error()), []byte("virus"))
 }
 
-// Stop kills GoodbyeDPI and removes the WinDivert service it installed.
+// Stop kills the engine and removes every WinDivert service.
 func (m *Manager) Stop() error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
+	return m.stopLocked()
+}
+
+func (m *Manager) stopLocked() error {
 	var errs []error
 	if m.proc != nil {
+		if m.plan.AutoHostlist != "" {
+			// Keep what the engine learned; it only lives in its directory.
+			if b, err := os.ReadFile(filepath.Join(m.dir(m.running), autoHostlistName)); err == nil {
+				errs = append(errs, os.WriteFile(m.plan.AutoHostlist, b, 0o644))
+			}
+		}
 		if !m.proc.Exited() {
 			errs = append(errs, m.proc.Kill())
 		}
-		m.proc = nil
+		m.proc, m.running, m.plan = nil, "", Plan{}
 	}
 	names, err := m.svc.Find(driverService)
 	errs = append(errs, err)
@@ -188,36 +268,12 @@ func (m *Manager) Running() bool {
 	return m.proc != nil && !m.proc.Exited()
 }
 
-// localBlacklist copies a --blacklist file into the working directory as
-// "blacklist.txt" and passes that relative name. GoodbyeDPI 0.2.2 reads its
-// argv as ANSI, so a path with Vietnamese letters (C:\Users\Đức…) would be
-// mangled before fopen.
-func (m *Manager) localBlacklist(args []string) ([]string, error) {
-	out := append([]string(nil), args...)
-	for i := 0; i+1 < len(out); i++ {
-		if out[i] != "--blacklist" {
-			continue
-		}
-		b, err := os.ReadFile(out[i+1])
-		if err != nil {
-			return nil, err
-		}
-		if err := os.WriteFile(filepath.Join(m.dir, "blacklist.txt"), b, 0o644); err != nil {
-			return nil, err
-		}
-		out[i+1] = "blacklist.txt"
+// Engine returns the ID of the running engine, "" when none runs.
+func (m *Manager) Engine() string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.proc == nil || m.proc.Exited() {
+		return ""
 	}
-	return out, nil
-}
-
-// driverRunning reports whether any WinDivert driver service is running.
-// WinDivert 1.x names its service with the version ("WinDivert1.4").
-func (m *Manager) driverRunning() bool {
-	names, _ := m.svc.Find(driverService)
-	for _, n := range names {
-		if ok, _ := m.svc.Running(n); ok {
-			return true
-		}
-	}
-	return false
+	return m.running
 }

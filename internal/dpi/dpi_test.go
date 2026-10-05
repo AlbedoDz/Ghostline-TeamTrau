@@ -14,8 +14,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var light = []string{"-p", "-r", "-s", "-m", "-e", "40", "-w", "--native-frag"}
-
 func sha(s string) string { h := sha256.Sum256([]byte(s)); return hex.EncodeToString(h[:]) }
 
 func TestExtractVerify(t *testing.T) {
@@ -39,6 +37,28 @@ func TestExtractVerify(t *testing.T) {
 	require.ErrorIs(t, extractWith(fstest.MapFS{"a.bin": {Data: []byte("tampered")}}, t.TempDir(), pins), ErrHashMismatch)
 }
 
+// fakeEngine records the plans Args received and returns a fixed argv.
+type fakeEngine struct {
+	id    string
+	files map[string]string
+	got   []Plan
+}
+
+func (e *fakeEngine) ID() string                  { return e.id }
+func (e *fakeEngine) Files() map[string]string    { return e.files }
+func (e *fakeEngine) Exe() string                 { return e.id + ".exe" }
+func (e *fakeEngine) Strategies() []Strategy      { return nil }
+func (e *fakeEngine) ValidateCustom(string) error { return nil }
+func (e *fakeEngine) HotReloadsLists() bool       { return e.id == "zapret2" }
+func (e *fakeEngine) Args(p Plan) ([]string, error) {
+	e.got = append(e.got, p)
+	out := []string{"-" + e.id}
+	if p.Blacklist != "" {
+		out = append(out, "--list", p.Blacklist)
+	}
+	return out, nil
+}
+
 type fakeProc struct {
 	pid    int
 	exited bool
@@ -49,122 +69,237 @@ func (p *fakeProc) PID() int     { return p.pid }
 func (p *fakeProc) Exited() bool { return p.exited }
 func (p *fakeProc) Kill() error  { p.killed = true; p.exited = true; return nil }
 
+// calls is shared by the fake runner and services to check ordering.
+type calls struct{ log []string }
+
 type fakeRunner struct {
-	proc *fakeProc
-	args []string
-	err  error
+	c     *calls
+	procs []*fakeProc
+	exe   string
+	dir   string
+	args  []string
+	err   error
+	onRun func(dir string)
 }
 
 func (r *fakeRunner) Start(exe string, args []string, dir string) (Process, error) {
-	r.args = args
+	r.exe, r.args, r.dir = exe, args, dir
+	r.c.log = append(r.c.log, "run:"+filepath.Base(exe))
 	if r.err != nil {
 		return nil, r.err
 	}
-	return r.proc, nil
+	if r.onRun != nil {
+		r.onRun(dir)
+	}
+	p := &fakeProc{pid: 100 + len(r.procs)}
+	r.procs = append(r.procs, p)
+	return p, nil
 }
 
 type fakeSvc struct {
+	c       *calls
 	running bool
-	calls   []string
 	names   []string // installed WinDivert services
 }
 
-func (s *fakeSvc) Find(prefix string) ([]string, error) {
-	if s.names == nil {
-		return []string{"WinDivert1.4"}, nil
-	}
-	return s.names, nil
-}
-
-func (s *fakeSvc) Running(name string) (bool, error) { return s.running && name == "WinDivert1.4", nil }
-func (s *fakeSvc) Stop(name string) error            { s.calls = append(s.calls, "svc.stop:"+name); return nil }
+func (s *fakeSvc) Find(prefix string) ([]string, error) { return s.names, nil }
+func (s *fakeSvc) Running(name string) (bool, error)    { return s.running && name == "WinDivert", nil }
+func (s *fakeSvc) Stop(name string) error               { s.c.log = append(s.c.log, "svc.stop:"+name); return nil }
 func (s *fakeSvc) Delete(name string) error {
-	s.calls = append(s.calls, "svc.delete:"+name)
+	s.c.log = append(s.c.log, "svc.delete:"+name)
 	return nil
 }
 
-func newTestManager(t *testing.T, r *fakeRunner, s *fakeSvc) *Manager {
-	pins := map[string]string{"goodbyedpi.exe": sha("x")}
-	m := NewManager(t.TempDir(), fstest.MapFS{"goodbyedpi.exe": {Data: []byte("x")}}, r, s, func(time.Duration) {})
-	m.pins = pins
-	return m
+type rig struct {
+	m   *Manager
+	r   *fakeRunner
+	s   *fakeSvc
+	c   *calls
+	z2  *fakeEngine
+	bin string
+}
+
+func newRig(t *testing.T) *rig {
+	c := &calls{}
+	g := &fakeEngine{id: "goodbyedpi", files: map[string]string{"goodbyedpi.exe": sha("g")}}
+	z := &fakeEngine{id: "zapret2", files: map[string]string{"zapret2.exe": sha("z"), "lua/a.lua": sha("lua")}}
+	rg := &rig{r: &fakeRunner{c: c}, s: &fakeSvc{c: c, running: true}, c: c, z2: z, bin: t.TempDir()}
+	rg.m = NewManager(rg.bin, []Installed{
+		{Engine: g, Assets: fstest.MapFS{"goodbyedpi.exe": {Data: []byte("g")}}},
+		{Engine: z, Assets: fstest.MapFS{"zapret2.exe": {Data: []byte("z")}, "lua/a.lua": {Data: []byte("lua")}}},
+	}, rg.r, rg.s, func(time.Duration) {})
+	return rg
 }
 
 func TestManager_StartSuccess(t *testing.T) {
-	r := &fakeRunner{proc: &fakeProc{pid: 8812}}
-	m := newTestManager(t, r, &fakeSvc{running: true})
-	pid, err := m.Start(context.Background(), light)
+	rg := newRig(t)
+	pid, err := rg.m.Start(context.Background(), "goodbyedpi", Plan{Strategy: "light"})
 	require.NoError(t, err)
-	require.Equal(t, 8812, pid)
-	require.Equal(t, light, r.args)
-	require.True(t, m.Running())
+	require.Equal(t, 100, pid)
+	require.Equal(t, []string{"-goodbyedpi"}, rg.r.args)
+	require.Equal(t, filepath.Join(rg.bin, "goodbyedpi"), rg.r.dir)
+	require.Equal(t, filepath.Join(rg.bin, "goodbyedpi", "goodbyedpi.exe"), rg.r.exe)
+	require.True(t, rg.m.Running())
+	require.Equal(t, "goodbyedpi", rg.m.Engine())
 }
 
-func TestManager_ExitedImmediatelyIsStartFailed(t *testing.T) {
-	m := newTestManager(t, &fakeRunner{proc: &fakeProc{pid: 1, exited: true}}, &fakeSvc{running: false})
-	_, err := m.Start(context.Background(), light)
-	require.ErrorIs(t, err, ErrStartFailed)
-	require.False(t, m.Running())
+func TestManager_UnknownEngine(t *testing.T) {
+	_, err := newRig(t).m.Start(context.Background(), "x", Plan{})
+	require.ErrorIs(t, err, ErrUnknownEngine)
 }
 
-func TestManager_AccessDeniedIsBlockedByAV(t *testing.T) {
-	m := newTestManager(t, &fakeRunner{err: os.ErrPermission}, &fakeSvc{})
-	_, err := m.Start(context.Background(), light)
-	require.ErrorIs(t, err, ErrBlockedByAV)
-}
-
-func TestManager_DriverNotRunningIsStartFailed(t *testing.T) {
-	m := newTestManager(t, &fakeRunner{proc: &fakeProc{pid: 1}}, &fakeSvc{running: false})
-	_, err := m.Start(context.Background(), light)
-	require.ErrorIs(t, err, ErrStartFailed)
-}
-
-func TestManager_StopKillsAndRemovesWinDivert(t *testing.T) {
-	r := &fakeRunner{proc: &fakeProc{pid: 8812}}
-	s := &fakeSvc{running: true}
-	m := newTestManager(t, r, s)
-	_, err := m.Start(context.Background(), light)
+func TestManager_NestedFilesExtracted(t *testing.T) {
+	rg := newRig(t)
+	_, err := rg.m.Start(context.Background(), "zapret2", Plan{})
 	require.NoError(t, err)
-	require.NoError(t, m.Stop())
-	require.True(t, r.proc.killed)
-	require.Equal(t, []string{"svc.stop:WinDivert1.4", "svc.delete:WinDivert1.4"}, s.calls)
-	require.False(t, m.Running())
+	b, err := os.ReadFile(filepath.Join(rg.bin, "zapret2", "lua", "a.lua"))
+	require.NoError(t, err)
+	require.Equal(t, "lua", string(b))
 }
 
-func TestManager_StopWhenNotRunningStillCleansDriver(t *testing.T) {
-	s := &fakeSvc{}
-	m := newTestManager(t, &fakeRunner{}, s)
-	require.NoError(t, m.Stop())
-	require.Equal(t, []string{"svc.stop:WinDivert1.4", "svc.delete:WinDivert1.4"}, s.calls)
-	require.False(t, errors.Is(nil, ErrStartFailed))
+func TestManager_StartRemovesStaleDriverServices(t *testing.T) { // Review Focus #2
+	rg := newRig(t)
+	rg.s.names = []string{"WinDivert1.4", "WinDivert"}
+	_, err := rg.m.Start(context.Background(), "zapret2", Plan{})
+	require.NoError(t, err)
+	require.Equal(t, []string{"svc.stop:WinDivert1.4", "svc.delete:WinDivert1.4", "svc.stop:WinDivert", "svc.delete:WinDivert", "run:zapret2.exe"}, rg.c.log)
 }
 
-func TestManager_BlacklistCopiedToASCIIName(t *testing.T) { // review I7: GoodbyeDPI uses ANSI argv
+func TestManager_ListsCopiedRelative(t *testing.T) { // Review Focus #1
+	rg := newRig(t)
 	src := filepath.Join(t.TempDir(), "Đức Hạnh", "dpi-blacklist.txt")
 	require.NoError(t, os.MkdirAll(filepath.Dir(src), 0o755))
 	require.NoError(t, os.WriteFile(src, []byte("youtube.com\n"), 0o644))
-	r := &fakeRunner{proc: &fakeProc{pid: 1}}
-	m := newTestManager(t, r, &fakeSvc{running: true})
-	_, err := m.Start(context.Background(), append(append([]string{}, light...), "--blacklist", src))
+	_, err := rg.m.Start(context.Background(), "zapret2", Plan{Scope: ScopeBlacklist, Blacklist: src})
 	require.NoError(t, err)
-	require.Equal(t, "blacklist.txt", r.args[len(r.args)-1])
-	b, err := os.ReadFile(filepath.Join(m.dir, "blacklist.txt"))
+	require.Equal(t, "blacklist.txt", rg.z2.got[0].Blacklist)
+	require.Equal(t, []string{"-zapret2", "--list", "blacklist.txt"}, rg.r.args)
+	b, err := os.ReadFile(filepath.Join(rg.bin, "zapret2", "blacklist.txt"))
 	require.NoError(t, err)
 	require.Equal(t, "youtube.com\n", string(b))
 }
 
-// WinDivert 1.x registers a versioned service ("WinDivert1.4"); looking for
-// exactly "WinDivert" made every start look failed.
-func TestManager_VersionedDriverServiceCountsAsRunning(t *testing.T) {
-	m := newTestManager(t, &fakeRunner{proc: &fakeProc{pid: 7}}, &fakeSvc{running: true, names: []string{"WinDivert1.4"}})
-	pid, err := m.Start(context.Background(), light)
+func TestManager_AutoHostlistRoundTrip(t *testing.T) {
+	rg := newRig(t)
+	src := filepath.Join(t.TempDir(), "dpi-autohostlist.txt")
+	require.NoError(t, os.WriteFile(src, []byte("a.com\n"), 0o644))
+	rg.r.onRun = func(dir string) {
+		b, err := os.ReadFile(filepath.Join(dir, "autohostlist.txt"))
+		require.NoError(t, err)
+		require.Equal(t, "a.com\n", string(b))
+		require.NoError(t, os.WriteFile(filepath.Join(dir, "autohostlist.txt"), []byte("a.com\nb.com\n"), 0o644))
+	}
+	_, err := rg.m.Start(context.Background(), "zapret2", Plan{AutoHostlist: src})
 	require.NoError(t, err)
-	require.Equal(t, 7, pid)
+	require.Equal(t, "autohostlist.txt", rg.z2.got[0].AutoHostlist)
+	require.NoError(t, rg.m.Stop())
+	b, err := os.ReadFile(src)
+	require.NoError(t, err)
+	require.Equal(t, "a.com\nb.com\n", string(b))
 }
 
-func TestManager_StopRemovesEveryWinDivertService(t *testing.T) {
-	s := &fakeSvc{names: []string{"WinDivert", "WinDivert1.4"}}
-	m := newTestManager(t, &fakeRunner{}, s)
-	require.NoError(t, m.Stop())
-	require.Equal(t, []string{"svc.stop:WinDivert", "svc.delete:WinDivert", "svc.stop:WinDivert1.4", "svc.delete:WinDivert1.4"}, s.calls)
+func TestManager_AutoHostlistMissingSourceStartsEmpty(t *testing.T) {
+	rg := newRig(t)
+	src := filepath.Join(t.TempDir(), "dpi-autohostlist.txt")
+	_, err := rg.m.Start(context.Background(), "zapret2", Plan{AutoHostlist: src})
+	require.NoError(t, err)
+	b, err := os.ReadFile(filepath.Join(rg.bin, "zapret2", "autohostlist.txt"))
+	require.NoError(t, err)
+	require.Empty(t, b)
+}
+
+func TestManager_SwitchEngine(t *testing.T) {
+	rg := newRig(t)
+	_, err := rg.m.Start(context.Background(), "goodbyedpi", Plan{})
+	require.NoError(t, err)
+	_, err = rg.m.Start(context.Background(), "zapret2", Plan{})
+	require.NoError(t, err)
+	require.True(t, rg.r.procs[0].killed)
+	require.Equal(t, "zapret2", rg.m.Engine())
+}
+
+func TestManager_RefreshLists(t *testing.T) {
+	rg := newRig(t)
+	src := filepath.Join(t.TempDir(), "bl.txt")
+	require.NoError(t, os.WriteFile(src, []byte("a.com\n"), 0o644))
+	_, err := rg.m.Start(context.Background(), "zapret2", Plan{Scope: ScopeBlacklist, Blacklist: src})
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(src, []byte("b.com\n"), 0o644))
+	require.NoError(t, rg.m.RefreshLists(Plan{Scope: ScopeBlacklist, Blacklist: src}))
+	b, _ := os.ReadFile(filepath.Join(rg.bin, "zapret2", "blacklist.txt"))
+	require.Equal(t, "b.com\n", string(b))
+	require.Len(t, rg.r.procs, 1, "no restart")
+}
+
+func TestManager_ExitedImmediatelyIsStartFailed(t *testing.T) {
+	rg := newRig(t)
+	rg.m.sleep = func(time.Duration) { rg.r.procs[len(rg.r.procs)-1].exited = true }
+	_, err := rg.m.Start(context.Background(), "goodbyedpi", Plan{})
+	require.ErrorIs(t, err, ErrStartFailed)
+	require.False(t, rg.m.Running())
+	require.Equal(t, "", rg.m.Engine())
+}
+
+func TestManager_ExitedAndFilesGoneIsBlockedByAV(t *testing.T) {
+	rg := newRig(t)
+	rg.m.sleep = func(time.Duration) {
+		rg.r.procs[len(rg.r.procs)-1].exited = true
+		_ = os.Remove(filepath.Join(rg.bin, "goodbyedpi", "goodbyedpi.exe"))
+	}
+	_, err := rg.m.Start(context.Background(), "goodbyedpi", Plan{})
+	require.ErrorIs(t, err, ErrBlockedByAV)
+}
+
+func TestManager_AccessDeniedIsBlockedByAV(t *testing.T) {
+	rg := newRig(t)
+	rg.r.err = os.ErrPermission
+	_, err := rg.m.Start(context.Background(), "zapret2", Plan{})
+	require.ErrorIs(t, err, ErrBlockedByAV)
+}
+
+func TestManager_TamperedAssetIsHashMismatch(t *testing.T) {
+	c := &calls{}
+	e := &fakeEngine{id: "zapret2", files: map[string]string{"zapret2.exe": sha("z")}}
+	m := NewManager(t.TempDir(), []Installed{{Engine: e, Assets: fstest.MapFS{"zapret2.exe": {Data: []byte("evil")}}}},
+		&fakeRunner{c: c}, &fakeSvc{c: c, running: true}, func(time.Duration) {})
+	_, err := m.Start(context.Background(), "zapret2", Plan{})
+	require.ErrorIs(t, err, ErrHashMismatch)
+}
+
+func TestManager_DriverNotRunningIsStartFailed(t *testing.T) {
+	rg := newRig(t)
+	rg.s.running = false
+	_, err := rg.m.Start(context.Background(), "goodbyedpi", Plan{})
+	require.ErrorIs(t, err, ErrStartFailed)
+	require.True(t, rg.r.procs[0].killed)
+}
+
+func TestManager_StopKillsAndRemovesWinDivert(t *testing.T) {
+	rg := newRig(t)
+	_, err := rg.m.Start(context.Background(), "goodbyedpi", Plan{})
+	require.NoError(t, err)
+	rg.s.names = []string{"WinDivert"}
+	rg.c.log = nil
+	require.NoError(t, rg.m.Stop())
+	require.True(t, rg.r.procs[0].killed)
+	require.Equal(t, []string{"svc.stop:WinDivert", "svc.delete:WinDivert"}, rg.c.log)
+	require.False(t, rg.m.Running())
+	require.Equal(t, "", rg.m.Engine())
+}
+
+func TestManager_StopWhenNotRunningStillCleansDriver(t *testing.T) {
+	rg := newRig(t)
+	rg.s.names = []string{"WinDivert1.4", "WinDivert"}
+	require.NoError(t, rg.m.Stop())
+	require.Equal(t, []string{"svc.stop:WinDivert1.4", "svc.delete:WinDivert1.4", "svc.stop:WinDivert", "svc.delete:WinDivert"}, rg.c.log)
+	require.False(t, errors.Is(nil, ErrStartFailed))
+}
+
+func TestManager_Get(t *testing.T) {
+	rg := newRig(t)
+	e, ok := rg.m.Get("zapret2")
+	require.True(t, ok)
+	require.Equal(t, "zapret2", e.ID())
+	_, ok = rg.m.Get("x")
+	require.False(t, ok)
 }
