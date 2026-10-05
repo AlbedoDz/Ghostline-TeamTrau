@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "zapret2": [
+    {
+      "id": "z-split",
+      "name": { "vi": "Nhẹ", "en": "Light" },
+      "tcp": ["--lua-desync=multisplit:pos=1,midsld"],
+      "quic": []
+    },
+    {
+      "id": "z-disorder",
+      "name": { "vi": "Vừa", "en": "Medium" },
+      "tcp": ["--lua-desync=multidisorder:pos=1,midsld"],
+      "quic": []
+    },
+    {
+      "id": "z-fake",
+      "name": { "vi": "Mạnh", "en": "Strong" },
+      "tcp": ["--lua-desync=fake:blob=fake_default_tls:badsum", "--lua-desync=multidisorder:pos=1,midsld"],
+      "quic": ["--lua-desync=fake:blob=fake_default_quic:repeats=6"]
+    },
+    {
+      "id": "z-fake-ttl",
+      "name": { "vi": "Rất mạnh", "en": "Extreme" },
+      "tcp": ["--lua-desync=fake:blob=fake_default_tls:ip_autottl=-2,3-20", "--lua-desync=fakeddisorder:pos=1,midsld"],
+      "quic": ["--lua-desync=fake:blob=fake_default_quic:repeats=11"]
+    }
+  ]
+}

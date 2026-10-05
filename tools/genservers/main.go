@@ -29,7 +29,16 @@ func main() {
 	outPath := flag.String("out", "lists/servers.json", "output list")
 	signEnv := flag.String("sign-env", "", "env var holding the base64 ed25519 private key; writes <out>.sig")
 	genkey := flag.Bool("genkey", false, "print a new signing keypair and exit")
+	signOnly := flag.String("sign-file", "", "only sign this file with -sign-env (writes <file>.sig) and exit")
 	flag.Parse()
+
+	if *signOnly != "" {
+		if err := signFile(*signOnly, os.Getenv(*signEnv)); err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println("signed", *signOnly)
+		return
+	}
 
 	if *genkey {
 		pub, priv, err := ed25519.GenerateKey(rand.Reader)
@@ -57,15 +66,24 @@ func main() {
 		log.Fatal(err)
 	}
 	if *signEnv != "" {
-		raw, err := base64.StdEncoding.DecodeString(os.Getenv(*signEnv))
-		if err != nil || len(raw) != ed25519.PrivateKeySize {
-			log.Fatalf("%s does not hold a base64 ed25519 private key", *signEnv)
-		}
-		if err := os.WriteFile(*outPath+".sig", servers.Sign(data, ed25519.PrivateKey(raw)), 0o644); err != nil {
+		if err := signFile(*outPath, os.Getenv(*signEnv)); err != nil {
 			log.Fatal(err)
 		}
 	}
 	fmt.Printf("wrote %d servers to %s\n", len(list.Servers), *outPath)
+}
+
+// signFile writes <path>.sig, signed with a base64 ed25519 private key.
+func signFile(path, key string) error {
+	raw, err := base64.StdEncoding.DecodeString(key)
+	if err != nil || len(raw) != ed25519.PrivateKeySize {
+		return fmt.Errorf("the signing key is not a base64 ed25519 private key")
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(path+".sig", servers.Sign(data, ed25519.PrivateKey(raw)), 0o644)
 }
 
 // resolveVia resolves A and AAAA records through a fixed plain-DNS server.
