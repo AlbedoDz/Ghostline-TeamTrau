@@ -105,12 +105,12 @@ func TestQuery_Timeout(t *testing.T) {
 
 func TestQueryName_Normalises(t *testing.T) {
 	ok := map[[2]string]string{
-		{"Example.COM.", "A"}:          "example.com",
-		{"https://x.com/a?b", "A"}:     "x.com",
-		{"http://X.com:8080/", "AAAA"}: "x.com",
-		{"bücher.de", "A"}:             "xn--bcher-kva.de",
-		{"8.8.4.4", "PTR"}:             "4.4.8.8.in-addr.arpa",
-		{"2001:db8::1", "PTR"}:         "1.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa",
+		{"Example.COM.", "A"}:           "example.com",
+		{"https://x.com/a?b", "A"}:      "x.com",
+		{"http://X.com:8080/", "AAAA"}:  "x.com",
+		{"bücher.de", "A"}:              "xn--bcher-kva.de",
+		{"8.8.4.4", "PTR"}:              "4.4.8.8.in-addr.arpa",
+		{"2001:db8::1", "PTR"}:          "1.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa",
 		{"4.4.8.8.in-addr.arpa", "PTR"}: "4.4.8.8.in-addr.arpa",
 		{" _dmarc.example.com ", "TXT"}: "_dmarc.example.com",
 	}
