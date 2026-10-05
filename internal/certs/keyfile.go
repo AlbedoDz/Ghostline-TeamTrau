@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"slices"
+	"strings"
 )
 
 // Protector encrypts the LAN CA key at rest (DPAPI in production).
@@ -61,7 +63,41 @@ func LoadLANCA(certPath, keyPath string, p Protector) (*CA, error) {
 	if !ok || !key.PublicKey.Equal(cert.PublicKey) {
 		return nil, fmt.Errorf("%w: key does not match the certificate", ErrKeyUnreadable)
 	}
+	if err := checkLANShape(cert); err != nil {
+		return nil, fmt.Errorf("%w: %v", ErrKeyUnreadable, err)
+	}
 	return &CA{Cert: cert, DER: der, Key: key}, nil
+}
+
+// checkLANShape accepts only a certificate NewLANCA could have made: a
+// CA limited to serverAuth, the private ranges and ghostline.lan. A file
+// replaced by another program is therefore never installed in Root.
+func checkLANShape(c *x509.Certificate) error {
+	want, err := parseCIDRs(LANPermittedCIDRs)
+	if err != nil {
+		return err
+	}
+	switch {
+	case !strings.HasPrefix(c.Subject.CommonName, LANPrefix+" "):
+		return errors.New("not a Ghostline LAN CA")
+	case !c.IsCA || !c.BasicConstraintsValid || !c.MaxPathLenZero:
+		return errors.New("bad basic constraints")
+	case !slices.Equal(c.ExtKeyUsage, []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth}) || len(c.UnknownExtKeyUsage) > 0:
+		return errors.New("extended key usage must be serverAuth only")
+	case !c.PermittedDNSDomainsCritical || !slices.Equal(c.PermittedDNSDomains, []string{LANDomain}):
+		return errors.New("bad DNS name constraints")
+	case len(c.ExcludedDNSDomains)+len(c.ExcludedIPRanges)+len(c.PermittedEmailAddresses)+len(c.ExcludedEmailAddresses)+
+		len(c.PermittedURIDomains)+len(c.ExcludedURIDomains) > 0:
+		return errors.New("unexpected name constraints")
+	case len(c.PermittedIPRanges) != len(want):
+		return errors.New("bad IP name constraints")
+	}
+	for i, n := range c.PermittedIPRanges {
+		if n.String() != want[i].String() {
+			return errors.New("bad IP name constraints")
+		}
+	}
+	return nil
 }
 
 // writeFile replaces path atomically, readable only by its owner.

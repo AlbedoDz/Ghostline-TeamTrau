@@ -4,6 +4,7 @@ import (
 	"errors"
 	"log/slog"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/hashcott/ghostline/internal/brand"
@@ -24,7 +25,7 @@ func runHeadless(mode cli.Mode) int {
 	if err != nil {
 		return 1
 	}
-	paths := store.ResolvePaths(exe, os.Getenv("APPDATA"))
+	paths := store.WithMachineDir(store.ResolvePaths(exe, os.Getenv("APPDATA")), filepath.Join(os.Getenv("ProgramData"), brand.AppName))
 	logger := slog.Default()
 	if w, err := logx.NewRotating(paths.LogDir, "ghostline", 5<<20, 3); err == nil {
 		defer w.Close()
@@ -45,8 +46,11 @@ func runHeadless(mode cli.Mode) int {
 
 		RestoreSysProxy: sysproxy.Manager{API: sysproxy.NewWindowsAPI()}.RestoreIfOurs,
 		DeleteRule:      winutil.DeleteNamedRule,
-		RemoveCert:      roots.Remove,
-		SweepSession:    sweepSession(roots),
+		RemoveCert: func(t string) error {
+			// state.json is user-writable: remove only Fake SNI roots.
+			return certstore.RemoveIfPrefix(roots, t, certs.SessionPrefix)
+		},
+		SweepSession: sweepSession(roots),
 	}
 	switch mode.Kind {
 	case cli.KindWatchdog:

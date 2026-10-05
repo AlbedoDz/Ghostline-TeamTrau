@@ -10,6 +10,7 @@ import (
 	"math/rand"
 	"net"
 	"os"
+	"path/filepath"
 	"slices"
 	"time"
 
@@ -50,7 +51,7 @@ func Run(o Options) error {
 		messageBox(brand.AppName, "Ghostline cần Microsoft Edge WebView2 Runtime.\nGhostline needs the Microsoft Edge WebView2 Runtime.\n\nhttps://go.microsoft.com/fwlink/p/?LinkId=2124703")
 		return errors.New("webview2 missing")
 	}
-	paths := store.ResolvePaths(o.Executable, os.Getenv("APPDATA"))
+	paths := store.WithMachineDir(store.ResolvePaths(o.Executable, os.Getenv("APPDATA")), filepath.Join(os.Getenv("ProgramData"), brand.AppName))
 	if err := os.MkdirAll(paths.DataDir, 0o755); err != nil {
 		fatalBox(err)
 		return err
@@ -84,7 +85,10 @@ func Run(o Options) error {
 	recoverDeps := watchdog.Deps{States: states, DNS: dnsMgr, StopDPI: dpiMgr.Stop, Alive: winutil.ProcessAlive, Log: log,
 		RestoreSysProxy: sysproxy.Manager{API: sysproxy.NewWindowsAPI()}.RestoreIfOurs,
 		DeleteRule:      winutil.DeleteNamedRule,
-		RemoveCert:      roots.Remove,
+		RemoveCert: func(t string) error {
+			// state.json is user-writable: remove only Fake SNI roots.
+			return certstore.RemoveIfPrefix(roots, t, certs.SessionPrefix)
+		},
 		SweepSession: func(keep []string) error {
 			_, err := certstore.Sweep(roots, certs.SessionPrefix, keep)
 			return err

@@ -92,3 +92,21 @@ func TestMITMBox(t *testing.T) {
 	b.set(nil)
 	require.Nil(t, b.get())
 }
+
+// A LAN CA whose files are not owned by Administrators/SYSTEM (planted by
+// a normal user) is replaced by a fresh one, never installed.
+func TestCertWiring_ForeignOwnedFilesReplaced(t *testing.T) {
+	st := certstore.NewFake()
+	dir := t.TempDir()
+	planted := testCertWiring(t, st, dir)
+	evil, err := planted.LANCA(context.Background())
+	require.NoError(t, err)
+	require.NoError(t, st.Remove(evil.Thumbprint()))
+
+	w := testCertWiring(t, st, dir)
+	w.owned = func(string) (bool, error) { return false, nil }
+	ca, err := w.LANCA(context.Background())
+	require.NoError(t, err)
+	require.NotEqual(t, evil.Thumbprint(), ca.Thumbprint())
+	require.False(t, st.Has(evil.Thumbprint()))
+}

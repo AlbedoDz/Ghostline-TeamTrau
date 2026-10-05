@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"slices"
 	"time"
 
 	"github.com/hashcott/ghostline/internal/model"
@@ -144,6 +145,9 @@ func restoreProxy(d Deps, st store.State) error {
 	}
 	if st.Firewall != nil && d.DeleteRule != nil {
 		for _, name := range st.Firewall.Rules {
+			if !slices.Contains(AllFirewallRules, name) {
+				continue // state.json is user-writable: never delete other rules
+			}
 			if err := d.DeleteRule(name); err != nil {
 				errs = append(errs, fmt.Errorf("watchdog: delete firewall rule %q: %w", name, err))
 			}

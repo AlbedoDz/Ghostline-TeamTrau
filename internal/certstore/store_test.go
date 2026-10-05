@@ -60,3 +60,19 @@ func TestSweep_RemoveErrorReported(t *testing.T) {
 	_, err := certstore.Sweep(s, certs.SessionPrefix, nil)
 	require.Error(t, err)
 }
+
+func TestRemoveIfPrefix_OnlyGhostlineRoots(t *testing.T) {
+	s := certstore.NewFake()
+	ses := session(t)
+	lan, err := certs.NewLANCA("PC", time.Now())
+	require.NoError(t, err)
+	require.NoError(t, s.Install(ses.DER))
+	require.NoError(t, s.Install(lan.DER))
+
+	// A thumbprint from an untrusted file that names another root: kept.
+	require.NoError(t, certstore.RemoveIfPrefix(s, lan.Thumbprint(), certs.SessionPrefix))
+	require.True(t, s.Has(lan.Thumbprint()))
+	require.NoError(t, certstore.RemoveIfPrefix(s, ses.Thumbprint(), certs.SessionPrefix))
+	require.False(t, s.Has(ses.Thumbprint()))
+	require.NoError(t, certstore.RemoveIfPrefix(s, "00112233445566778899aabbccddeeff00112233", certs.SessionPrefix))
+}

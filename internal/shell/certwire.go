@@ -26,6 +26,10 @@ type certWiring struct {
 	prot  certs.Protector
 	host  func() string
 	now   func() time.Time
+	// secure makes paths.MachineDir admin-only; owned says whether a file
+	// is owned by Administrators/SYSTEM. Nil skips the check (tests).
+	secure func(dir string) error
+	owned  func(path string) (bool, error)
 
 	mu  sync.Mutex
 	lan *certs.CA
@@ -39,13 +43,26 @@ func (machineProtector) Unprotect(b []byte) ([]byte, error) { return winutil.Unp
 
 func newCertWiring(paths store.Paths) *certWiring {
 	return &certWiring{paths: paths, store: certstore.NewWindows(certstore.LocalMachine), prot: machineProtector{},
-		host: func() string { h, _ := os.Hostname(); return h }, now: time.Now}
+		host: func() string { h, _ := os.Hostname(); return h }, now: time.Now,
+		secure: winutil.SecureDir, owned: winutil.OwnedByAdmins}
 }
 
 // loadLocked returns the LAN CA from memory or disk; nil when none exists.
 func (c *certWiring) loadLocked() (*certs.CA, error) {
 	if c.lan != nil {
 		return c.lan, nil
+	}
+	if c.secure != nil && c.paths.MachineDir != "" {
+		if err := c.secure(c.paths.MachineDir); err != nil {
+			return nil, err
+		}
+	}
+	if c.owned != nil && !c.ownedByAdmins() {
+		// Planted or left by a normal user: never trust it; start over.
+		if err := c.removeLocked(); err != nil {
+			return nil, err
+		}
+		return nil, nil
 	}
 	ca, err := certs.LoadLANCA(c.paths.LANCACert, c.paths.LANCAKey, c.prot)
 	if errors.Is(err, fs.ErrNotExist) {
@@ -82,12 +99,26 @@ func (c *certWiring) LANCA(context.Context) (*certs.CA, error) {
 	return ca, nil
 }
 
+// ownedByAdmins is true when the LAN CA files are missing or both owned by
+// Administrators/SYSTEM.
+func (c *certWiring) ownedByAdmins() bool {
+	for _, p := range []string{c.paths.LANCACert, c.paths.LANCAKey} {
+		if _, err := os.Stat(p); errors.Is(err, fs.ErrNotExist) {
+			continue
+		}
+		if ok, err := c.owned(p); err != nil || !ok {
+			return false
+		}
+	}
+	return true
+}
+
 // removeLocked removes the LAN CA from Root and deletes its files. An
 // unreadable key still lets the certificate file be removed.
 func (c *certWiring) removeLocked() error {
 	var errs []error
 	if der, err := os.ReadFile(c.paths.LANCACert); err == nil {
-		errs = append(errs, c.store.Remove(certstore.Thumbprint(der)))
+		errs = append(errs, certstore.RemoveIfPrefix(c.store, certstore.Thumbprint(der), certs.LANPrefix))
 	}
 	for _, p := range []string{c.paths.LANCACert, c.paths.LANCAKey} {
 		if err := os.Remove(p); err != nil && !errors.Is(err, fs.ErrNotExist) {
@@ -120,7 +151,10 @@ func (c *certWiring) RemoveLANCA(context.Context) error {
 func (c *certWiring) InstallSession(der []byte) error { return c.store.Install(der) }
 
 // RemoveSession implements app.Certs.
-func (c *certWiring) RemoveSession(thumb string) error { return c.store.Remove(thumb) }
+// Only Fake SNI roots are removed: thumbprints may come from state.json.
+func (c *certWiring) RemoveSession(thumb string) error {
+	return certstore.RemoveIfPrefix(c.store, thumb, certs.SessionPrefix)
+}
 
 // List implements app.Certs.
 func (c *certWiring) List() ([]certstore.Cert, error) { return c.store.List("Ghostline") }

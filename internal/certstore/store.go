@@ -139,3 +139,20 @@ func (f *Fake) Has(thumbprint string) bool {
 	_, ok := f.certs[strings.ToLower(thumbprint)]
 	return ok
 }
+
+// RemoveIfPrefix removes thumbprint only when the certificate it names is
+// one of Ghostline's (common name starting with prefix). Thumbprints read
+// from files a normal user can write must never delete another root.
+// A thumbprint not in the store is not an error.
+func RemoveIfPrefix(s Store, thumbprint, prefix string) error {
+	list, err := s.List(prefix)
+	if err != nil {
+		return err
+	}
+	for _, c := range list {
+		if strings.EqualFold(c.Thumbprint, thumbprint) {
+			return s.Remove(c.Thumbprint)
+		}
+	}
+	return nil
+}

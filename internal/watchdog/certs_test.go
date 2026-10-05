@@ -105,3 +105,17 @@ func TestRecover_NoSweepWhileOwnerAlive(t *testing.T) {
 }
 
 func writeCorrupt(path string) error { return os.WriteFile(path, []byte("{bad"), 0o644) }
+
+// state.json is user-writable: only Ghostline's own rule names are deleted.
+func TestRecover_IgnoresUnknownRuleNames(t *testing.T) {
+	var log []string
+	st := dirty()
+	st.AddFirewallRule("Block Telemetry")
+	st.AddFirewallRule("Ghostline DNS (UDP)")
+	d, _, _ := setup(t, false, st)
+	d = certHooks(d, &log, nil)
+	_, err := watchdog.RestoreIfOrphaned(d)
+	require.NoError(t, err)
+	require.Contains(t, log, "rule:Ghostline DNS (UDP)")
+	require.NotContains(t, log, "rule:Block Telemetry")
+}
