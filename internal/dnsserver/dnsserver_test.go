@@ -125,3 +125,17 @@ func TestSetupPage_StopEarly(t *testing.T) {
 	<-stopped
 	require.False(t, p.Running())
 }
+
+// The trust step is required and the "PC off" consequence is spelled out,
+// in numbered steps (testing showed both are easy to miss in prose).
+func TestSetupPage_StepsAndWarnings(t *testing.T) {
+	h := dnsserver.NewSetupPage(files(), time.Now).Handler()
+	en := do(t, h, "/", "192.168.1.9:1", "en").Body.String()
+	for _, want := range []string{"<ol", "Required", "Full Trust", "loses the internet", "VPN &amp; Device Management", "Automatic", "Configure DNS"} {
+		require.Contains(t, en, want)
+	}
+	vi := do(t, h, "/", "192.168.1.9:1", "vi").Body.String()
+	for _, want := range []string{"<ol", "Bắt buộc", "Tin cậy hoàn toàn", "mất mạng", "VPN và quản lý thiết bị", "Tự động", "Định cấu hình DNS"} {
+		require.Contains(t, vi, want)
+	}
+}
