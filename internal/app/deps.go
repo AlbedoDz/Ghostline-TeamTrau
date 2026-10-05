@@ -192,4 +192,7 @@ type Deps struct {
 	// turns Fake SNI off. MITMSelfTest intercepts a loopback test server.
 	SetMITM      func(mitm.LeafSource)
 	MITMSelfTest func(ctx context.Context) error
+	// AfterFunc is time.AfterFunc (tests replace it); the result stops
+	// the timer.
+	AfterFunc func(d time.Duration, f func()) (stop func() bool)
 }

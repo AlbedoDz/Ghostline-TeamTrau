@@ -46,6 +46,8 @@ type Orchestrator struct {
 	dns dnsState
 	// sni is the Fake SNI phase state; guarded by opMu.
 	sni sniState
+	// sniTimer stops the pending debounced rotation; guarded by mu.
+	sniTimer func() bool
 	// pending is a system proxy restore that failed; guarded by mu.
 	pending *pendingRestore
 }
@@ -57,6 +59,9 @@ func New(d Deps) *Orchestrator {
 	}
 	if d.Sleep == nil {
 		d.Sleep = time.Sleep
+	}
+	if d.AfterFunc == nil {
+		d.AfterFunc = func(dur time.Duration, f func()) func() bool { return time.AfterFunc(dur, f).Stop }
 	}
 	if !d.ListenV4.IsValid() {
 		d.ListenV4 = netip.MustParseAddrPort("127.0.0.1:53")

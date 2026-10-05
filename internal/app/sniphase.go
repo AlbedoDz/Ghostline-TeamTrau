@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"slices"
+	"time"
 
 	"github.com/hashcott/ghostline/internal/certs"
 	"github.com/hashcott/ghostline/internal/store"
@@ -162,4 +163,85 @@ func (o *Orchestrator) ReapplyFakeSNI(ctx context.Context) error {
 	}
 	o.stopSNIPhase(ctx)
 	return o.startSNIPhase(ctx)
+}
+
+const (
+	sniDebounce = 2 * time.Second
+	sniRenew    = 3 * 24 * time.Hour
+)
+
+// OnRulesCompiled schedules a session CA rotation once rule edits settle
+// (spec 2B 5.3): a burst of recompiles rotates once.
+func (o *Orchestrator) OnRulesCompiled() {
+	o.mu.Lock()
+	defer o.mu.Unlock()
+	if o.sniTimer != nil {
+		o.sniTimer()
+	}
+	o.sniTimer = o.d.AfterFunc(sniDebounce, func() {
+		o.mu.Lock()
+		o.sniTimer = nil
+		o.mu.Unlock()
+		o.rotateSession(context.Background(), false)
+	})
+}
+
+// checkSNIHealth rotates the session CA before it expires.
+func (o *Orchestrator) checkSNIHealth(ctx context.Context) {
+	o.opMu.Lock()
+	due := o.sni.issuer != nil && o.sni.issuer.CA().Cert.NotAfter.Sub(o.d.Now()) < sniRenew
+	o.opMu.Unlock()
+	if due {
+		o.rotateSession(ctx, true)
+	}
+}
+
+// rotateSession replaces the session CA when the sni= domains changed (or
+// always, with force): new CA recorded, installed and handed to the proxy
+// before the old one is removed. With no CA yet it starts the phase; with
+// no domains left it stops it.
+func (o *Orchestrator) rotateSession(ctx context.Context, force bool) {
+	o.opMu.Lock()
+	defer o.opMu.Unlock()
+	if st := o.Snapshot().Status; st != StatusProtected && st != StatusDegraded {
+		return
+	}
+	domains := o.sniDomains()
+	fs := o.d.Settings().FakeSNI
+	switch {
+	case o.sni.issuer == nil:
+		_ = o.startSNIPhase(ctx)
+		return
+	case len(domains) == 0 || !fs.Enabled || fs.AckVersion < FakeSNIWarningVersion:
+		o.stopSNIPhase(ctx)
+		return
+	case !force && slices.Equal(domains, o.sni.domains):
+		return
+	}
+	ca, err := certs.NewSessionCA(domains, o.d.Now())
+	if err != nil {
+		// Too many domains: the phase reports it the same way as at connect.
+		o.stopSNIPhase(ctx)
+		_ = o.startSNIPhase(ctx)
+		return
+	}
+	thumb := ca.Thumbprint()
+	if err := ignoreNoChange(o.setState(func(st *store.State) { st.AddSessionCert(thumb) })); err != nil {
+		o.AddWarning(AppError{Code: CodeCertInstallFailed, Params: map[string]any{"kind": "session"}})
+		return
+	}
+	if err := o.d.Certs.InstallSession(ca.DER); err != nil {
+		_ = ignoreNoChange(o.setState(func(st *store.State) { st.RemoveSessionCert(thumb) }))
+		o.AddWarning(AppError{Code: CodeCertInstallFailed, Params: map[string]any{"kind": "session"}})
+		o.log("fakesni", CodeCertInstallFailed, "kind", "session")
+		return
+	}
+	o.sni.installed = append(o.sni.installed, thumb)
+	old := o.sni.issuer.CA().Thumbprint()
+	o.sni.issuer = certs.NewIssuer(ca, o.d.Now)
+	o.sni.domains = domains
+	o.d.SetMITM(o.sni.issuer)
+	o.setSNIStatus()
+	_ = o.removeSessionCA(old)
+	o.log("fakesni", "FAKESNI_ROTATED", "domains", len(domains))
 }

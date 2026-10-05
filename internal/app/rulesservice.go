@@ -114,6 +114,7 @@ func (s *Service) recompileLocked(changed string) {
 		s.o.log("rules", CodeListTooLarge, "id", disabled)
 	}
 	s.x.Bus.Emit(EventRulesCompiled, RulesCompiled{Count: c.Count(), Ms: time.Since(start).Milliseconds()})
+	s.o.OnRulesCompiled()
 }
 
 func (s *Service) saveRulesLocked() error { return store.SaveRules(s.x.RulesPath, s.rf) }
