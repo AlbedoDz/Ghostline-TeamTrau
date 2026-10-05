@@ -13,6 +13,7 @@ import (
 	"github.com/hashcott/ghostline/internal/brand"
 	"github.com/hashcott/ghostline/internal/icon"
 	"github.com/hashcott/ghostline/internal/model"
+	"github.com/hashcott/ghostline/internal/winutil"
 	"github.com/wailsapp/wails/v3/pkg/application"
 	"github.com/wailsapp/wails/v3/pkg/events"
 )
@@ -166,7 +167,7 @@ func (u *ui) resize(mode string) {
 
 func (u *ui) createTray() {
 	u.tray = u.app.SystemTray.New()
-	u.tray.SetIcon(icon.Ring(statusColour[app.StatusDisconnected], 32))
+	u.tray.SetIcon(icon.Ring(statusColour[app.StatusDisconnected], winutil.SmallIconSize()))
 	tt := trayText(u.box.Get().Language)
 	u.tray.SetTooltip(brand.AppName + " · " + tt.status[app.StatusDisconnected])
 	menu := application.NewMenu()
@@ -227,7 +228,7 @@ func (u *ui) onState(s app.Snapshot) {
 	if !changed || u.tray == nil {
 		return
 	}
-	u.tray.SetIcon(icon.Ring(statusColour[s.Status], 32))
+	u.tray.SetIcon(icon.Ring(statusColour[s.Status], winutil.SmallIconSize()))
 	u.relabel(s.Status)
 	u.dpiItem.SetChecked(s.DPI.Enabled)
 }
