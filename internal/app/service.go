@@ -540,6 +540,9 @@ func (s *Service) SaveDPIAutoHostlist(domains []string) error {
 	return nil
 }
 
+// DPIEngineDir is the folder an engine runs from, for antivirus exclusions.
+func (s *Service) DPIEngineDir(engine string) string { return filepath.Join(s.x.Paths.BinDir, engine) }
+
 // RetryZapret2 restarts DPI with the configured engine after a fallback.
 func (s *Service) RetryZapret2() error { return s.o.RestartDPI(context.Background()) }
 

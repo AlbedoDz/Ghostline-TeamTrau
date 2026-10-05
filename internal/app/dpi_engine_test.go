@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"path/filepath"
 	"slices"
 	"testing"
 
@@ -238,4 +239,9 @@ func TestService_AutoHostlistRoundTrip(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, []string{"a.com", "b.com"}, got)
 	require.True(t, slices.IsSorted(got))
+}
+
+func TestService_DPIEngineDir(t *testing.T) {
+	s := newSvc(t)
+	require.Equal(t, filepath.Join(s.paths.BinDir, "zapret2"), s.svc.DPIEngineDir("zapret2"))
 }
