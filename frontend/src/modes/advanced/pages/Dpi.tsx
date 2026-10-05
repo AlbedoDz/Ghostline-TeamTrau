@@ -101,7 +101,8 @@ export function Dpi() {
     isZ ? void setZ({ customArgs: custom }) : void save((s) => ({ ...s, dpi: { ...s.dpi, customArgs: custom } }));
   const pickEngine = (e: string) => {
     setError(null);
-    if (e !== engine) void save((s) => ({ ...s, dpi: { ...s.dpi, engine: e } }));
+    // Choosing by hand means the user knows both engines: the hint is done.
+    if (e !== engine) void save((s) => ({ ...s, dpi: { ...s.dpi, engine: e, hideEngineHint: true } }));
   };
   const saveAutoSites = (list: string[]) => {
     setAutoSites(list);

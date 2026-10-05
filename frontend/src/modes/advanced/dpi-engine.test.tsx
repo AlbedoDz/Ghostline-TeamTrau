@@ -147,3 +147,12 @@ test("switching engine never shows the old engine's args or a raw strategy id", 
   const sel = screen.getByRole("combobox", { name: "preset" }) as HTMLSelectElement;
   expect(sel.options[sel.selectedIndex].text).not.toBe("z-split");
 });
+
+test("picking an engine by hand retires the 'try zapret2' hint", async () => {
+  withDPI({ engine: "goodbyedpi" });
+  render(<Dpi />);
+  fireEvent.click(screen.getByRole("button", { name: "zapret2 (khuyên dùng)" }));
+  await waitFor(() => expect(svc.SaveSettings).toHaveBeenCalled());
+  expect(saved().dpi.engine).toBe("zapret2");
+  expect(saved().dpi.hideEngineHint).toBe(true);
+});
