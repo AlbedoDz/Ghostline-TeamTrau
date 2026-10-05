@@ -67,7 +67,11 @@ type server struct {
 	sni []string
 }
 
-func (s *server) gotSNI() []string { s.mu.Lock(); defer s.mu.Unlock(); return append([]string(nil), s.sni...) }
+func (s *server) gotSNI() []string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return append([]string(nil), s.sni...)
+}
 
 func newServer(t *testing.T, cert tls.Certificate, protos []string, abort bool) *server {
 	t.Helper()
