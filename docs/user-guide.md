@@ -29,7 +29,7 @@ This guide is for anyone running Windows 10/11; no technical background is neede
 
 Every time you open a website, your computer asks **DNS**: "what is the IP address of this site?" Normally that question travels **unencrypted**, so your ISP can read it, log it, or answer with a wrong address to block the site.
 
-Ghostline runs a small DNS server on your own machine (`127.0.0.1`), points every network adapter at it, and sends your DNS questions over an **encrypted** channel (DoH, DoT, DoQ or DNSCrypt) to the fastest server available. If your ISP also blocks sites by inspecting packets (DPI), Ghostline can run **GoodbyeDPI** to get around it.
+Ghostline runs a small DNS server on your own machine (`127.0.0.1`), points every network adapter at it, and sends your DNS questions over an **encrypted** channel (DoH, DoT, DoQ or DNSCrypt) to the fastest server available. If your ISP also blocks sites by inspecting packets (DPI), Ghostline can run a DPI bypass engine (**zapret2** or **GoodbyeDPI**) to get around it.
 
 Most importantly, **Ghostline always gives your original DNS back** when you disconnect, even if the app crashes or the machine loses power.
 
@@ -54,7 +54,7 @@ Compare the result with the matching line in `SHA256SUMS` on the Releases page. 
 
 **Administrator rights.** Ghostline needs admin rights to change DNS and run GoodbyeDPI, so Windows shows a UAC prompt each time you open it. Choose **Yes**. If you turn on *start with windows*, the app is launched through Task Scheduler and no longer asks.
 
-**Antivirus.** GoodbyeDPI uses the **WinDivert** driver, which some antivirus products flag by mistake. Ghostline checks GoodbyeDPI's hash before every start. If your antivirus blocks it, add the Ghostline folder to its exclusions.
+**Antivirus.** zapret2 and GoodbyeDPI use the **WinDivert** driver, which antivirus products often flag by mistake. Ghostline checks the engine's hash before every start. If zapret2 is blocked, Ghostline runs GoodbyeDPI for now and the DPI page shows the `bin\zapret2` folder to add to Windows Defender's exclusions.
 
 ## 3. Quick start: one button
 
@@ -126,21 +126,26 @@ Use this when DNS is encrypted but connections to a site are **still interfered 
 
 > ⚖️ You are responsible for complying with the law and your network provider's terms. Do not use these features to reach content that is prohibited by law. See the [Disclaimer](../README.md#disclaimer).
 
-**GoodbyeDPI**
+**DPI bypass for every app**
 
-- **GOODBYEDPI switch:** turns it on or off. GoodbyeDPI only runs while Ghostline is **connected**:
-  - `● GoodbyeDPI running (preset …)`: working.
-  - `○ GoodbyeDPI is starting…`: waiting a few seconds for the WinDivert driver.
-  - `○ On — GoodbyeDPI starts when you connect`: switched on, but you're not connected yet.
+- **Switch:** turns it on or off. The engine only runs while Ghostline is **connected**:
+  - `● zapret2 started (preset …)`: working.
+  - `○ starting…`: waiting a few seconds for the WinDivert driver.
+  - `○ Enabled — starts when connected`: switched on, but you're not connected yet.
+- **engine:**
+  - **zapret2 (recommended):** stronger, with fake packets, more split methods and QUIC support (YouTube, Google). Ghostline refreshes its signed strategy list daily, no new release needed.
+  - **GoodbyeDPI:** the previous engine. Installs from before zapret2 keep GoodbyeDPI until you switch.
+  - If antivirus blocks zapret2, Ghostline runs GoodbyeDPI instead, shows *degraded* and offers **retry zapret2**.
 - **preset:** how aggressively packets are modified.
   - **Light → Medium → High → Extreme:** higher levels get past more blocks but may slow down or break some sites. Start with **Light**.
-  - **Mode 1–6:** GoodbyeDPI's built-in modes; try them when the levels above don't help.
-  - **Custom:** enter your own GoodbyeDPI arguments (for people who know GoodbyeDPI; Ghostline rejects dangerous flags).
+  - **Mode 1–6** (GoodbyeDPI only): GoodbyeDPI's built-in modes; try them when the levels above don't help.
+  - **Custom:** enter your own arguments. zapret2 only accepts `--lua-desync=…` calls to the built-in functions; Ghostline rejects dangerous flags.
 - **⚡ auto-tune:** Ghostline tries each preset from lightest to strongest and keeps the lightest one that opens every *test site*. You must **connect first**. Click again to cancel.
 - **scope:**
   - **all connections:** applies to every site.
   - **blacklist:** applies only to domains on the list. Click **edit ›**, enter one domain per line, then **save**. This affects other sites the least.
-- **command line:** shows exactly what GoodbyeDPI will run.
+- **detect blocked sites automatically** (zapret2, blacklist scope): zapret2 notices blocked sites and adds them to a separate list shown below; you can remove any of them.
+- **command line:** shows exactly what the engine will run.
 
 **DNS fragment**
 

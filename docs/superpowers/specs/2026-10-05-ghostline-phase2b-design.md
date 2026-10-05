@@ -83,7 +83,7 @@
 | `store` | `settings.json` v3 (`dnsServer`, `fakeSni`, `dpi.fakeSni`), `state.json` v3 (`certs`, `firewall.rules`), file `lan-ca.crt` / `lan-ca.key` |
 | `watchdog` | Gỡ CA phiên trước mọi bước khôi phục khác, xoá mọi luật firewall trong `state.json` |
 | `winutil` | Liệt kê IP LAN kèm tên card, đọc SSID Wi-Fi hiện tại (`WlanQueryInterface`), luật firewall nhiều cổng và giao thức |
-| `dpi` | GoodbyeDPI 0.2.3rc3 (hash mới, WinDivert 2.2, tên dịch vụ `WinDivert`), cờ `--fake-with-sni` |
+| `dpi` | Cờ `--fake-with-sni` (chỉ khi engine là GoodbyeDPI). Việc nâng GoodbyeDPI lên 0.2.3rc3 đã làm trong [spec zapret2](2026-10-05-ghostline-zapret2-design.md) |
 | `cli` | `--remove-certs` (gỡ mọi chứng chỉ Ghostline, dùng cho trình gỡ cài đặt) |
 
 ### 4.3 Ranh giới
