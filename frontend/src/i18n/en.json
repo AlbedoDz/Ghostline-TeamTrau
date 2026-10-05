@@ -127,7 +127,6 @@
   "dpi": {
     "title": "DPI BYPASS",
     "legalNote": "You are responsible for complying with the laws where you live and your network provider's terms. Do not use this feature to reach content that is prohibited by law.",
-    "goodbyedpi": "GOODBYEDPI",
     "preset": "preset",
     "presets": {
       "light": "Light",
@@ -152,9 +151,9 @@
     "fragment": "DNS FRAGMENT",
     "chunks": "chunks",
     "delay": "delay (ms)",
-    "redundant": "ⓘ redundant while GoodbyeDPI is on",
-    "waiting": "On — GoodbyeDPI starts when you connect",
-    "starting": "GoodbyeDPI is starting…",
+    "redundant": "ⓘ redundant while DPI bypass is on",
+    "waiting": "Enabled — starts when connected",
+    "starting": "starting…",
     "probeSites": "TEST SITES",
     "probeAgain": "⟳ test again",
     "stage": {
@@ -164,10 +163,35 @@
       "tls": "✕ TLS",
       "http": "✕ HTTP"
     },
-    "webFragmentNote": "Web fragmentation (Proxy page) only applies to apps that use the proxy; GoodbyeDPI applies to every app.",
+    "webFragmentNote": "Web fragment (Proxy page) only applies to apps that use the proxy; the DPI bypass here applies to every app.",
     "blacklistSuggested": "suggested from the sample sites — edit, then save to use it",
     "blacklistSaved": "saved",
-    "blacklistSavedRestart": "saved — GoodbyeDPI restarted"
+    "blacklistSavedRestart": "saved — {{engine}} restarted",
+    "engineTitle": "DPI BYPASS FOR EVERY APP",
+    "engine": {
+      "label": "engine",
+      "zapret2": "zapret2 (recommended)",
+      "goodbyedpi": "GoodbyeDPI",
+      "zapret2Desc": "Stronger: fake packets, more split methods, QUIC support",
+      "goodbyedpiDesc": "The previous engine, simple"
+    },
+    "engineHint": {
+      "text": "Try the new zapret2 engine: stronger, with QUIC support.",
+      "try": "use zapret2",
+      "dismiss": "hide tip"
+    },
+    "fallback": {
+      "text": "zapret2 was blocked (probably by antivirus); GoodbyeDPI is standing in. Add the folder {{dir}} to Windows Defender's exclusions, then try again.",
+      "retry": "retry zapret2"
+    },
+    "autoHostlist": {
+      "label": "detect blocked sites automatically",
+      "empty": "no sites detected yet",
+      "removeOne": "remove {{domain}}",
+      "clear": "remove all"
+    },
+    "blacklistSavedReload": "saved — zapret2 loaded the new list",
+    "autotuneDone": "✓ auto-tune picked {{preset}} ({{engine}})"
   },
   "logs": {
     "title": "LOGS",
@@ -193,12 +217,15 @@
     "SWAP_FAILED": "could not switch servers",
     "ADAPTER_ADDED": "protected new adapter: {{adapter}}",
     "SITES_BLOCKED": "{{count}} test sites blocked at TLS",
-    "DPI_STARTED": "GoodbyeDPI running (preset {{preset}})",
-    "DPI_STOPPED": "GoodbyeDPI stopped",
+    "DPI_STARTED": "{{engine}} started (preset {{preset}})",
+    "DPI_STOPPED": "DPI bypass stopped",
     "AUTOTUNE_TRY": "auto-tune: trying {{preset}}",
     "AUTOTUNE_FOUND": "auto-tune: using {{preset}}",
     "PROXY_STARTED": "proxy running on {{addr}}",
-    "PROXY_RESTART": "proxy stopped listening, restarting"
+    "PROXY_RESTART": "proxy stopped listening, restarting",
+    "DPI_FALLBACK": "{{from}} could not start ({{cause}}); using {{to}}",
+    "AUTOTUNE_ENGINE_SWITCHED": "auto-tune switched to {{to}} (preset {{preset}})",
+    "DPI_STRATEGY_RESET": "strategy {{from}} is gone; using {{to}}"
   },
   "settings": {
     "title": "SETTINGS",
@@ -254,15 +281,15 @@
       "action": "Click Restore DNS now"
     },
     "DPI_START_FAILED": {
-      "message": "GoodbyeDPI failed to start",
+      "message": "The DPI bypass engine failed to start",
       "action": "Try another preset"
     },
     "DPI_BLOCKED_BY_AV": {
-      "message": "GoodbyeDPI was blocked by antivirus",
+      "message": "The DPI bypass engine was blocked by antivirus",
       "action": "Exclude the Ghostline folder in your antivirus (WinDivert is often flagged falsely)"
     },
     "DPI_HASH_MISMATCH": {
-      "message": "GoodbyeDPI files were modified; Ghostline refuses to run them",
+      "message": "The DPI bypass engine files were changed; Ghostline refuses to run them",
       "action": "Reinstall Ghostline"
     },
     "SERVERLIST_BAD_SIGNATURE": {
@@ -351,6 +378,22 @@
     "DPI_BLACKLIST_EMPTY": {
       "message": "the blacklist is empty",
       "action": "Add at least one domain, or pick \"all connections\""
+    },
+    "DPI_FALLBACK": {
+      "message": "zapret2 was blocked; GoodbyeDPI is standing in",
+      "action": "Add the zapret2 folder to Defender's exclusions"
+    },
+    "AUTOTUNE_ENGINE_SWITCHED": {
+      "message": "Auto-tune switched to GoodbyeDPI",
+      "action": "zapret2 cannot run on this PC"
+    },
+    "STRATEGY_LIST_INVALID": {
+      "message": "The downloaded strategy list is invalid",
+      "action": "Ghostline keeps the list in use"
+    },
+    "DPI_CUSTOM_REJECTED": {
+      "message": "That custom argument is not allowed",
+      "action": "Remove {{arg}}"
     }
   },
   "tray": {
@@ -424,7 +467,7 @@
       "blockedEvenFragmented": "blocked even fragmented"
     },
     "hint": {
-      "goodbyedpi": "{{count}} connections were blocked even fragmented — try GoodbyeDPI on the DPI page"
+      "goodbyedpi": "{{count}} connections were blocked even fragmented — try the DPI bypass on the DPI page"
     }
   },
   "rules": {

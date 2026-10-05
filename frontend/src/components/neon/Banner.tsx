@@ -3,13 +3,13 @@ import css from "./neon.module.css";
 
 export type BannerAction = { label: string; onClick: () => void; primary?: boolean };
 
-type Props = { tone: "warn" | "err"; children: ReactNode; actions?: BannerAction[] };
+type Props = { tone: "ok" | "warn" | "err"; children: ReactNode; actions?: BannerAction[] };
 
 export function Banner({ tone, children, actions = [] }: Props) {
   return (
     <div className={css.banner} data-tone={tone} role="alert">
       <div>
-        {tone === "warn" ? "⚠ " : "✕ "}
+        {tone === "warn" ? "⚠ " : tone === "err" ? "✕ " : ""}
         {children}
       </div>
       {actions.length > 0 && (

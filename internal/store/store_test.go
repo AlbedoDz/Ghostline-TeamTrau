@@ -41,7 +41,7 @@ func TestWriteJSONAtomic_RoundTripLeavesNoTemp(t *testing.T) {
 
 func TestDefaultSettings_MatchSpec(t *testing.T) {
 	s := store.DefaultSettings()
-	require.Equal(t, 2, s.Version)
+	require.Equal(t, 3, s.Version)
 	require.Equal(t, "vi", s.Language)
 	require.Equal(t, "simple", s.Mode)
 	require.True(t, s.CloseToTray)
@@ -51,7 +51,7 @@ func TestDefaultSettings_MatchSpec(t *testing.T) {
 	require.Equal(t, 5, s.MaxUpstreams)
 	require.Equal(t, []string{"no-filter"}, s.IncludeTags)
 	require.Equal(t, []string{"youtube.com", "discord.com", "x.com"}, s.ProbeSites)
-	require.Equal(t, store.DPISettings{Enabled: false, Preset: "light", CustomArgs: "", Scope: "all"}, s.DPI)
+	require.Equal(t, store.DPISettings{Enabled: false, Engine: "zapret2", Preset: "light", CustomArgs: "", Scope: "all", Zapret2: store.Zapret2Settings{Strategy: "z-split"}}, s.DPI)
 	require.Equal(t, store.FragmentSettings{Enabled: false, Chunks: 5, DelayMs: 5}, s.FragmentDNS)
 	require.Equal(t, store.UpdateSettings{CheckApp: true, UpdateServerList: true}, s.Updates)
 	require.Equal(t, store.WindowSize{Width: 1000, Height: 660}, s.AdvancedWindow)

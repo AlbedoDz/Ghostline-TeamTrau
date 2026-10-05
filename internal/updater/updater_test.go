@@ -106,3 +106,18 @@ func TestFetchDNSCrypt_BadSignatureEverywhere(t *testing.T) {
 	require.Error(t, err)
 	require.True(t, strings.Contains(err.Error(), "signature"))
 }
+
+func TestFetchSigned(t *testing.T) {
+	pub, priv, _ := ed25519.GenerateKey(rand.Reader)
+	_, other, _ := ed25519.GenerateKey(rand.Reader)
+	data := []byte(`{"version":2}`)
+	srv := serveFiles(t, map[string][]byte{"/a": data, "/a.sig": servers.Sign(data, priv), "/b": data, "/b.sig": servers.Sign(data, other)}, nil)
+	raw, sig, err := updater.FetchSigned(context.Background(), srv.Client(), srv.URL+"/a", srv.URL+"/a.sig", pub)
+	require.NoError(t, err)
+	require.Equal(t, data, raw)
+	require.NoError(t, servers.VerifySigned(raw, sig, pub))
+	_, _, err = updater.FetchSigned(context.Background(), srv.Client(), srv.URL+"/b", srv.URL+"/b.sig", pub)
+	require.ErrorIs(t, err, servers.ErrBadSignature)
+	_, _, err = updater.FetchSigned(context.Background(), srv.Client(), srv.URL+"/missing", srv.URL+"/missing.sig", pub)
+	require.Error(t, err)
+}

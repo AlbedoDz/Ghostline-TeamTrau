@@ -22,10 +22,11 @@ const (
 // ErrStateCorrupt means state.json exists but cannot be parsed.
 var ErrStateCorrupt = errors.New("store: state.json is corrupt")
 
-// DPIState records a running GoodbyeDPI process.
+// DPIState records a running DPI engine process.
 type DPIState struct {
-	Running bool `json:"running"`
-	PID     int  `json:"pid"`
+	Running bool   `json:"running"`
+	PID     int    `json:"pid"`
+	Engine  string `json:"engine,omitempty"`
 }
 
 // State is the write-ahead record of what Ghostline changed on the system.

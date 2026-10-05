@@ -84,7 +84,7 @@ func newUpdateChecker(meta *metaFile, st *updateState, bus *app.Bus, log *slog.L
 // runUpdates performs the background jobs: the release check (at start and
 // every 6 hours), the signed server list and the DNSCrypt resolver list
 // (daily). Failures are only logged.
-func runUpdates(ctx context.Context, paths store.Paths, box *app.SettingsBox, cat *catalog, checker *updateChecker, log *slog.Logger) {
+func runUpdates(ctx context.Context, paths store.Paths, box *app.SettingsBox, cat *catalog, strats *strategyBox, checker *updateChecker, log *slog.Logger) {
 	client := &http.Client{Timeout: 30 * time.Second}
 	metaF := checker.meta
 	tick := time.NewTicker(releaseInterval)
@@ -107,6 +107,14 @@ func runUpdates(ctx context.Context, paths store.Paths, box *app.SettingsBox, ca
 			} else if os.WriteFile(paths.ServersRemote, raw, 0o644) == nil && os.WriteFile(paths.ServersRemoteSig, sig, 0o644) == nil {
 				metaF.update(func(m *store.Meta) { m.LastServerList = now })
 				cat.reload()
+			}
+		}
+		if s.Updates.UpdateServerList && updater.Due(meta.LastStrategyList, now) {
+			if raw, sig, err := updater.FetchSigned(ctx, client, brand.StrategyListURL, brand.StrategyListSigURL, serverListKey()); err != nil {
+				log.Info("strategy list", "code", app.CodeStrategyListInvalid, "err", err)
+			} else if os.WriteFile(paths.DPIStrategies, raw, 0o644) == nil && os.WriteFile(paths.DPIStrategiesSig, sig, 0o644) == nil {
+				metaF.update(func(m *store.Meta) { m.LastStrategyList = now })
+				strats.reload()
 			}
 		}
 		if s.Updates.UpdateServerList && updater.Due(meta.LastDNSCrypt, now) {

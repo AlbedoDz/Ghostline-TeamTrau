@@ -100,7 +100,7 @@ test("the fragment cache lists hosts and can be cleared", async () => {
 test("blocked-even-fragmented suggests GoodbyeDPI", async () => {
   render(<Proxy />);
   act(() => useGhost.getState().setProxyStats({ open: 1, lanClients: 0, bytesIn: 1, bytesOut: 1, byOutcome: { blockedEvenFragmented: 2 } } as any));
-  expect(await screen.findByText(/thử bật GoodbyeDPI/)).toBeInTheDocument();
+  expect(await screen.findByText(/thử bật vượt DPI/)).toBeInTheDocument();
 });
 
 test("SYSPROXY_EXISTING asks before replacing", async () => {

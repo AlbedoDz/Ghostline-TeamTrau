@@ -134,7 +134,7 @@ func (o *Orchestrator) heal(ctx context.Context) {
 		}
 		o.update(func(s *Snapshot) {
 			s.Status, s.Error, s.Servers, s.LatencyMs, s.Queries = StatusError, &AppError{Code: CodeEngineSelfTest}, nil, 0, 0
-			s.DPI.Running = false
+			s.DPI.Running, s.DPI.Engine, s.DPI.Fallback = false, "", false
 		})
 		return
 	}

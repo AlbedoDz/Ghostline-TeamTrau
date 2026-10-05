@@ -29,7 +29,7 @@ Hướng dẫn này dành cho người dùng Windows 10/11, không cần biết 
 
 Mỗi khi bạn mở một trang web, máy tính phải hỏi **DNS** "trang này ở địa chỉ IP nào?". Bình thường câu hỏi đó được gửi đi **không mã hoá**, nên nhà mạng có thể đọc, ghi lại hoặc trả lời sai để chặn trang.
 
-Ghostline chạy một DNS nhỏ ngay trên máy bạn (`127.0.0.1`), trỏ mọi card mạng về đó, rồi gửi câu hỏi DNS qua kênh **mã hoá** (DoH, DoT, DoQ, DNSCrypt) tới máy chủ nhanh nhất. Nếu nhà mạng còn chặn bằng cách soi gói tin (DPI), Ghostline có thể bật thêm **GoodbyeDPI** để vượt qua.
+Ghostline chạy một DNS nhỏ ngay trên máy bạn (`127.0.0.1`), trỏ mọi card mạng về đó, rồi gửi câu hỏi DNS qua kênh **mã hoá** (DoH, DoT, DoQ, DNSCrypt) tới máy chủ nhanh nhất. Nếu nhà mạng còn chặn bằng cách soi gói tin (DPI), Ghostline có thể bật thêm engine vượt DPI (**zapret2** hoặc **GoodbyeDPI**) để vượt qua.
 
 Điều quan trọng nhất: **Ghostline luôn trả lại DNS gốc của bạn** khi ngắt kết nối, kể cả khi app bị tắt đột ngột hay máy mất điện.
 
@@ -54,7 +54,7 @@ So mã hiện ra với dòng tương ứng trong file `SHA256SUMS` trên trang R
 
 **Quyền admin.** Ghostline cần quyền quản trị để đổi DNS và chạy GoodbyeDPI, nên Windows sẽ hỏi UAC mỗi lần mở. Chọn **Yes**. Nếu bật *Khởi động cùng Windows*, app được mở qua Task Scheduler và không hỏi UAC nữa.
 
-**Phần mềm diệt virus.** GoodbyeDPI dùng driver **WinDivert**, đôi khi bị antivirus báo nhầm. Ghostline kiểm tra mã băm của GoodbyeDPI trước mỗi lần chạy. Nếu antivirus chặn, thêm thư mục cài Ghostline vào danh sách loại trừ (exclusions).
+**Phần mềm diệt virus.** zapret2 và GoodbyeDPI dùng driver **WinDivert**, hay bị antivirus báo nhầm. Ghostline kiểm tra mã băm của engine trước mỗi lần chạy. Nếu zapret2 bị chặn, Ghostline tạm dùng GoodbyeDPI và trang Vượt DPI hiện đường dẫn thư mục `bin\zapret2` để bạn thêm vào danh sách loại trừ (exclusions) của Windows Defender.
 
 ## 3. Bắt đầu nhanh: một nút bấm
 
@@ -126,21 +126,26 @@ Dùng khi DNS đã được mã hoá nhưng kết nối tới một trang **vẫ
 
 > ⚖️ Bạn tự chịu trách nhiệm tuân thủ pháp luật và điều khoản của nhà mạng. Không dùng các tính năng này để truy cập nội dung bị cấm theo quy định của pháp luật. Xem [Tuyên bố miễn trừ trách nhiệm](../README.vi.md#tuyên-bố-miễn-trừ-trách-nhiệm).
 
-**GoodbyeDPI**
+**Vượt DPI cho mọi ứng dụng**
 
-- **Công tắc GOODBYEDPI:** bật/tắt. GoodbyeDPI chỉ chạy khi Ghostline **đang kết nối**:
-  - `● GoodbyeDPI đã chạy (preset …)`: đang hoạt động.
-  - `○ GoodbyeDPI đang khởi động…`: chờ vài giây để driver WinDivert sẵn sàng.
-  - `○ Đã bật — GoodbyeDPI sẽ chạy khi kết nối`: bạn đã bật nhưng chưa kết nối.
+- **Công tắc:** bật/tắt. Engine chỉ chạy khi Ghostline **đang kết nối**:
+  - `● zapret2 đã chạy (preset …)`: đang hoạt động.
+  - `○ đang khởi động…`: chờ vài giây để driver WinDivert sẵn sàng.
+  - `○ Đã bật — sẽ chạy khi kết nối`: bạn đã bật nhưng chưa kết nối.
+- **Engine:**
+  - **zapret2 (khuyên dùng):** mạnh hơn, có gói giả, nhiều kiểu cắt và hỗ trợ QUIC (YouTube, Google). Danh sách chiến lược được Ghostline cập nhật hằng ngày (có chữ ký), không cần cài bản mới.
+  - **GoodbyeDPI:** engine cũ. Bản cài từ trước khi có zapret2 vẫn dùng GoodbyeDPI cho tới khi bạn tự đổi.
+  - Nếu zapret2 bị antivirus chặn, Ghostline tạm chạy GoodbyeDPI, báo *suy giảm* và hiện nút **thử lại zapret2**.
 - **Preset:** mức độ can thiệp vào gói tin.
   - **Nhẹ → Vừa → Mạnh → Cực mạnh:** mức càng cao càng dễ vượt chặn nhưng có thể làm vài trang chậm hoặc lỗi. Nên bắt đầu từ **Nhẹ**.
-  - **Mode 1–6:** các cấu hình có sẵn của GoodbyeDPI, thử khi các mức trên không hiệu quả.
-  - **Tự nhập:** nhập tham số GoodbyeDPI của riêng bạn (dành cho người dùng hiểu GoodbyeDPI; Ghostline từ chối các tham số nguy hiểm).
+  - **Mode 1–6** (chỉ GoodbyeDPI): các cấu hình có sẵn của GoodbyeDPI, thử khi các mức trên không hiệu quả.
+  - **Tự nhập:** nhập tham số của riêng bạn. Với zapret2 chỉ nhận `--lua-desync=…` gọi các hàm có sẵn; Ghostline từ chối các tham số nguy hiểm.
 - **⚡ tự dò:** Ghostline tự thử từng preset từ nhẹ đến mạnh và giữ preset nhẹ nhất mở được tất cả *trang mẫu*. Cần **kết nối trước** khi tự dò. Bấm lần nữa để huỷ.
 - **Phạm vi:**
   - **mọi kết nối:** áp dụng cho mọi trang web.
-  - **danh sách đen:** chỉ áp dụng cho các domain trong danh sách. Bấm **sửa ›** để chỉnh, mỗi dòng một domain, rồi **lưu**. Cách này ít ảnh hưởng tới các trang khác nhất.
-- **Dòng lệnh:** cho xem chính xác lệnh GoodbyeDPI sẽ chạy.
+  - **danh sách đen:** chỉ áp dụng cho các domain trong danh sách, mỗi dòng một domain, rồi **lưu**. Cách này ít ảnh hưởng tới các trang khác nhất.
+- **Tự phát hiện trang bị chặn** (zapret2, phạm vi danh sách đen): zapret2 tự nhận ra trang bị chặn và thêm vào một danh sách riêng hiện ngay bên dưới; bạn xoá được từng trang.
+- **Dòng lệnh:** cho xem chính xác lệnh engine sẽ chạy.
 
 **Fragment DNS**
 

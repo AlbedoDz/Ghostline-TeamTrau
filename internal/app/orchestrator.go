@@ -522,7 +522,7 @@ func (o *Orchestrator) Disconnect(ctx context.Context) error {
 	}
 	o.update(func(s *Snapshot) {
 		s.Status, s.Error, s.Since, s.Servers, s.BlockedSites, s.LatencyMs, s.Queries = StatusDisconnected, nil, time.Time{}, nil, nil, 0, 0
-		s.DPI.Running = false
+		s.DPI.Running, s.DPI.Engine, s.DPI.Fallback = false, "", false
 		s.Reasons = nil
 	})
 	o.log("system", "DISCONNECTED")
@@ -555,12 +555,12 @@ func (o *Orchestrator) cancelBackground() {
 
 // recordDPI persists GoodbyeDPI's state while DNS is redirected, so the
 // watchdog and --restore also remove the WinDivert driver after a crash.
-func (o *Orchestrator) recordDPI(running bool, pid int) {
+func (o *Orchestrator) recordDPI(running bool, pid int, engine string) {
 	_ = o.d.States.Update(func(st *store.State) error {
 		if st.Phase != store.PhaseDNSSet {
 			return errNoChange
 		}
-		st.DPI = store.DPIState{Running: running, PID: pid}
+		st.DPI = store.DPIState{Running: running, PID: pid, Engine: engine}
 		return nil
 	})
 }

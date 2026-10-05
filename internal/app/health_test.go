@@ -125,7 +125,7 @@ func TestAutotune_StopsAtFirstWorkingPreset(t *testing.T) {
 	require.NoError(t, h.o.Connect(context.Background()))
 	require.Eventually(t, func() bool { return len(h.o.Snapshot().BlockedSites) > 0 }, time.Second, 5*time.Millisecond)
 	var progress []string
-	require.NoError(t, h.o.Autotune(context.Background(), func(p string, i, n int) {
+	require.NoError(t, h.o.Autotune(context.Background(), func(_, p string, i, n int) {
 		progress = append(progress, p)
 		require.Equal(t, 4, n)
 	}))

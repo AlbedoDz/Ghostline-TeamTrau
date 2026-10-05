@@ -34,6 +34,21 @@ Chạy trên Windows 11 x64, terminal **admin**. Đánh dấu từng mục; mụ
 - [ ] **Import danh sách từ link GitHub** cho cả 6 mục "Thêm nhanh" → nhận đúng định dạng, có số mục, ô "Thử tên miền" chỉ đúng danh sách.
 - [ ] **Gỡ cài đặt** khi đang chia sẻ LAN → luật `Ghostline Proxy` bị xoá.
 
+## Kiểm tra thủ công engine zapret2 (spec zapret2 §10.2)
+
+- [ ] **Cài mới, Connect:** các trang mẫu mở được bằng zapret2; YouTube trên Chrome chạy QUIC (kiểm tra `chrome://net-internals`) vẫn xem được.
+- [ ] **Tự dò với zapret2** trên ít nhất hai nhà mạng (ví dụ Viettel, VNPT): tìm được chiến lược; ghi lại chiến lược thắng để chỉnh `lists/strategies.json`.
+- [ ] **Nâng cấp từ v0.2.5:** engine là GoodbyeDPI 0.2.3rc3, preset cũ chạy được, dịch vụ `WinDivert1.4` cũ đã bị gỡ.
+- [ ] **Đổi GoodbyeDPI → zapret2 → GoodbyeDPI khi đang kết nối:** `sc qc WinDivert` trỏ đúng file `.sys` của engine đang chạy.
+- [ ] **Kill `ghostline.exe` bằng Task Manager:** `winws2` chết theo; dịch vụ được gỡ trong ≤ 3 giây.
+- [ ] **Để Defender chặn `winws2.exe`** (bỏ loại trừ, giải nén lại): Connect quay về GoodbyeDPI, banner hướng dẫn hiện ra.
+- [ ] **Phạm vi danh sách đen + tự phát hiện:** mở một trang bị chặn không có trong danh sách ba lần → domain hiện trong danh sách tự thêm, lần sau mở được.
+- [ ] **Tự chạy một `winws2` ngoài Ghostline rồi Connect:** lỗi `DPI_START_FAILED` với gợi ý đúng.
+- [ ] **Defender với bản build:** `ghostline.exe` (đã nhúng `winws2.exe`) không bị Defender xoá khi tải về và khi chạy.
+- [ ] **Nâng zapret2:** `grep -n "_G\[\|load(" assets/zapret2/lua/*.lua` — mọi khoá tham số mới mà thư viện tra như tên hàm phải được thêm vào `funcKeys` trong `internal/dpi/zapret2/validate.go`.
+- [ ] **Ký danh sách chiến lược** (tăng `version` mỗi lần đổi): `go run ./tools/genservers -sign-file lists/strategies.json -sign-env SERVERLIST_SIGNING_KEY`, commit cả `lists/strategies.json.sig`.
+- [ ] **Gửi `winws2.exe` và `ghostline.exe`** lên https://www.microsoft.com/wdsi/filesubmission (báo nhầm); ghi lại mã gửi.
+
 ## Cần xác minh trên máy thật (reviewer không kiểm chứng được)
 
 - [ ] **Luật firewall với đường dẫn có dấu cách và chữ có dấu** (`C:\Program Files\…`, `C:\Users\Đức Hạnh\…` cho bản portable): `netsh` tạo đúng luật `Ghostline Proxy` cho exe đó.
@@ -41,5 +56,5 @@ Chạy trên Windows 11 x64, terminal **admin**. Đánh dấu từng mục; mụ
 - [ ] **Tắt máy khi app đang ẩn ở khay**: Windows gửi `WM_QUERYENDSESSION` tới cửa sổ ẩn, và DNS được trả về trước khi tắt.
 - [ ] **Khởi động cùng Windows** (`--autostart` qua Task Scheduler) rồi Connect: watchdog vẫn sống sau khi tác vụ kết thúc (thử `taskkill /F` → DNS khôi phục).
 - [ ] **Windows 11 có cấu hình DoH riêng cho từng card mạng**: sau Disconnect, cấu hình DoH ban đầu vẫn còn.
-- [ ] **Danh sách đen GoodbyeDPI khi tên người dùng có dấu** (ví dụ `C:\Users\Đức Hạnh`): phạm vi "danh sách đen" hoạt động.
+- [ ] **Danh sách đen GoodbyeDPI và zapret2 khi tên người dùng có dấu** (ví dụ `C:\Users\Đức Hạnh`): phạm vi "danh sách đen" hoạt động.
 - [ ] **Nhật ký → lưu file** trong WebView2 tải được file `ghostline-log.txt`.

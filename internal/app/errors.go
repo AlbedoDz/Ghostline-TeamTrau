@@ -39,6 +39,11 @@ const (
 	CodeUpstreamProxy     = "UPSTREAM_PROXY_FAILED"
 	CodeNoPinnedServers   = "NO_PINNED_SERVERS"
 	CodeDPIBlacklistEmpty = "DPI_BLACKLIST_EMPTY"
+	// DPI engines (zapret2 spec §9.4).
+	CodeDPIFallback            = "DPI_FALLBACK"
+	CodeAutotuneEngineSwitched = "AUTOTUNE_ENGINE_SWITCHED"
+	CodeStrategyListInvalid    = "STRATEGY_LIST_INVALID"
+	CodeDPICustomRejected      = "DPI_CUSTOM_REJECTED"
 )
 
 // AppError is a coded error the UI can translate.

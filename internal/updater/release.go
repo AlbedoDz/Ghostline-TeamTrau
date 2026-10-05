@@ -76,17 +76,25 @@ func get(ctx context.Context, c *http.Client, url string, limit int64) ([]byte, 
 	return io.ReadAll(io.LimitReader(resp.Body, limit))
 }
 
-// FetchServerList downloads a list and its ed25519 signature and verifies it.
-func FetchServerList(ctx context.Context, c *http.Client, url, sigURL string, pub ed25519.PublicKey) (servers.List, []byte, []byte, error) {
-	raw, err := get(ctx, c, url, 8<<20)
-	if err != nil {
-		return servers.List{}, nil, nil, err
+// FetchSigned downloads a file and its ed25519 signature (servers.Sign
+// format) and verifies it.
+func FetchSigned(ctx context.Context, c *http.Client, url, sigURL string, pub ed25519.PublicKey) (raw, sig []byte, err error) {
+	if raw, err = get(ctx, c, url, 8<<20); err != nil {
+		return nil, nil, err
 	}
-	sig, err := get(ctx, c, sigURL, 4096)
-	if err != nil {
-		return servers.List{}, nil, nil, err
+	if sig, err = get(ctx, c, sigURL, 4096); err != nil {
+		return nil, nil, err
 	}
 	if err := servers.VerifySigned(raw, sig, pub); err != nil {
+		return nil, nil, err
+	}
+	return raw, sig, nil
+}
+
+// FetchServerList downloads a list and its ed25519 signature and verifies it.
+func FetchServerList(ctx context.Context, c *http.Client, url, sigURL string, pub ed25519.PublicKey) (servers.List, []byte, []byte, error) {
+	raw, sig, err := FetchSigned(ctx, c, url, sigURL, pub)
+	if err != nil {
 		return servers.List{}, nil, nil, err
 	}
 	l, err := servers.ParseList(raw)

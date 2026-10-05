@@ -8,6 +8,8 @@ type Meta struct {
 	LastUpdateCheck time.Time `json:"lastUpdateCheck"`
 	LastServerList  time.Time `json:"lastServerList"`
 	LastDNSCrypt    time.Time `json:"lastDnsCrypt"`
+	// LastStrategyList is the zapret2 strategy list download (daily).
+	LastStrategyList time.Time `json:"lastStrategyList"`
 	// LatestTag/URL remember the newest release seen, so the notice survives
 	// restarts between the daily checks.
 	LatestTag string `json:"latestTag,omitempty"`

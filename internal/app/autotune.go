@@ -10,92 +10,12 @@ import (
 	"github.com/hashcott/ghostline/internal/store"
 )
 
-// dpiErr maps dpi errors to UI codes.
-func dpiErr(err error) *AppError {
-	switch {
-	case errors.Is(err, dpi.ErrHashMismatch):
-		return appErr(CodeDPIHashMismatch, err)
-	case errors.Is(err, dpi.ErrBlockedByAV):
-		return appErr(CodeDPIBlockedByAV, err)
-	}
-	return appErr(CodeDPIStartFailed, err)
-}
-
-func (o *Orchestrator) dpiArgs(s store.Settings, preset string) ([]string, error) {
-	return dpi.Args(dpi.Preset(preset), s.DPI.CustomArgs, dpi.Scope(s.DPI.Scope), o.d.BlacklistPath)
-}
-
-func (o *Orchestrator) startDPI(ctx context.Context, s store.Settings) error {
-	args, err := o.dpiArgs(s, s.DPI.Preset)
-	if err != nil {
-		return appErr(CodeDPIStartFailed, err)
-	}
-	pid, err := o.d.DPI.Start(ctx, args)
-	if err != nil {
-		return dpiErr(err)
-	}
-	o.recordDPI(true, pid)
-	o.update(func(sn *Snapshot) { sn.DPI = DPIStatus{Enabled: true, Running: true, Preset: s.DPI.Preset} })
-	o.log("dpi", "DPI_STARTED", "preset", s.DPI.Preset)
-	return nil
-}
-
-func (o *Orchestrator) connected() bool {
-	st := o.Snapshot().Status
-	return st == StatusProtected || st == StatusDegraded
-}
-
-// RestartDPI restarts a running GoodbyeDPI so new options or a new
-// blacklist take effect. It does nothing when GoodbyeDPI is not running.
-func (o *Orchestrator) RestartDPI(ctx context.Context) error {
-	o.opMu.Lock()
-	defer o.opMu.Unlock()
-	if !o.d.DPI.Running() {
-		return nil
-	}
-	_ = o.d.DPI.Stop()
-	o.recordDPI(false, 0)
-	if err := o.startDPI(ctx, o.d.Settings()); err != nil {
-		o.update(func(sn *Snapshot) { sn.DPI.Running = false })
-		return err
-	}
-	return nil
-}
-
-// SetDPIEnabled turns GoodbyeDPI on or off. While disconnected it only
-// saves the setting; enabled DPI starts on the next connect.
-func (o *Orchestrator) SetDPIEnabled(ctx context.Context, on bool) error {
-	o.opMu.Lock()
-	defer o.opMu.Unlock()
-	s := o.d.Settings()
-	if on && o.connected() && !o.d.DPI.Running() {
-		// Starting takes seconds; say "enabled" now so snapshots emitted
-		// meanwhile don't flip the UI switch back.
-		o.update(func(sn *Snapshot) { sn.DPI.Enabled = true })
-		if err := o.startDPI(ctx, s); err != nil {
-			o.update(func(sn *Snapshot) { sn.DPI.Enabled = s.DPI.Enabled })
-			return err
-		}
-	}
-	if !on && o.d.DPI.Running() {
-		_ = o.d.DPI.Stop()
-		o.recordDPI(false, 0)
-		o.log("dpi", "DPI_STOPPED")
-	}
-	s.DPI.Enabled = on
-	if err := o.d.SaveSettings(s); err != nil {
-		return err
-	}
-	o.update(func(sn *Snapshot) {
-		sn.DPI.Enabled, sn.DPI.Preset = on, s.DPI.Preset
-		sn.DPI.Running = o.d.DPI.Running()
-	})
-	return nil
-}
-
-// Autotune tries presets lightest first and keeps the first one under
-// which every blocked site passes the TLS stage (spec §7.2).
-func (o *Orchestrator) Autotune(ctx context.Context, onProgress func(preset string, i, n int)) error {
+// Autotune tries the configured engine's strategies lightest first and keeps
+// the first one under which every blocked site passes the TLS stage (spec
+// §7.2). When zapret2 cannot start at all (antivirus, tampered files) it
+// tries GoodbyeDPI's presets instead and, on success, switches the engine:
+// the user asked for whatever works (zapret2 spec §8.3).
+func (o *Orchestrator) Autotune(ctx context.Context, onProgress func(engine, preset string, i, n int)) error {
 	// Probing goes through Ghostline's DNS, so it only means something
 	// while connected.
 	if !o.connected() {
@@ -103,44 +23,67 @@ func (o *Orchestrator) Autotune(ctx context.Context, onProgress func(preset stri
 	}
 	ctx, cancel := o.background(ctx)
 	defer cancel()
+	o.mu.Lock()
+	bg := o.bgCtx // cancelled by Disconnect
+	o.mu.Unlock()
 	o.opMu.Lock()
 	defer o.opMu.Unlock()
 	s := o.d.Settings()
+	before := s
+	// giveUp leaves DPI as auto-tune found it: running the saved engine and
+	// strategy again, unless DPI was off or Disconnect is tearing down.
+	giveUp := func() {
+		o.stopDPI()
+		if !before.DPI.Enabled || bg.Err() != nil || !o.connected() {
+			return
+		}
+		if err := o.startDPI(context.Background(), before); err != nil {
+			o.log("dpi", errCode(err))
+		}
+	}
 	sites := o.Snapshot().BlockedSites
 	if len(sites) == 0 {
 		sites = s.ProbeSites
 	}
-	n := len(dpi.AutotuneOrder)
-	for i, p := range dpi.AutotuneOrder {
+	engine := s.DPI.Engine
+	e, ok := o.d.DPI.Get(engine)
+	if !ok {
+		return appErr(CodeDPIStartFailed, dpi.ErrUnknownEngine, "engine", engine)
+	}
+	steps, switched := e.Strategies(), false
+	for i := 0; i < len(steps); i++ {
+		p := steps[i].ID
 		if err := ctx.Err(); err != nil {
-			_ = o.d.DPI.Stop()
+			giveUp()
 			return err
 		}
 		if onProgress != nil {
-			onProgress(string(p), i+1, n)
+			onProgress(engine, p, i+1, len(steps))
 		}
-		o.log("dpi", "AUTOTUNE_TRY", "preset", string(p))
+		o.log("dpi", "AUTOTUNE_TRY", "engine", engine, "preset", p)
 		if o.d.DPI.Running() {
-			_ = o.d.DPI.Stop()
+			o.stopDPI()
 		}
-		args, err := o.dpiArgs(s, string(p))
-		if err != nil {
-			return appErr(CodeDPIStartFailed, err)
-		}
-		pid, err := o.d.DPI.Start(ctx, args)
-		if err != nil {
-			ae := dpiErr(err)
-			if ae.Code != CodeDPIStartFailed {
-				return ae // hash mismatch / AV: further presets will fail the same way
+		plan := o.planFor(s, engine)
+		plan.Strategy, plan.Custom = p, ""
+		if err := o.startEngine(ctx, engine, plan); err != nil {
+			ae := err.(*AppError)
+			switch {
+			case ae.Code == CodeDPIStartFailed:
+				continue
+			case engine == store.EngineZapret2 && i == 0:
+				engine, switched = store.EngineGoodbyeDPI, true
+				g, _ := o.d.DPI.Get(engine)
+				steps, i = g.Strategies(), -1
+				continue
 			}
-			continue
+			giveUp()
+			return ae // hash mismatch / AV: further presets will fail the same way
 		}
-		o.recordDPI(true, pid)
 		o.d.Sleep(dpiSettleDelay)
 		results := o.d.Prober.ProbeAll(ctx, sites)
 		if err := ctx.Err(); err != nil {
-			_ = o.d.DPI.Stop()
-			o.recordDPI(false, 0)
+			giveUp()
 			return err
 		}
 		ok := true
@@ -149,22 +92,30 @@ func (o *Orchestrator) Autotune(ctx context.Context, onProgress func(preset stri
 				ok = false
 			}
 		}
-		if ok {
-			s.DPI.Enabled, s.DPI.Preset = true, string(p)
-			if err := o.d.SaveSettings(s); err != nil {
-				return err
-			}
-			o.update(func(sn *Snapshot) {
-				sn.DPI = DPIStatus{Enabled: true, Running: true, Preset: string(p)}
-				sn.BlockedSites = nil
-			})
-			o.log("ok", "AUTOTUNE_FOUND", "preset", string(p))
-			return nil
+		if !ok {
+			continue
 		}
+		s.DPI.Enabled, s.DPI.Engine = true, engine
+		if engine == store.EngineZapret2 {
+			s.DPI.Zapret2.Strategy = p
+		} else {
+			s.DPI.Preset = p
+		}
+		if err := o.d.SaveSettings(s); err != nil {
+			return err
+		}
+		o.update(func(sn *Snapshot) {
+			sn.DPI = DPIStatus{Enabled: true, Running: true, Engine: engine, Preset: p}
+			sn.BlockedSites = nil
+		})
+		o.clearReason(ReasonDPIFallback)
+		if switched {
+			o.log("dpi", CodeAutotuneEngineSwitched, "from", store.EngineZapret2, "to", engine, "preset", p)
+		}
+		o.log("ok", "AUTOTUNE_FOUND", "engine", engine, "preset", p)
+		return nil
 	}
-	_ = o.d.DPI.Stop()
-	o.recordDPI(false, 0)
-	o.update(func(sn *Snapshot) { sn.DPI.Running = false })
+	giveUp()
 	return appErr(CodeAutotuneNoPreset, nil)
 }
 

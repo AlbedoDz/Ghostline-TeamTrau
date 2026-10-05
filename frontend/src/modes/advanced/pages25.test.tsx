@@ -12,6 +12,9 @@ const svc = vi.hoisted(() => ({
   StartAutotune: vi.fn(() => Promise.resolve()),
   CancelAutotune: vi.fn(() => Promise.resolve()),
   ProbeNow: vi.fn(() => Promise.resolve([{ site: "youtube.com", stage: "ok", latency: 2e8 }])),
+  DPIStrategies: vi.fn(() => Promise.resolve([{ id: "light", name: { vi: "Nhẹ", en: "Light" } }, { id: "medium", name: { vi: "Vừa", en: "Medium" } }])),
+  GetDPIAutoHostlist: vi.fn(() => Promise.resolve([])),
+  DPIEngineDir: vi.fn(() => Promise.resolve("")),
   PreviewDPIArgs: vi.fn(() => Promise.resolve(["-p", "-r"])),
   GetDPIBlacklist: vi.fn(() => Promise.resolve("")),
   SaveDPIBlacklist: vi.fn(() => Promise.resolve()),
@@ -55,12 +58,12 @@ test("autotune progress renders preset steps", async () => {
   fireEvent.click(screen.getByRole("button", { name: "⚡ tự dò" }));
   expect(svc.StartAutotune).toHaveBeenCalled();
   act(() => useGhost.getState().setAutotune({ preset: "medium", index: 2, total: 4, running: true } as any));
-  expect(screen.getByText(/đang dò: medium \(2\/4\)/)).toBeInTheDocument();
+  expect(await screen.findByText(/đang dò: Vừa \(2\/4\)/)).toBeInTheDocument();
 });
 
 test("dpi toggle and probe", async () => {
   render(<Dpi />);
-  fireEvent.click(screen.getByRole("switch", { name: "GOODBYEDPI" }));
+  fireEvent.click(screen.getByRole("switch", { name: "VƯỢT DPI CHO MỌI ỨNG DỤNG" }));
   expect(svc.SetDPIEnabled).toHaveBeenCalledWith(true);
   fireEvent.click(screen.getByRole("button", { name: "⟳ thử lại" }));
   expect(await screen.findByText("✓")).toBeInTheDocument();
@@ -77,13 +80,13 @@ test("query log toggle calls SetQueryLog and shows RAM-only note", () => {
 test("logs translate codes and filter by source", () => {
   useGhost.getState().setLogs([
     { time: "2026-10-04T14:02:11+07:00", source: "system", code: "CONNECTED", params: { servers: 5 } },
-    { time: "2026-10-04T14:05:41+07:00", source: "dpi", code: "DPI_STARTED", params: { preset: "medium" } },
+    { time: "2026-10-04T14:05:41+07:00", source: "dpi", code: "DPI_STARTED", params: { engine: "goodbyedpi", preset: "medium" } },
   ] as any);
   render(<Logs />);
   expect(screen.getByText("đã kết nối với 5 máy chủ")).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "dpi" }));
   expect(screen.queryByText("đã kết nối với 5 máy chủ")).toBeNull();
-  expect(screen.getByText("GoodbyeDPI đã chạy (preset medium)")).toBeInTheDocument();
+  expect(screen.getByText("goodbyedpi đã chạy (preset medium)")).toBeInTheDocument();
 });
 
 test("settings: restore DNS now calls RestoreDNSNow", () => {
@@ -135,14 +138,14 @@ test("query view toggle survives leaving the logs page", () => { // review minor
 test("errors from Go are translated, not shown raw", async () => {
   svc.SetDPIEnabled.mockRejectedValueOnce(new Error("DPI_START_FAILED: dpi: GoodbyeDPI failed to start"));
   render(<Dpi />);
-  fireEvent.click(screen.getByRole("switch", { name: "GOODBYEDPI" }));
-  expect(await screen.findByText(/GoodbyeDPI không chạy được/)).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("switch", { name: "VƯỢT DPI CHO MỌI ỨNG DỤNG" }));
+  expect(await screen.findByText(/Engine vượt DPI không chạy được/)).toBeInTheDocument();
   expect(screen.queryByText(/map\[/)).toBeNull();
 });
 
 test("dpi toggle reflects the new state and the snapshot from Go", async () => {
   render(<Dpi />);
-  const sw = screen.getByRole("switch", { name: "GOODBYEDPI" });
+  const sw = screen.getByRole("switch", { name: "VƯỢT DPI CHO MỌI ỨNG DỤNG" });
   fireEvent.click(sw);
   await waitFor(() => expect(sw).toHaveAttribute("aria-checked", "true"));
   // Turned off from the tray: the snapshot is the source of truth.
