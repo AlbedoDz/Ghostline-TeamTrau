@@ -148,7 +148,7 @@ Chi tiết thiết kế nằm trong [`docs/superpowers/specs`](docs/superpowers/
 - Chia sẻ LAN chỉ hoạt động trên mạng được Windows đánh dấu **Private**; Ghostline không bao giờ tự đổi profile mạng.
 
 - **Fake SNI** chỉ áp dụng cho trình duyệt trên máy này đi qua proxy, chỉ cho tên miền có rule `sni=`, và làm hỏng app ghim chứng chỉ. Firefox có thể cần bật `security.enterprise_roots.enabled`.
-- **iPhone dùng profile DoH:** nếu máy tính tắt hoặc ngắt kết nối khi iPhone đang ở Wi-Fi nhà, hãy tắt profile trong *Cài đặt › VPN và quản lý thiết bị*. Private DNS của Android không dùng được với Ghostline; hãy đặt DNS tĩnh cho Wi-Fi.
+- **Thiết bị dùng DNS của máy tính sẽ mất mạng khi máy tắt hoặc ngắt kết nối.** iOS không có DNS dự phòng: với profile DoH, iPhone mất mạng ở Wi-Fi nhà cho tới khi bạn chọn *Tự động* trong *Cài đặt › Cài đặt chung › VPN và quản lý thiết bị › DNS* (4G/5G không bị ảnh hưởng). Nút Ngắt kết nối sẽ hỏi lại khi có thiết bị trong mạng đang dùng DNS server; nếu máy tính hay tắt, hãy đặt DNS thủ công cho iPhone thay vì dùng profile. Private DNS của Android không dùng được với Ghostline; hãy đặt DNS tĩnh cho Wi-Fi.
 
 ## Build từ mã nguồn
 

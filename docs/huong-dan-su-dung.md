@@ -271,7 +271,9 @@ Chia sẻ DNS mã hoá của Ghostline cho trình duyệt trên máy này và ch
 | Steam Deck | đặt DNS thủ công cho riêng Wi-Fi nhà (không đặt cho mọi mạng) |
 | iPhone / iPad | *Cài đặt › Wi-Fi › (i) › Định cấu hình DNS › Thủ công* với IP máy tính — hoặc cài profile DoH bên dưới |
 
-**Profile DoH cho iPhone:** chọn hoặc nhập tên Wi-Fi nhà (Ghostline liệt kê các Wi-Fi máy biết; máy cắm dây có thể không có), bấm **mở trang cài đặt cho điện thoại** rồi quét mã QR. Trang mở trong 10 phút. So vân tay trên điện thoại với vân tay trong Ghostline, kiểm tra tên Wi-Fi trên trang (có thể nhập ngay ở đó), tải profile, cài, rồi bật chứng chỉ trong *Cài đặt › Cài đặt chung › Giới thiệu › Cài đặt tin cậy chứng chỉ*. DNS mã hoá chỉ dùng khi ở Wi-Fi nhà. Nếu máy tính tắt khi bạn đang ở nhà, hãy tắt profile trong *Cài đặt › VPN và quản lý thiết bị*. **lưu file…** ghi chứng chỉ và profile ra đĩa thay vì mở trang.
+**Profile DoH cho iPhone:** chọn hoặc nhập tên Wi-Fi nhà (Ghostline liệt kê các Wi-Fi máy biết; máy cắm dây có thể không có), bấm **mở trang cài đặt cho điện thoại** rồi quét mã QR. Trang mở trong 10 phút. So vân tay trên điện thoại với vân tay trong Ghostline, kiểm tra tên Wi-Fi trên trang (có thể nhập ngay ở đó), tải profile, cài, rồi **bật chứng chỉ** trong *Cài đặt › Cài đặt chung › Giới thiệu › Cài đặt tin cậy chứng chỉ* (Tin cậy hoàn toàn). Bước này bắt buộc: thiếu nó, iPhone không dùng được DNS và mất mạng ở Wi-Fi nhà. Cuối cùng kiểm tra *Cài đặt › Cài đặt chung › VPN và quản lý thiết bị › DNS* đang chọn **Ghostline DNS**. DNS mã hoá chỉ dùng khi ở Wi-Fi nhà; khi dùng 4G/5G hay mạng khác, iPhone dùng DNS như bình thường. **lưu file…** ghi chứng chỉ và profile ra đĩa thay vì mở trang.
+
+**Khi máy tính tắt hoặc ngắt kết nối,** mọi thiết bị dùng DNS của máy sẽ mất mạng ở mạng nhà. iOS không tự chuyển sang DNS khác. Để iPhone có mạng lại, mở *Cài đặt › Cài đặt chung › VPN và quản lý thiết bị › DNS* và chọn **Tự động** (hoặc xoá profile). Nếu máy tính hay tắt, hãy dùng cách đặt DNS thủ công ở trên thay cho profile: không cần chứng chỉ và đổi lại rất nhanh. Khi có thiết bị trong mạng dùng DNS server trong 10 phút gần nhất, nút **Ngắt kết nối** (trong app và trên khay) sẽ hỏi lại trước; tắt Windows và **Thoát** thì không hỏi.
 
 **CA LAN:** chứng chỉ mà thiết bị khác tin. Nó chỉ ký được cho IP nội bộ và `*.ghostline.lan`, nên không thể dùng để giả mạo trang web. **tạo lại** sinh CA mới (thiết bị phải cài lại); **gỡ** xoá CA và tắt DNS server.
 
@@ -294,7 +296,7 @@ Danh sách từ nguồn khác chỉ được dùng rule `sni=` sau khi bạn b�
 
 Ghostline có icon hình vòng tròn ở khay (góc dưới bên phải, cạnh đồng hồ). Màu icon cho biết trạng thái. **Bấm chuột phải** để mở menu:
 
-- **Kết nối / Ngắt kết nối**
+- **Kết nối / Ngắt kết nối** (hỏi lại khi có thiết bị trong mạng đang dùng DNS của máy)
 - **Vượt DPI:** bật/tắt GoodbyeDPI nhanh
 - **Proxy: bật/tắt:** bật hoặc tắt proxy cục bộ
 - **Mở Ghostline:** hiện lại cửa sổ

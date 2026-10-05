@@ -147,7 +147,7 @@ Design details live in [`docs/superpowers/specs`](docs/superpowers/specs).
 - LAN sharing works only on networks marked **Private** in Windows; Ghostline never changes the network profile itself.
 
 - **Fake SNI** works only for browsers on this PC going through the proxy, only for domains with an `sni=` rule, and breaks apps that pin certificates. Firefox may need `security.enterprise_roots.enabled`.
-- **iPhone with the DoH profile:** if this PC is off or disconnected while the iPhone is on your home Wi-Fi, turn the profile off in *Settings › VPN & Device Management*. Android's Private DNS cannot use Ghostline; set a static DNS for your Wi-Fi instead.
+- **Devices using this PC's DNS lose the internet when it is off or disconnected.** iOS has no fallback: with the DoH profile, the iPhone has no internet on your home Wi-Fi until you choose *Automatic* in *Settings › General › VPN & Device Management › DNS* (mobile data is not affected). Disconnect asks first while LAN devices use the DNS server; if this PC is often off, set the iPhone's DNS manually instead of using the profile. Android's Private DNS cannot use Ghostline; set a static DNS for your Wi-Fi instead.
 
 ## Building from source
 

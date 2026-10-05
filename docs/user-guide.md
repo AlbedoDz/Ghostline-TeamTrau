@@ -271,7 +271,9 @@ Share Ghostline's encrypted DNS with this PC's browsers and with other devices o
 | Steam Deck | set the DNS manually for your home Wi-Fi only (not for every network) |
 | iPhone / iPad | *Settings › Wi-Fi › (i) › Configure DNS › Manual* with this PC's IP — or install the DoH profile below |
 
-**iPhone DoH profile:** pick or type your home Wi-Fi name (Ghostline lists the networks this PC knows; a PC on Ethernet may list none), press **open the phone setup page** and scan the QR code. The page stays open for 10 minutes. Compare the fingerprint on the phone with the one in Ghostline, check the Wi-Fi name on the page (you can type it there too), download the profile, install it, then turn the certificate on in *Settings › General › About › Certificate Trust Settings*. The encrypted DNS is used only on your home Wi-Fi. If this PC is off while you are at home, turn the profile off in *Settings › VPN & Device Management*. **save files…** writes the certificate and profile to disk instead.
+**iPhone DoH profile:** pick or type your home Wi-Fi name (Ghostline lists the networks this PC knows; a PC on Ethernet may list none), press **open the phone setup page** and scan the QR code. The page stays open for 10 minutes. Compare the fingerprint on the phone with the one in Ghostline, check the Wi-Fi name on the page (you can type it there too), download the profile, install it, then **turn the certificate on** in *Settings › General › About › Certificate Trust Settings* (Full Trust). This step is required: without it the iPhone cannot use the DNS and has no internet on your home Wi-Fi. Finally check that *Settings › General › VPN & Device Management › DNS* shows **Ghostline DNS**. The encrypted DNS is used only on your home Wi-Fi; on mobile data and other networks the iPhone uses its usual DNS. **save files…** writes the certificate and profile to disk instead.
+
+**When this PC is off or disconnected,** every device that uses it for DNS loses the internet on your home network. iOS does not fall back to another DNS server. To get the iPhone back online, open *Settings › General › VPN & Device Management › DNS* and choose **Automatic** (or remove the profile). If this PC is often off, use the manual DNS setting above instead of the profile: it needs no certificate and is quick to switch back. When LAN devices have used the DNS server in the last 10 minutes, **Disconnect** (in the app and in the tray) asks first; shutting Windows down and **Quit** do not ask.
 
 **LAN CA:** the certificate other devices trust. It can only sign private addresses and `*.ghostline.lan`, so it cannot be used to impersonate websites. **recreate** makes a new one (devices must install it again); **remove** deletes it and turns the DNS server off.
 
@@ -294,7 +296,7 @@ Lists from other sources can carry `sni=` rules only after you mark them **trust
 
 Ghostline puts a ring icon in the system tray (bottom right, next to the clock). Its colour shows the current status. **Right-click** it for the menu:
 
-- **Connect / Disconnect**
+- **Connect / Disconnect** (asks first while devices on your network use this PC's DNS)
 - **DPI bypass:** quickly turn GoodbyeDPI on or off
 - **Proxy: on/off:** turn the local proxy on or off
 - **Open Ghostline:** show the window again

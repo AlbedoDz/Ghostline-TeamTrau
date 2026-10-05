@@ -53,7 +53,9 @@ Chạy trên Windows 11 x64, terminal **admin**. Đánh dấu từng mục; mụ
 ## Kiểm tra thủ công giai đoạn 2B (spec 2B §12)
 
 - [ ] **Preset Fake SNI:** làm theo `lists/fakesni/README.md` trên mạng bị chặn, ghi kết quả; ký từng preset và commit `.sig`. `GHOSTLINE_RELEASE=1 go test ./lists/` phải qua.
-- [ ] **iPhone:** cài `.mobileconfig` qua trang cài đặt (QR), bật tin cậy hoàn toàn; DoH chạy ở Wi-Fi nhà; ra 4G vẫn có mạng; ghi lại hành vi khi Ghostline ngắt kết nối và cập nhật hướng dẫn.
+- [x] **iPhone:** cài `.mobileconfig` qua trang cài đặt (QR), bật tin cậy hoàn toàn; DoH chạy ở Wi-Fi nhà; ra 4G vẫn có mạng; ghi lại hành vi khi Ghostline ngắt kết nối và cập nhật hướng dẫn.
+  - Kết quả (0.4.0-dev, 2026-10-05): thiếu bước bật tin cậy hoàn toàn thì iPhone kết nối Wi-Fi nhưng không vào được mạng; bật xong DoH chạy. Mạng Public: iPhone bị chặn; đổi sang Private thì chạy. 4G: vẫn có mạng. Ghostline ngắt kết nối: iPhone **mất mạng ở Wi-Fi nhà** (iOS không có DNS dự phòng); có mạng lại khi chọn *Tự động* trong *VPN và quản lý thiết bị › DNS*. Hướng dẫn, README và trang cài đặt đã ghi điều này.
+- [ ] **Hỏi lại khi ngắt kết nối:** có thiết bị LAN dùng DNS server trong 10 phút gần nhất → nút Ngắt kết nối trong app (cả hai chế độ) và trên khay hỏi lại, chọn Không thì vẫn kết nối; không có thiết bị nào thì không hỏi; tắt Windows và Thoát không hỏi.
 - [ ] **Android:** tắt DNS riêng tư, đặt DNS tĩnh là IP máy; duyệt web được.
 - [ ] **Steam Deck:** đặt DNS thủ công (ghi lại làm được ở Game Mode hay phải sang Desktop mode, cập nhật hướng dẫn).
 - [ ] **Router / TV:** đặt DNS là IP máy; truy vấn hiện trong số thiết bị LAN.
