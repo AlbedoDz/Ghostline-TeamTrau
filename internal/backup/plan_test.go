@@ -49,9 +49,9 @@ func current() backup.Data {
 	s.FakeSNI.AckVersion = 1
 	s.Proxy.Upstreams = []store.UpstreamProxy{{ID: "corp", Type: "socks5", Addr: "10.0.0.1:1080", PassEnc: "local-secret"}}
 	return backup.Data{
-		Settings: s,
-		Rules:    store.RulesFile{Version: 1, Rules: []rules.Rule{{Pattern: "old.com", Action: rules.Action{Block: true}, Enabled: true}}, Lists: []lists.List{}},
-		Custom:   []model.Server{{ID: "x", Address: "https://old.example/dns-query", Source: model.SourceCustom}},
+		Settings:  s,
+		Rules:     store.RulesFile{Version: 1, Rules: []rules.Rule{{Pattern: "old.com", Action: rules.Action{Block: true}, Enabled: true}}, Lists: []lists.List{}},
+		Custom:    []model.Server{{ID: "x", Address: "https://old.example/dns-query", Source: model.SourceCustom}},
 		Blacklist: "old.com\n",
 	}
 }
