@@ -55,12 +55,12 @@ func (w winStore) Install(der []byte) error {
 	if err != nil {
 		return err
 	}
-	defer windows.CertCloseStore(h, 0)
+	defer func() { _ = windows.CertCloseStore(h, 0) }()
 	ctx, err := windows.CertCreateCertificateContext(encoding, &der[0], uint32(len(der)))
 	if err != nil {
 		return fmt.Errorf("certstore: parse: %w", err)
 	}
-	defer windows.CertFreeCertificateContext(ctx)
+	defer func() { _ = windows.CertFreeCertificateContext(ctx) }()
 	if err := windows.CertAddCertificateContextToStore(h, ctx, windows.CERT_STORE_ADD_REPLACE_EXISTING, nil); err != nil {
 		return fmt.Errorf("certstore: add: %w", err)
 	}
@@ -71,7 +71,7 @@ func (w winStore) Install(der []byte) error {
 	if found == nil {
 		return ErrNotInstalled
 	}
-	windows.CertFreeCertificateContext(found)
+	_ = windows.CertFreeCertificateContext(found)
 	return nil
 }
 
@@ -81,7 +81,7 @@ func (w winStore) Remove(thumbprint string) error {
 	if err != nil {
 		return err
 	}
-	defer windows.CertCloseStore(h, 0)
+	defer func() { _ = windows.CertCloseStore(h, 0) }()
 	ctx, err := find(h, thumbprint)
 	if err != nil || ctx == nil {
 		return err
@@ -99,7 +99,7 @@ func (w winStore) List(prefix string) ([]Cert, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer windows.CertCloseStore(h, 0)
+	defer func() { _ = windows.CertCloseStore(h, 0) }()
 	var out []Cert
 	var ctx *windows.CertContext
 	for {

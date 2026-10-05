@@ -38,12 +38,12 @@ func CurrentSSID() (string, error) {
 	if r, _, _ := procWlanOpenHandle.Call(2, 0, uintptr(unsafe.Pointer(&negotiated)), uintptr(unsafe.Pointer(&h))); r != 0 {
 		return "", nil // WLAN AutoConfig not running: no Wi-Fi
 	}
-	defer procWlanCloseHandle.Call(uintptr(h), 0)
+	defer func() { _, _, _ = procWlanCloseHandle.Call(uintptr(h), 0) }()
 	var list unsafe.Pointer
 	if r, _, _ := procWlanEnumInterfaces.Call(uintptr(h), 0, uintptr(unsafe.Pointer(&list))); r != 0 {
 		return "", errors.New("wlan: enumerate interfaces failed")
 	}
-	defer procWlanFreeMemory.Call(uintptr(list))
+	defer func() { _, _, _ = procWlanFreeMemory.Call(uintptr(list)) }()
 	n := *(*uint32)(list)
 	for i := uint32(0); i < n; i++ {
 		info := unsafe.Add(list, 8+uintptr(i)*wlanInterfaceInfoSize)
@@ -61,7 +61,7 @@ func CurrentSSID() (string, error) {
 			l = 32
 		}
 		ssid := string(unsafe.Slice((*byte)(unsafe.Add(data, wlanSSIDOffset+4)), l))
-		procWlanFreeMemory.Call(uintptr(data))
+		_, _, _ = procWlanFreeMemory.Call(uintptr(data))
 		return ssid, nil
 	}
 	return "", nil
@@ -92,12 +92,12 @@ func WifiNames() ([]string, error) {
 	if r, _, _ := procWlanOpenHandle.Call(2, 0, uintptr(unsafe.Pointer(&negotiated)), uintptr(unsafe.Pointer(&h))); r != 0 {
 		return nil, nil
 	}
-	defer procWlanCloseHandle.Call(uintptr(h), 0)
+	defer func() { _, _, _ = procWlanCloseHandle.Call(uintptr(h), 0) }()
 	var ifaces unsafe.Pointer
 	if r, _, _ := procWlanEnumInterfaces.Call(uintptr(h), 0, uintptr(unsafe.Pointer(&ifaces))); r != 0 {
 		return nil, errors.New("wlan: enumerate interfaces failed")
 	}
-	defer procWlanFreeMemory.Call(uintptr(ifaces))
+	defer func() { _, _, _ = procWlanFreeMemory.Call(uintptr(ifaces)) }()
 	seen := map[string]bool{}
 	n := *(*uint32)(ifaces)
 	for i := uint32(0); i < n; i++ {
@@ -108,7 +108,7 @@ func WifiNames() ([]string, error) {
 				name := unsafe.Slice((*uint16)(unsafe.Add(profiles, 8+uintptr(j)*wlanProfileInfoSize)), 256)
 				seen[windows.UTF16ToString(name)] = true
 			}
-			procWlanFreeMemory.Call(uintptr(profiles))
+			_, _, _ = procWlanFreeMemory.Call(uintptr(profiles))
 		}
 		var nets unsafe.Pointer
 		if r, _, _ := procWlanGetAvailableNetworkList.Call(uintptr(h), uintptr(guid), 0, 0, uintptr(unsafe.Pointer(&nets))); r == 0 {
@@ -117,7 +117,7 @@ func WifiNames() ([]string, error) {
 				l := min(*(*uint32)(unsafe.Add(e, 512)), 32)
 				seen[string(unsafe.Slice((*byte)(unsafe.Add(e, 516)), l))] = true
 			}
-			procWlanFreeMemory.Call(uintptr(nets))
+			_, _, _ = procWlanFreeMemory.Call(uintptr(nets))
 		}
 	}
 	delete(seen, "")
