@@ -18,6 +18,8 @@ const (
 	// KindRemoveCerts is --remove-certs (the uninstaller): restore, then
 	// remove every Ghostline root certificate.
 	KindRemoveCerts
+	// KindExport is --export <file>: write a settings backup and exit.
+	KindExport
 )
 
 // Mode is the parsed command line.
@@ -25,6 +27,7 @@ type Mode struct {
 	Kind        Kind
 	ParentPID   uint32
 	ParentStart time.Time
+	ExportPath  string
 }
 
 // Parse reads the run mode from args (without the program name).
@@ -41,6 +44,12 @@ func Parse(args []string) (Mode, error) {
 			m.Kind = KindRemoveCerts
 		case "--watchdog":
 			m.Kind = KindWatchdog
+		case "--export":
+			if i+1 >= len(args) {
+				return Mode{}, fmt.Errorf("cli: --export needs a file")
+			}
+			m.Kind, m.ExportPath = KindExport, args[i+1]
+			i++
 		case "--parent", "--parent-start":
 			if i+1 >= len(args) {
 				return Mode{}, fmt.Errorf("cli: %s needs a value", args[i])

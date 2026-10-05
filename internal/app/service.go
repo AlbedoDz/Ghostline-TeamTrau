@@ -50,6 +50,13 @@ func (b *SettingsBox) Get() store.Settings {
 }
 
 // Save persists and adopts s.
+// set replaces the settings in memory only (the file was already written).
+func (b *SettingsBox) set(s store.Settings) {
+	b.mu.Lock()
+	b.s = s
+	b.mu.Unlock()
+}
+
 func (b *SettingsBox) Save(s store.Settings) error {
 	b.mu.Lock()
 	defer b.mu.Unlock()
@@ -122,6 +129,7 @@ type ServiceDeps struct {
 	BuildUpstream func(model.Server) (upstream.Upstream, error)
 	PlainUpstream func(ip string) (upstream.Upstream, error)                        // plain UDP 53: Ghostline's own engine and the ISP lookup source only
 	DialDirect    func(ctx context.Context, network, addr string) (net.Conn, error) // clean-IP scan: straight out, not via the proxy
+	OpenFile      func(title string) (string, error)                                // native open dialog; "" when cancelled
 	ISPResolvers  func() []string                                                   // this PC's DNS before Ghostline took over
 }
 
@@ -139,7 +147,9 @@ type Service struct {
 	adv        advJob
 	cfCancel   context.CancelFunc
 	cf         cfJob
-	cfRoots    *x509.CertPool // nil = system roots; tests inject a test CA
+	cfRoots    *x509.CertPool   // nil = system roots; tests inject a test CA
+	imp        *importTicket    // the last import preview
+	now        func() time.Time // nil = time.Now; tests inject
 	tuneCancel context.CancelFunc
 	overrideCh chan bool
 
@@ -175,7 +185,9 @@ func (s *Service) SaveSettings(n store.Settings) error { return s.saveSettings(n
 // saveSettings validates and stores n. The DNS server and Fake SNI blocks
 // change only through their own bindings (owned=true): the UI's copy of the
 // settings may be stale and must not undo them.
-func (s *Service) saveSettings(n store.Settings, owned bool) error {
+// validateSettings checks the fields every save (and every import) must
+// pass.
+func (s *Service) validateSettings(n store.Settings) error {
 	if n.Language != "vi" && n.Language != "en" {
 		return fmt.Errorf("settings: language must be vi or en")
 	}
@@ -200,6 +212,13 @@ func (s *Service) saveSettings(n store.Settings, owned bool) error {
 		return fmt.Errorf("settings: dnsBlockMode must be zero or nxdomain")
 	}
 	if err := s.validateDPI(n.DPI); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *Service) saveSettings(n store.Settings, owned bool) error {
+	if err := s.validateSettings(n); err != nil {
 		return err
 	}
 	old := s.x.Settings.Get()
