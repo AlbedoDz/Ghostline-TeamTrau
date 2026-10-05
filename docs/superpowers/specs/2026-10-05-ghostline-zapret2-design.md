@@ -261,7 +261,7 @@ Bước DPI của Connect (hiện là `startDPI`):
 ### 8.4 An toàn hệ thống
 
 - `winws2` chạy ẩn trong job object kill-on-close, như GoodbyeDPI.
-- `state.json` `dpi` thêm `engine`. Watchdog, khôi phục lúc mở app và `--restore` dừng process theo PID **và thời điểm khởi động** của process (tránh giết nhầm PID đã bị tái sử dụng), rồi gỡ mọi dịch vụ có tên bắt đầu bằng `WinDivert`.
+- `state.json` `dpi` thêm `engine` (để ghi log và chẩn đoán). Như hiện tại, process engine nằm trong job object kill-on-close nên chết cùng Ghostline; watchdog, khôi phục lúc mở app và `--restore` chỉ cần gọi `Manager.Stop`, vốn gỡ mọi dịch vụ có tên bắt đầu bằng `WinDivert`. Không giết process theo PID.
 - `--wf-dup-check=1`: nếu đã có một `winws2` khác (người dùng tự chạy zapret) với cùng bộ lọc, `winws2` thoát ngay → `DPI_START_FAILED` với gợi ý "đóng zapret đang chạy bên ngoài Ghostline".
 - Trình gỡ cài đặt xoá `bin/zapret2/` cùng các thư mục engine khác (như hiện tại với `bin/goodbyedpi/`).
 
@@ -298,7 +298,7 @@ dpi-autohostlist.txt         domain winws2 tự thêm
 - Dòng mới **Engine**: `zapret2 (khuyên dùng)` | `GoodbyeDPI`, kèm một dòng mô tả ngắn cho mỗi engine.
 - Danh sách preset/chiến lược và ô tham số tuỳ chỉnh đổi theo engine đang chọn. Nút autotune giữ nguyên.
 - Khi engine là zapret2 và phạm vi là Danh sách: công tắc **Tự phát hiện trang bị chặn**, kèm danh sách domain đã tự thêm (xem, xoá từng dòng, xoá hết).
-- Người dùng đang ở GoodbyeDPI thấy banner đóng được: *"Thử engine mới zapret2: mạnh hơn, hỗ trợ QUIC"*. Đóng rồi thì không hiện lại (`ui.dismissed` lưu trong cài đặt).
+- Người dùng đang ở GoodbyeDPI thấy banner đóng được: *"Thử engine mới zapret2: mạnh hơn, hỗ trợ QUIC"*. Đóng rồi thì không hiện lại (`dpi.hideEngineHint` trong cài đặt).
 - Khi đang ở trạng thái `dpiFallback`: banner cảnh báo kèm hướng dẫn thêm `…\bin\zapret2` vào danh sách loại trừ của Defender và nút "Thử lại zapret2".
 - Chế độ Đơn giản không đổi.
 
