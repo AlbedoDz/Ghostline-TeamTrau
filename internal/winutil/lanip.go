@@ -87,3 +87,19 @@ func LocalLANAddrs() []netip.Addr {
 	}
 	return LANAddrs(ifs, func(i net.Interface) ([]net.Addr, error) { return i.Addrs() })
 }
+
+// IsPrivateOrLocal reports whether a is loopback, private (RFC 1918, ULA)
+// or link-local: the only sources the LAN DNS server and the phone setup
+// page answer.
+func IsPrivateOrLocal(a netip.Addr) bool {
+	a = a.Unmap()
+	if a.IsLoopback() || a.IsLinkLocalUnicast() {
+		return true
+	}
+	for _, p := range privatePrefixes {
+		if p.Contains(a) {
+			return true
+		}
+	}
+	return false
+}

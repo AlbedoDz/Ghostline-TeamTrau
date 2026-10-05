@@ -89,6 +89,12 @@ type Engine struct {
 	latSum  time.Duration
 	latN    uint64
 	per     map[string]UpstreamStat
+
+	// DNS server for this PC and the LAN (serve.go).
+	serve        *proxy.Proxy
+	serveQueries uint64
+	clients      map[netip.Addr]time.Time
+	rates        map[netip.Addr]*rateWindow
 }
 
 // New creates an engine; onQuery may be nil.
@@ -165,6 +171,7 @@ func (e *Engine) Swap(ctx context.Context, ups []upstream.Upstream) error {
 
 // Stop shuts the proxy down and closes its upstreams.
 func (e *Engine) Stop(ctx context.Context) error {
+	_ = e.StopServe(ctx)
 	e.mu.Lock()
 	defer e.mu.Unlock()
 	if e.p == nil {

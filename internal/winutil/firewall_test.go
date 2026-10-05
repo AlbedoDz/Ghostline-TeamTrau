@@ -104,3 +104,13 @@ func TestUnicastAddrs_IncludesPublicAndGlobal(t *testing.T) {
 		netip.MustParseAddr("fe80::1"), netip.MustParseAddr("100.64.1.2"),
 	}, got)
 }
+
+func TestIsPrivateOrLocal(t *testing.T) {
+	for _, s := range []string{"127.0.0.1", "::1", "10.1.2.3", "172.16.0.1", "192.168.1.5", "fd00::1", "169.254.1.1", "fe80::1"} {
+		require.True(t, IsPrivateOrLocal(netip.MustParseAddr(s)), s)
+	}
+	for _, s := range []string{"8.8.8.8", "172.32.0.1", "2001:4860::8888", "100.64.0.1"} {
+		require.False(t, IsPrivateOrLocal(netip.MustParseAddr(s)), s)
+	}
+	require.True(t, IsPrivateOrLocal(netip.MustParseAddr("::ffff:192.168.1.5")))
+}
