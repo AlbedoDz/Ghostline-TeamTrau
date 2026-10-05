@@ -8,6 +8,7 @@ const svc = vi.hoisted(() => ({
   ExportSettings: vi.fn(() => Promise.resolve()),
   PreviewImport: vi.fn(),
   ApplyImport: vi.fn(() => Promise.resolve()),
+  GetSettings: vi.fn(() => Promise.resolve({ language: "vi", proxy: { port: 8181 } })),
 }));
 vi.mock("../../../../app/api", () => ({ Service: svc }));
 
@@ -103,4 +104,16 @@ test("a cancelled file dialog does nothing", async () => {
   fireEvent.click(screen.getByRole("button", { name: "nhập cài đặt…" }));
   await waitFor(() => expect(svc.PreviewImport).toHaveBeenCalled());
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+});
+
+test("after an import the UI reloads settings, so a later save cannot undo it", async () => {
+  useGhost.getState().setSettings({ language: "vi", proxy: { port: 8080 } } as any);
+  const rulesBefore = useGhost.getState().rulesVersion;
+  svc.PreviewImport.mockResolvedValueOnce(preview());
+  render(<Backup />);
+  fireEvent.click(screen.getByRole("button", { name: "nhập cài đặt…" }));
+  fireEvent.click(await screen.findByRole("button", { name: "nhập" }));
+  await waitFor(() => expect(useGhost.getState().settings?.proxy?.port).toBe(8181));
+  expect(useGhost.getState().rulesVersion).toBeGreaterThan(rulesBefore);
+
 });

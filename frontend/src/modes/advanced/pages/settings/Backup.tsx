@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Service, type ImportPreview } from "../../../../app/api";
 import { useGhost } from "../../../../app/store";
-import { describeError } from "../../../../i18n";
+import { describeError, initI18n } from "../../../../i18n";
 import css from "../../advanced.module.css";
 
 const sections = ["settings", "rules", "customServers", "dpiBlacklist", "dpiAutoHostlist"];
@@ -98,6 +98,14 @@ function ImportDialog({ p, onClose }: { p: ImportPreview; onClose: (done: string
     try {
       const order = secs.map((s) => s.name).filter((n) => chosen.includes(n));
       await Service.ApplyImport(p.token, { sections: order, merge, sniRules });
+      // Every later save sends the whole settings copy: reload it now, or
+      // the next save from any page would undo the import.
+      const s = await Service.GetSettings();
+      if (s) {
+        useGhost.getState().setSettings(s);
+        void initI18n(s.language === "en" ? "en" : "vi");
+      }
+      useGhost.getState().bumpRules();
       onClose(t("settings.backup.imported"));
     } catch (e) {
       const msg = describeError(e);
