@@ -32,8 +32,12 @@ func Build(d Data, sections []string, appVersion string, now time.Time) ([]byte,
 		case SecCustom:
 			f.Sections.CustomServers = slices.Clone(d.Custom)
 		case SecBlacklist:
-			b := d.Blacklist
-			f.Sections.DPIBlacklist = &b
+			// An empty list is left out: importing it would wipe the
+			// other PC's blacklist.
+			if len(lines(d.Blacklist)) > 0 {
+				b := d.Blacklist
+				f.Sections.DPIBlacklist = &b
+			}
 		case SecAutoHostlist:
 			f.Sections.DPIAutoHostlist = slices.Clone(d.AutoHostlist)
 		default:

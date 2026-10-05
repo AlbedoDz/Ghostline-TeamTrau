@@ -67,6 +67,9 @@ var (
 	ErrSNIUnconfirmed = errors.New("backup: rules with sni= or connect= need confirmation")
 )
 
+// scopeBlacklist is dpi.ScopeBlacklist (DPI bypass only for listed sites).
+const scopeBlacklist = "blacklist"
+
 // Choices are the user's answers on the preview.
 type Choices struct {
 	Sections []string `json:"sections"`
@@ -133,6 +136,9 @@ func Parse(b []byte, cur Data, v Validators) (*Plan, error) {
 	if sec.DPIBlacklist != nil {
 		p.blacklist = *sec.DPIBlacklist
 		sp := SectionPreview{Name: SecBlacklist}
+		if len(lines(p.blacklist)) == 0 {
+			sp.Errors = append(sp.Errors, "the DPI blacklist is empty")
+		}
 		sp.New, sp.Replaced = diff(lines(p.blacklist), lines(cur.Blacklist), func(s string) string { return s })
 		p.add(sp)
 	}
@@ -303,6 +309,10 @@ func (p *Plan) Result(cur Data, c Choices) (Data, []string, error) {
 			out.AutoHostlist = mergeBy(cur.AutoHostlist, p.autoHost, c.Merge, func(s string) string { return s })
 		}
 		changed = append(changed, name)
+	}
+	if out.Settings.DPI.Scope == scopeBlacklist && len(lines(out.Blacklist)) == 0 &&
+		(slices.Contains(changed, SecSettings) || slices.Contains(changed, SecBlacklist)) {
+		return cur, nil, fmt.Errorf("%w: DPI scope is the blacklist but the blacklist is empty", ErrInvalid)
 	}
 	return out, changed, nil
 }

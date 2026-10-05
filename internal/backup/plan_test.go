@@ -260,3 +260,37 @@ func TestParse_RejectsUnsafeListIDs(t *testing.T) {
 	_, _, err = p.Result(current(), backup.Choices{Sections: []string{"rules"}})
 	require.ErrorIs(t, err, backup.ErrInvalid)
 }
+
+func TestBuild_OmitsEmptyBlacklist(t *testing.T) {
+	d := sampleData()
+	d.Blacklist = "# only a comment\n\n"
+	b, err := backup.Build(d, backup.AllSections, "0.5.0", now)
+	require.NoError(t, err)
+	require.NotContains(t, string(b), `"dpiBlacklist"`, "an empty blacklist must never wipe another PC's list")
+}
+
+func TestParse_EmptyBlacklistIsAnError(t *testing.T) {
+	b := fileWith(t, sampleData(), func(m map[string]any) { m["sections"].(map[string]any)["dpiBlacklist"] = "  \n" })
+	p, err := backup.Parse(b, current(), okValidators)
+	require.NoError(t, err)
+	for _, s := range p.Preview.Sections {
+		if s.Name == "dpiBlacklist" {
+			require.NotEmpty(t, s.Errors)
+		}
+	}
+}
+
+func TestResult_BlacklistScopeNeedsEntries(t *testing.T) {
+	d := sampleData()
+	d.Settings.DPI.Scope = "blacklist"
+	p, err := backup.Parse(fileWith(t, d, nil), current(), okValidators)
+	require.NoError(t, err)
+	empty := current()
+	empty.Blacklist = ""
+	_, _, err = p.Result(empty, backup.Choices{Sections: []string{"settings"}})
+	require.ErrorIs(t, err, backup.ErrInvalid, "scope=blacklist with no blacklist bypasses nothing")
+	_, _, err = p.Result(empty, backup.Choices{Sections: []string{"settings", "dpiBlacklist"}})
+	require.NoError(t, err, "importing the file's blacklist too is fine")
+	_, _, err = p.Result(current(), backup.Choices{Sections: []string{"settings"}})
+	require.NoError(t, err, "this PC already has a blacklist")
+}
