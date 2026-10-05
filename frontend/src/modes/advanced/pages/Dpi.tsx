@@ -37,12 +37,12 @@ export function Dpi() {
   const customArgs = (isZ ? z.customArgs : dpi?.customArgs) ?? "";
   const autoOn = isZ && dpi?.scope === "blacklist" && z.autoHostlist;
   const [custom, setCustom] = useState(customArgs);
-  const [strategies, setStrategies] = useState<Strategy[]>([]);
+  const [loaded, setLoaded] = useState<{ engine: string; list: Strategy[] }>({ engine: "", list: [] });
   const [autoSites, setAutoSites] = useState<string[]>([]);
   const [engineDir, setEngineDir] = useState("");
   const runningName = useStrategyName(snap.dpi?.engine || engine, snap.dpi?.preset);
   const [error, setError] = useState<string | null>(null);
-  const [preview, setPreview] = useState<string[]>([]);
+  const [shown, setShown] = useState<{ engine: string; args: string[] }>({ engine: "", args: [] });
   const [probe, setProbe] = useState<ProbeResult[]>([]);
   // saved: the blacklist file as stored; draft: the editor text. newList is
   // true while a first list is being written: scope switches to blacklist
@@ -56,14 +56,14 @@ export function Dpi() {
   useEffect(() => {
     if (!dpi) return;
     Service.PreviewDPIArgs(engine, strategy, customArgs, dpi.scope, autoOn)
-      .then((a) => setPreview(a ?? []))
-      .catch(() => setPreview([]));
+      .then((a) => setShown({ engine, args: a ?? [] }))
+      .catch(() => setShown({ engine, args: [] }));
   }, [engine, strategy, customArgs, dpi?.scope, autoOn]);
   useEffect(() => {
     setCustom(customArgs);
     Service.DPIStrategies(engine)
-      .then((l) => setStrategies((l ?? []) as Strategy[]))
-      .catch(() => setStrategies([]));
+      .then((l) => setLoaded({ engine, list: (l ?? []) as Strategy[] }))
+      .catch(() => setLoaded({ engine, list: [] }));
   }, [engine]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!autoOn) return;
@@ -107,13 +107,18 @@ export function Dpi() {
     setAutoSites(list);
     Service.SaveDPIAutoHostlist(list).catch((e) => setError(describeError(e)));
   };
+  // Results for the engine just left are dropped, so a switch never shows
+  // one engine's args or strategies under the other's name.
+  const strategies = loaded.engine === engine ? loaded.list : [];
+  const preview = shown.engine === engine ? shown.args : [];
   const nameOf = (st: Strategy) => st.name?.[i18n.language] || st.name?.en || st.id;
   const options: { id: string; label: string }[] = [
     ...strategies.map((st) => ({ id: st.id, label: nameOf(st) })),
     ...(isZ ? [] : GOODBYE_MODES.map((m) => ({ id: m, label: t(`dpi.presets.${m}`) }))),
     { id: "custom", label: t("dpi.presets.custom") },
   ];
-  if (strategy && !options.some((o) => o.id === strategy)) options.unshift({ id: strategy, label: t(`dpi.presets.${strategy}`, strategy) });
+  if (strategy && !options.some((o) => o.id === strategy))
+    options.unshift({ id: strategy, label: loaded.engine === engine ? t(`dpi.presets.${strategy}`, strategy) : "…" });
   const runningEngine = snap.dpi?.engine || engine;
   const suggested = () => (settings.probeSites ?? []).map((s) => s + "\n").join("");
   const showList = dpi.scope === "blacklist" || newList;

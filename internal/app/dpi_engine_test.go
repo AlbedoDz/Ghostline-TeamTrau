@@ -312,3 +312,19 @@ func TestPlanFor_AllScopeHasNoBlacklist(t *testing.T) {
 		require.Equal(t, `C:\data\dpi-blacklist.txt`, h.o.planFor(s, engine).Blacklist, engine)
 	}
 }
+
+// Switching engines takes seconds: meanwhile the UI must say "starting",
+// not keep showing the engine that is being stopped.
+func TestRestartDPI_ShowsStartingWhileSwitching(t *testing.T) {
+	h := newHarness(t)
+	require.NoError(t, h.o.Connect(context.Background()))
+	require.NoError(t, h.o.SetDPIEnabled(context.Background(), true))
+	require.Equal(t, "goodbyedpi", h.o.Snapshot().DPI.Engine)
+	h.setSettings(func(s *store.Settings) { s.DPI.Engine = store.EngineZapret2 })
+	var during DPIStatus
+	h.dpi.onStart = func() { during = h.o.Snapshot().DPI }
+	require.NoError(t, h.o.RestartDPI(context.Background()))
+	require.Equal(t, DPIStatus{Enabled: true}, during)
+	require.Equal(t, "zapret2", h.o.Snapshot().DPI.Engine)
+	require.True(t, h.o.Snapshot().DPI.Running)
+}

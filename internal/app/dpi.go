@@ -92,10 +92,13 @@ func (o *Orchestrator) startDPI(ctx context.Context, s store.Settings) error {
 	return nil
 }
 
-// stopDPI stops the engine and forgets a fallback.
+// stopDPI stops the engine and forgets a fallback. The snapshot says so
+// at once: a restart takes seconds and the UI must not keep showing the
+// engine being stopped.
 func (o *Orchestrator) stopDPI() {
 	_ = o.d.DPI.Stop()
 	o.recordDPI(false, 0, "")
+	o.update(func(sn *Snapshot) { sn.DPI.Running, sn.DPI.Engine, sn.DPI.Preset, sn.DPI.Fallback = false, "", "", false })
 	o.clearReason(ReasonDPIFallback)
 }
 

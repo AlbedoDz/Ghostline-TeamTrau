@@ -133,3 +133,17 @@ test("the running line names the strategy, not its id", async () => {
   render(<Dpi />);
   expect(await screen.findByText(/zapret2 đã chạy \(preset Nhẹ\)/)).toBeInTheDocument();
 });
+
+test("switching engine never shows the old engine's args or a raw strategy id", async () => {
+  withDPI({ engine: "goodbyedpi" });
+  svc.PreviewDPIArgs.mockImplementation(((engine: string) =>
+    engine === "zapret2" ? new Promise(() => {}) : Promise.resolve(["-p", "-r"])) as any);
+  render(<Dpi />);
+  await waitFor(() => expect(screen.getByLabelText("dòng lệnh").textContent).toContain("-p -r"));
+  svc.DPIStrategies.mockImplementation((() => new Promise(() => {})) as any); // zapret2's list still loading
+  fireEvent.click(screen.getByRole("button", { name: "zapret2 (khuyên dùng)" }));
+  await waitFor(() => expect(screen.getByLabelText("dòng lệnh").textContent).toMatch(/^winws2\.exe/));
+  expect(screen.getByLabelText("dòng lệnh").textContent).not.toContain("-p -r");
+  const sel = screen.getByRole("combobox", { name: "preset" }) as HTMLSelectElement;
+  expect(sel.options[sel.selectedIndex].text).not.toBe("z-split");
+});
