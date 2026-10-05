@@ -44,7 +44,7 @@ type Deps struct {
 }
 
 // AllFirewallRules are the rule names a corrupt state may have left.
-var AllFirewallRules = []string{"Ghostline Proxy", "Ghostline DNS (TCP)", "Ghostline DNS (UDP)", "Ghostline Setup"}
+var AllFirewallRules = []string{"Ghostline Proxy", "Ghostline DNS (TCP)", "Ghostline DNS (UDP)", "Ghostline Setup", "Ghostline Block Public"}
 
 // Outcome says what RestoreIfOrphaned did.
 type Outcome int

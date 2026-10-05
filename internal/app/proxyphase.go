@@ -167,6 +167,10 @@ func (o *Orchestrator) startProxyPhase(ctx context.Context) error {
 			if !wantFW {
 				return nil
 			}
+			// Block Public before anything listens on the LAN.
+			if err := o.ensureBlockPublic(); err != nil {
+				return appErr(CodeProxyFirewall, err, "detail", err.Error())
+			}
 			if err := ignoreNoChange(o.setSysProxyState(func(st *store.State) {
 				st.AddFirewallRule(winutil.FirewallRuleName)
 			})); err != nil {

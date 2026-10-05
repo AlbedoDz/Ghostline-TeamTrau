@@ -124,6 +124,7 @@ Section "uninstall"
     nsExec::Exec 'netsh advfirewall firewall delete rule name="Ghostline DNS (TCP)"'
     nsExec::Exec 'netsh advfirewall firewall delete rule name="Ghostline DNS (UDP)"'
     nsExec::Exec 'netsh advfirewall firewall delete rule name="Ghostline Setup"'
+    nsExec::Exec 'netsh advfirewall firewall delete rule name="Ghostline Block Public"'
     nsExec::Exec 'schtasks /Delete /TN "Ghostline" /F'
     nsExec::Exec 'schtasks /Delete /TN "Ghostline Recovery" /F'
     nsExec::Exec 'sc stop WinDivert'

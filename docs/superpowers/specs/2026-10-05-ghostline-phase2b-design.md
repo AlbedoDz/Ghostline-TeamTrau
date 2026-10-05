@@ -206,6 +206,7 @@ Bất biến: không lúc nào CA phiên nằm trong Root mà không có thumbpr
   `netsh advfirewall firewall add rule name="Ghostline DNS (UDP)" dir=in action=allow protocol=UDP localport=53 program="<exe>" profile=private remoteip=localsubnet`
   `netsh advfirewall firewall add rule name="Ghostline Setup" dir=in action=allow protocol=TCP localport=8053 program="<exe>" profile=private remoteip=localsubnet` (chỉ khi mở trang cài đặt, xoá khi đóng)
 - Xoá theo tên, idempotent.
+- **`Ghostline Block Public`** (`dir=in action=block program="<exe>" profile=public`): tạo trước khi bất kỳ listener nào mở ra LAN (chia sẻ proxy hoặc DNS server), ghi vào `state.json` trước, giữ tới Disconnect. Windows tự tạo luật **Allow** cho exe khi người dùng trả lời hộp thoại firewall của nó; luật Block thắng luật Allow, nên trên mạng Public không thiết bị nào vào được Ghostline.
 - Mạng Public → hiện cùng gợi ý như 2A. Không tự đổi profile mạng.
 
 ### 6.5 Khôi phục khi crash

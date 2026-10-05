@@ -34,21 +34,36 @@ const (
 	RuleDNSTCP = "Ghostline DNS (TCP)"
 	RuleDNSUDP = "Ghostline DNS (UDP)"
 	RuleSetup  = "Ghostline Setup"
+	// RuleBlockPublic blocks every inbound connection to Ghostline on
+	// Public networks. Block wins over Allow, so the Allow rules Windows
+	// creates when someone answers its firewall prompt cannot open the
+	// proxy or DNS server on public Wi-Fi.
+	RuleBlockPublic = "Ghostline Block Public"
 )
 
+// BlockPublicRule is the Public-profile block rule.
+var BlockPublicRule = FirewallRule{Name: RuleBlockPublic, Block: true}
+
 // AllRuleNames lists every inbound rule Ghostline may create, for cleanup.
-var AllRuleNames = []string{FirewallRuleName, RuleDNSTCP, RuleDNSUDP, RuleSetup}
+var AllRuleNames = []string{FirewallRuleName, RuleDNSTCP, RuleDNSUDP, RuleSetup, RuleBlockPublic}
 
 // FirewallRule is a named inbound rule for some local ports.
 type FirewallRule struct {
 	Name     string
 	Protocol string // TCP | UDP
 	Ports    []int
+	// Block makes a Public-profile block rule for the exe (all protocols
+	// and ports); Protocol and Ports are ignored.
+	Block bool
 }
 
 // FirewallRuleArgs are the netsh arguments for r: only Ghostline's exe,
 // only Private networks, only the local subnet.
 func FirewallRuleArgs(r FirewallRule, exe string) []string {
+	if r.Block {
+		return []string{"advfirewall", "firewall", "add", "rule", "name=" + r.Name, "dir=in", "action=block",
+			"program=" + exe, "profile=public"}
+	}
 	ports := make([]string, len(r.Ports))
 	for i, p := range r.Ports {
 		ports[i] = strconv.Itoa(p)

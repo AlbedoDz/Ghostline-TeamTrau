@@ -60,7 +60,7 @@ Chạy trên Windows 11 x64, terminal **admin**. Đánh dấu từng mục; mụ
 - [ ] **Chrome, Edge, Firefox với Fake SNI:** trang trong preset mở được khi tắt cả hai engine vượt DPI; banner tím hiện ở cả hai chế độ.
 - [ ] **`certlm.msc`:** không còn `Ghostline Fake SNI` sau Disconnect, sau `taskkill /F`, sau khởi động lại máy; không còn chứng chỉ Ghostline nào sau gỡ cài đặt.
 - [ ] **Wireshark:** không có DNS plain do DoH server, DNS cho LAN hay Fake SNI gây ra (ngoài truy vấn LAN tới cổng 53 của máy).
-- [ ] **Mạng Public:** thiết bị khác không vào được; gợi ý đổi sang Private hiện ra.
+- [ ] **Mạng Public:** thiết bị khác không vào được (kể cả khi đã bấm Allow ở hộp thoại firewall của Windows); có luật `Ghostline Block Public` khi đang chia sẻ, mất sau Disconnect; gợi ý đổi sang Private hiện ra.
 - [ ] **Cổng 53 bị ICS chiếm** (bật chia sẻ Internet): IP đó bị bỏ qua, các IP khác vẫn chạy.
 
 

@@ -141,7 +141,7 @@ func TestConnect_ProxyPhaseRunsAfterProtected(t *testing.T) {
 	require.Equal(t, []ProxyRun{{Listen: listenFor(8080, true, true), ShareLAN: true}}, h.proxy.runs)
 	st, _ := h.states.Load()
 	require.True(t, st.SysProxy.Set)
-	require.Equal(t, []string{winutil.FirewallRuleName}, st.Firewall.Rules)
+	require.ElementsMatch(t, []string{winutil.FirewallRuleName, winutil.RuleBlockPublic}, st.Firewall.Rules)
 }
 
 func TestProxyPhase_FailureAtEachStep(t *testing.T) {
@@ -176,7 +176,7 @@ func TestProxyPhase_FailureAtEachStep(t *testing.T) {
 			require.False(t, sn.Proxy.Running)
 			st, _ := h.states.Load()
 			require.Nil(t, st.SysProxy)
-			require.Nil(t, st.Firewall)
+			require.NotContains(t, firewallRules(st), winutil.FirewallRuleName, "the proxy rule is undone; only the Public block rule may stay")
 			require.Equal(t, store.PhaseDNSSet, st.Phase)
 		})
 	}
@@ -286,7 +286,7 @@ func TestReapplyProxy_PortChange(t *testing.T) {
 	require.Equal(t, "127.0.0.1:9090", h.o.Snapshot().Proxy.Addr)
 	require.Equal(t, listenFor(9090, false, true), h.proxy.runs[len(h.proxy.runs)-1].Listen)
 	st, _ := h.states.Load()
-	require.Nil(t, st.Firewall)
+	require.Equal(t, onlyBlockPublic, firewallRules(st), "only the Public block rule may stay until Disconnect")
 	require.Equal(t, "127.0.0.1:9090", st.SysProxy.Ours)
 }
 

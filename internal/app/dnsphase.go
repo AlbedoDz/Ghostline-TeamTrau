@@ -106,6 +106,10 @@ func (o *Orchestrator) startDNSPhase(ctx context.Context) error {
 			if !ds.ShareLAN || o.d.Firewall == nil {
 				return nil
 			}
+			// Block Public before anything listens on the LAN.
+			if err := o.ensureBlockPublic(); err != nil {
+				return appErr(CodeDNSServerFirewall, err, "detail", err.Error())
+			}
 			for _, r := range dnsRules(ds.DoHPort) {
 				if err := ignoreNoChange(o.setState(func(st *store.State) { st.AddFirewallRule(r.Name) })); err != nil {
 					return appErr(CodeDNSServerFirewall, err, "detail", err.Error())
@@ -284,4 +288,35 @@ func skippedList(res engine.ServeResult) []string {
 	}
 	slices.Sort(out)
 	return out
+}
+
+// ensureBlockPublic adds the Public-profile block rule once (recorded in
+// state.json first), so Allow rules Windows creates from its firewall
+// prompt can never open LAN sharing on a public network.
+func (o *Orchestrator) ensureBlockPublic() error {
+	if o.blockPublic || o.d.Firewall == nil {
+		return nil
+	}
+	if err := ignoreNoChange(o.setState(func(st *store.State) { st.AddFirewallRule(winutil.RuleBlockPublic) })); err != nil {
+		return err
+	}
+	if err := o.d.Firewall.AddNamed(winutil.BlockPublicRule); err != nil {
+		_ = ignoreNoChange(o.setState(func(st *store.State) { st.RemoveFirewallRule(winutil.RuleBlockPublic) }))
+		return err
+	}
+	o.blockPublic = true
+	return nil
+}
+
+// dropBlockPublic removes the block rule at Disconnect.
+func (o *Orchestrator) dropBlockPublic() {
+	if !o.blockPublic {
+		return
+	}
+	if err := o.d.Firewall.DeleteNamed(winutil.RuleBlockPublic); err != nil {
+		o.log("proxy", CodeProxyFirewall, "detail", err.Error())
+		return // stays recorded: recovery removes it
+	}
+	o.blockPublic = false
+	_ = ignoreNoChange(o.setState(func(st *store.State) { st.RemoveFirewallRule(winutil.RuleBlockPublic) }))
 }

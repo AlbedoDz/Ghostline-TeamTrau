@@ -141,5 +141,12 @@ func TestNamedRule_AddDelete(t *testing.T) {
 }
 
 func TestAllRuleNames(t *testing.T) {
-	require.Equal(t, []string{"Ghostline Proxy", "Ghostline DNS (TCP)", "Ghostline DNS (UDP)", "Ghostline Setup"}, AllRuleNames)
+	require.Equal(t, []string{"Ghostline Proxy", "Ghostline DNS (TCP)", "Ghostline DNS (UDP)", "Ghostline Setup", "Ghostline Block Public"}, AllRuleNames)
+}
+
+func TestFirewallRuleArgs_BlockPublic(t *testing.T) {
+	exe := `C:\g.exe`
+	require.Equal(t, []string{"advfirewall", "firewall", "add", "rule", "name=Ghostline Block Public", "dir=in", "action=block",
+		"program=" + exe, "profile=public"}, FirewallRuleArgs(BlockPublicRule, exe))
+	require.Contains(t, AllRuleNames, RuleBlockPublic)
 }

@@ -47,6 +47,9 @@ type Orchestrator struct {
 	dns dnsState
 	// sni is the Fake SNI phase state; guarded by opMu.
 	sni sniState
+	// blockPublic is whether the Public-profile block rule is in place;
+	// guarded by opMu.
+	blockPublic bool
 	// sniTimer stops the pending debounced rotation; guarded by mu.
 	sniTimer func() bool
 	// setup is the open phone setup page; guarded by mu.
@@ -488,6 +491,7 @@ func (o *Orchestrator) disconnectLocked(ctx context.Context) []sysdns.RestoreErr
 	o.stopSNIPhase(ctx)
 	o.stopDNSPhase(ctx)
 	o.stopProxyPhase(ctx)
+	o.dropBlockPublic()
 	errs := o.d.DNS.Restore(snaps)
 	_ = o.d.DNS.Flush()
 	if len(errs) > 0 {

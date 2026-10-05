@@ -102,7 +102,7 @@ func TestRestore_CorruptDeletesFirewallOnly(t *testing.T) {
 	out, err := watchdog.RestoreIfOrphaned(d)
 	require.NoError(t, err)
 	require.Equal(t, watchdog.RestoredFromCorrupt, out)
-	require.Equal(t, []string{"firewall", "firewall", "firewall", "firewall", "dns"}, log)
+	require.Equal(t, []string{"firewall", "firewall", "firewall", "firewall", "firewall", "dns"}, log)
 }
 
 func TestRestore_OwnerAliveTouchesNothing(t *testing.T) {
