@@ -63,6 +63,8 @@ type AppInfo struct {
 	Portable  bool   `json:"portable"`
 	UpdateTag string `json:"updateTag"`
 	UpdateURL string `json:"updateUrl"`
+	Author    string `json:"author"`
+	RepoURL   string `json:"repoUrl"`
 }
 
 // ServerRow is one line of the Servers page.

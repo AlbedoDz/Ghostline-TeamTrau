@@ -257,6 +257,8 @@
     "stopServiceConfirm": "The Windows service {{name}} holds port 53. Stopping it can break Mobile Hotspot, WSL or Hyper-V until you restart. Continue?",
     "saved": "saved",
     "version": "version {{version}}",
+    "about": "Ghostline {{version}} · by {{author}}",
+    "github": "GitHub ↗",
     "update": "new version {{tag}} ↗",
     "checkUpdate": "check for updates",
     "checking": "checking…",

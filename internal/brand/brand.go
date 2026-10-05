@@ -7,6 +7,8 @@ const (
 	AppID            = "ghostline"
 	RepoOwner        = "hashcott"
 	RepoName         = "ghostline"
+	RepoURL          = "https://github.com/" + RepoOwner + "/" + RepoName
+	Author           = "Harry Nguyen"
 	TaskAutostart    = "Ghostline"
 	TaskRecovery     = "Ghostline Recovery"
 	StateMutex       = `Local\Ghostline-State`

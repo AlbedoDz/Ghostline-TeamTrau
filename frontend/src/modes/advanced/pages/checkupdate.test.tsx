@@ -48,3 +48,12 @@ test("check for updates: shows the error", async () => {
   fireEvent.click(screen.getByRole("button", { name: "kiểm tra cập nhật" }));
   expect(await screen.findByText(/không kiểm tra được bản mới/)).toBeInTheDocument();
 });
+
+test("about: shows the author and opens the GitHub repository", async () => {
+  useGhost.getState().setInfo({ version: "0.4.0", portable: false, updateTag: "", updateUrl: "",
+    author: "Harry Nguyen", repoUrl: "https://github.com/hashcott/ghostline" } as any);
+  render(<Settings />);
+  expect(screen.getByText("Ghostline 0.4.0 · tác giả Harry Nguyen")).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "GitHub ↗" }));
+  expect(browser.OpenURL).toHaveBeenCalledWith("https://github.com/hashcott/ghostline");
+});

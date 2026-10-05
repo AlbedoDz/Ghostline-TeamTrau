@@ -184,6 +184,15 @@ export function Settings() {
         </div>
       </div>
 
+      {info?.repoUrl && (
+        <div className={css.panel}>
+          <div className={css.setting}>
+            <span>{t("settings.about", { version: info.version, author: info.author })}</span>
+            <button className={css.ok} onClick={() => void Browser.OpenURL(info.repoUrl)}>{t("settings.github")}</button>
+          </div>
+        </div>
+      )}
+
       {confirmService && (
         <div className={css.dialog} role="dialog">
           <div className={css.dialogBox}>

@@ -202,7 +202,7 @@ func Run(o Options) error {
 		RestoreNow:   func() error { return restoreNow(states, dnsMgr) },
 		Info: func() app.AppInfo {
 			tag, url := update.get()
-			return app.AppInfo{Version: brand.Version, Portable: paths.Portable, UpdateTag: tag, UpdateURL: url}
+			return app.AppInfo{Version: brand.Version, Portable: paths.Portable, UpdateTag: tag, UpdateURL: url, Author: brand.Author, RepoURL: brand.RepoURL}
 		},
 		OnSettingsChanged: func(old, n store.Settings) {
 			if old.StartWithWindows != n.StartWithWindows {
