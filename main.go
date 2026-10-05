@@ -23,7 +23,7 @@ func main() {
 		os.Exit(2)
 	}
 	switch mode.Kind {
-	case cli.KindWatchdog, cli.KindRestore:
+	case cli.KindWatchdog, cli.KindRestore, cli.KindRemoveCerts:
 		os.Exit(runHeadless(mode))
 	}
 	exe, err := os.Executable()

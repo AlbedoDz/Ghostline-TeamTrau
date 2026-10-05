@@ -1,11 +1,14 @@
 package main
 
 import (
+	"errors"
 	"log/slog"
 	"os"
 	"time"
 
 	"github.com/hashcott/ghostline/internal/brand"
+	"github.com/hashcott/ghostline/internal/certs"
+	"github.com/hashcott/ghostline/internal/certstore"
 	"github.com/hashcott/ghostline/internal/cli"
 	"github.com/hashcott/ghostline/internal/logx"
 	"github.com/hashcott/ghostline/internal/store"
@@ -32,6 +35,7 @@ func runHeadless(mode cli.Mode) int {
 		logger.Error("state mutex", "err", err)
 		return 1
 	}
+	roots := certstore.NewWindows(certstore.LocalMachine)
 	d := watchdog.Deps{
 		States:  store.NewStateStore(paths.State, lock),
 		DNS:     sysdns.NewManager(sysdns.NewWindowsAPI(), time.Sleep),
@@ -40,11 +44,17 @@ func runHeadless(mode cli.Mode) int {
 		Log:     logger,
 
 		RestoreSysProxy: sysproxy.Manager{API: sysproxy.NewWindowsAPI()}.RestoreIfOurs,
-		DeleteFirewall:  winutil.DeleteFirewallRule,
+		DeleteRule:      winutil.DeleteNamedRule,
+		RemoveCert:      roots.Remove,
+		SweepSession:    sweepSession(roots),
 	}
 	switch mode.Kind {
 	case cli.KindWatchdog:
 		err = watchdog.RunWatchdog(mode.ParentPID, mode.ParentStart, winutil.WaitForExit, d)
+	case cli.KindRemoveCerts:
+		// The uninstaller: undo whatever a run left, then remove every
+		// Ghostline root and the LAN CA files.
+		err = errors.Join(watchdog.RunRestore(d), watchdog.RemoveAllCerts(roots, paths.LANCACert, paths.LANCAKey))
 	default:
 		err = watchdog.RunRestore(d)
 	}
@@ -61,8 +71,18 @@ func modeName(k cli.Kind) string {
 		return "watchdog"
 	case cli.KindRestore:
 		return "restore"
+	case cli.KindRemoveCerts:
+		return "remove-certs"
 	case cli.KindAutostart:
 		return "autostart"
 	}
 	return "ui"
+}
+
+// sweepSession removes Fake SNI roots not in keep.
+func sweepSession(s certstore.Store) func(keep []string) error {
+	return func(keep []string) error {
+		_, err := certstore.Sweep(s, certs.SessionPrefix, keep)
+		return err
+	}
 }

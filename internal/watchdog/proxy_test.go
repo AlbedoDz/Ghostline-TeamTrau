@@ -38,7 +38,7 @@ func withProxyHooks(d watchdog.Deps, log *[]string, sysErr error) watchdog.Deps 
 		*log = append(*log, "sysproxy:"+ours)
 		return sysErr == nil, sysErr
 	}
-	d.DeleteFirewall = func() error {
+	d.DeleteRule = func(name string) error {
 		*log = append(*log, "firewall")
 		return nil
 	}
@@ -102,7 +102,7 @@ func TestRestore_CorruptDeletesFirewallOnly(t *testing.T) {
 	out, err := watchdog.RestoreIfOrphaned(d)
 	require.NoError(t, err)
 	require.Equal(t, watchdog.RestoredFromCorrupt, out)
-	require.Equal(t, []string{"firewall", "dns"}, log)
+	require.Equal(t, []string{"firewall", "firewall", "firewall", "firewall", "dns"}, log)
 }
 
 func TestRestore_OwnerAliveTouchesNothing(t *testing.T) {

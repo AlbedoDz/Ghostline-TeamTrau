@@ -31,9 +31,19 @@ type Deps struct {
 	// RestoreSysProxy puts the system proxy back if it is still Ghostline's
 	// (sysproxy.Manager.RestoreIfOurs); nil skips it.
 	RestoreSysProxy func(ours string, snap store.SysProxySnapshot) (bool, error)
-	// DeleteFirewall removes the LAN-sharing firewall rule; nil skips it.
-	DeleteFirewall func() error
+	// DeleteRule removes an inbound firewall rule by name (idempotent);
+	// nil skips firewall cleanup.
+	DeleteRule func(name string) error
+	// RemoveCert removes a Fake SNI session CA from the Root store by
+	// thumbprint (a missing one is not an error); nil skips it.
+	RemoveCert func(thumbprint string) error
+	// SweepSession removes every "Ghostline Fake SNI" root not in keep;
+	// nil skips it.
+	SweepSession func(keep []string) error
 }
+
+// AllFirewallRules are the rule names a corrupt state may have left.
+var AllFirewallRules = []string{"Ghostline Proxy", "Ghostline DNS (TCP)", "Ghostline DNS (UDP)", "Ghostline Setup"}
 
 // Outcome says what RestoreIfOrphaned did.
 type Outcome int
@@ -61,10 +71,14 @@ func RestoreIfOrphaned(d Deps) (Outcome, error) {
 		st, err := d.States.Load()
 		if errors.Is(err, store.ErrStateCorrupt) {
 			d.log().Warn("state.json corrupt; resetting loopback adapters to DHCP")
-			if d.DeleteFirewall != nil {
+			if d.DeleteRule != nil {
 				// Idempotent; there is no system proxy snapshot to restore.
-				_ = d.DeleteFirewall()
+				for _, name := range AllFirewallRules {
+					_ = d.DeleteRule(name)
+				}
 			}
+			// No thumbprints to go by: the sweep removes every session CA.
+			defer d.sweep()
 			ads, lerr := d.DNS.LoopbackAdapters()
 			if lerr != nil {
 				return lerr
@@ -89,24 +103,30 @@ func RestoreIfOrphaned(d Deps) (Outcome, error) {
 		}
 		if st.Phase == store.PhaseClean {
 			out = NothingToDo
+			d.sweep()
 			return nil
 		}
 		if d.Alive(st.PID, st.PIDStartTime) {
 			out = OwnerAlive
 			return nil
 		}
-		// Order: system proxy, firewall, DNS (spec 2A 6.5).
+		// Order: session CAs, system proxy, firewall, DNS (spec 2B 6.5).
+		cerr := removeSessionCerts(d, st)
 		perr := restoreProxy(d, st)
 		rerr := joinRestore(d.DNS.Restore(stillOurs(d.DNS, st.Snapshot)))
 		if st.DPI.Running && d.StopDPI != nil {
 			_ = d.StopDPI()
 		}
 		out = Restored
-		if err := errors.Join(perr, rerr); err != nil {
+		if err := errors.Join(cerr, perr, rerr); err != nil {
 			// Keep the state so a later layer can retry.
 			return err
 		}
-		return d.States.Write(store.CleanState())
+		if err := d.States.Write(store.CleanState()); err != nil {
+			return err
+		}
+		d.sweep()
+		return nil
 	})
 	return out, err
 }
@@ -122,12 +142,40 @@ func restoreProxy(d Deps, st store.State) error {
 			errs = append(errs, fmt.Errorf("watchdog: restore system proxy: %w", err))
 		}
 	}
-	if st.Firewall != nil && d.DeleteFirewall != nil {
-		if err := d.DeleteFirewall(); err != nil {
-			errs = append(errs, fmt.Errorf("watchdog: delete firewall rule: %w", err))
+	if st.Firewall != nil && d.DeleteRule != nil {
+		for _, name := range st.Firewall.Rules {
+			if err := d.DeleteRule(name); err != nil {
+				errs = append(errs, fmt.Errorf("watchdog: delete firewall rule %q: %w", name, err))
+			}
 		}
 	}
 	return errors.Join(errs...)
+}
+
+// removeSessionCerts removes the Fake SNI CAs state.json recorded. It runs
+// first: a CA left in the Root store is the most dangerous leftover.
+func removeSessionCerts(d Deps, st store.State) error {
+	if st.Certs == nil || d.RemoveCert == nil {
+		return nil
+	}
+	var errs []error
+	for _, t := range st.Certs.Session {
+		if err := d.RemoveCert(t); err != nil {
+			errs = append(errs, fmt.Errorf("watchdog: remove session CA %s: %w", t, err))
+		}
+	}
+	return errors.Join(errs...)
+}
+
+// sweep removes Fake SNI roots no running session owns (none, here: the
+// owner is gone or the state is clean).
+func (d Deps) sweep() {
+	if d.SweepSession == nil {
+		return
+	}
+	if err := d.SweepSession(nil); err != nil {
+		d.log().Warn("sweeping Fake SNI certificates failed", "err", err)
+	}
 }
 
 // stillOurs keeps the snapshots of adapters whose DNS still points at

@@ -29,6 +29,8 @@ type Paths struct {
 	Rules              string
 	FragCache          string
 	ListsDir           string
+	LANCACert          string
+	LANCAKey           string
 	Portable           bool
 }
 
@@ -46,6 +48,8 @@ func ResolvePaths(exePath, appData string) Paths {
 	j := func(name string) string { return filepath.Join(p.DataDir, name) }
 	p.Settings = j("settings.json")
 	p.State = j("state.json")
+	p.LANCACert = j("lan-ca.crt")
+	p.LANCAKey = j("lan-ca.key")
 	p.Meta = j("meta.json")
 	p.ScanCache = j("scan-cache.json")
 	p.ServersRemote = j("servers-remote.json")

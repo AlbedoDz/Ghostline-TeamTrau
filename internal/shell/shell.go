@@ -15,6 +15,8 @@ import (
 
 	"github.com/hashcott/ghostline/internal/app"
 	"github.com/hashcott/ghostline/internal/brand"
+	"github.com/hashcott/ghostline/internal/certs"
+	"github.com/hashcott/ghostline/internal/certstore"
 	"github.com/hashcott/ghostline/internal/cli"
 	"github.com/hashcott/ghostline/internal/engine"
 	"github.com/hashcott/ghostline/internal/logx"
@@ -77,9 +79,15 @@ func Run(o Options) error {
 	dnsMgr := sysdns.NewManager(sysdns.NewWindowsAPI(), time.Sleep)
 	strats := newStrategyBox(paths, serverListKey(), log)
 	dpiMgr := NewDPIManager(paths, o.GoodbyeDPIAssets, o.Zapret2Assets, strats.get)
+	roots := certstore.NewWindows(certstore.LocalMachine)
 	recoverDeps := watchdog.Deps{States: states, DNS: dnsMgr, StopDPI: dpiMgr.Stop, Alive: winutil.ProcessAlive, Log: log,
 		RestoreSysProxy: sysproxy.Manager{API: sysproxy.NewWindowsAPI()}.RestoreIfOurs,
-		DeleteFirewall:  winutil.DeleteFirewallRule,
+		DeleteRule:      winutil.DeleteNamedRule,
+		RemoveCert:      roots.Remove,
+		SweepSession: func(keep []string) error {
+			_, err := certstore.Sweep(roots, certs.SessionPrefix, keep)
+			return err
+		},
 	}
 
 	// Safety layer 3: restore whatever a dead previous run left behind.

@@ -15,6 +15,9 @@ const (
 	KindAutostart
 	KindWatchdog
 	KindRestore
+	// KindRemoveCerts is --remove-certs (the uninstaller): restore, then
+	// remove every Ghostline root certificate.
+	KindRemoveCerts
 )
 
 // Mode is the parsed command line.
@@ -34,6 +37,8 @@ func Parse(args []string) (Mode, error) {
 			m.Kind = KindAutostart
 		case "--restore":
 			m.Kind = KindRestore
+		case "--remove-certs":
+			m.Kind = KindRemoveCerts
 		case "--watchdog":
 			m.Kind = KindWatchdog
 		case "--parent", "--parent-start":
