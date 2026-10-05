@@ -101,7 +101,7 @@
 ```
 lan-ca.crt             CA LAN (DER), công khai
 lan-ca.key             khoá CA LAN, mã hoá DPAPI (phạm vi máy)
-lists/<id>.txt.minisig chữ ký của danh sách có chữ ký
+lists/<id>.txt.sig      chữ ký ed25519 (base64) của danh sách có chữ ký
 ```
 
 Không có file nào cho CA phiên.
@@ -242,7 +242,7 @@ Bất biến: không lúc nào CA phiên nằm trong Root mà không có thumbpr
 
 - Listener `HTTPSListenAddr` / `UDPListenAddr` / `TCPListenAddr` của `dnsproxy` trong cùng instance với engine, nên rules, cache, thống kê và bảo đảm không rò DNS giữ nguyên.
 - DoH: đường dẫn `/dns-query`, GET và POST (`application/dns-message`), HTTP/2 và HTTP/1.1, TLS ≥ 1.2.
-- **Lọc nguồn:** chỉ nhận loopback, IP riêng (v4 RFC 1918, v6 `fc00::/7`) và link-local. Nguồn khác: bỏ, không trả lời.
+- **Lọc nguồn:** chỉ nhận loopback, IP riêng (v4 RFC 1918, v6 `fc00::/7`) và link-local. Nguồn khác: trả `REFUSED`, không chuyển đi đâu (firewall đã chặn từ ngoài subnet).
 - **Chống lạm dụng:** `Ratelimit` 100 truy vấn/giây mỗi IP, từ chối `ANY` (`REFUSED`).
 - **IP LAN đổi:** health check 30 giây so tập IP; đổi thì chạy lại pha D (ký lại chứng chỉ lá).
 - **Thống kê:** số truy vấn qua DoH và DNS LAN; số thiết bị LAN khác nhau trong 10 phút gần nhất. IP thiết bị chỉ hiện khi bật "hiện truy vấn" và chỉ trong RAM.
@@ -415,7 +415,7 @@ Phát triển theo TDD. Test cần Windows thật gắn build tag `integration`.
 ## 13. Đóng gói và tài liệu
 
 - Không thêm dependency Go nào cho lõi, không thêm file nhị phân nào.
-- Thư mục `lists/fakesni/` trong repo chứa preset và file `.minisig`; quy trình ký giống `servers.json`.
+- Thư mục `lists/fakesni/` trong repo chứa preset và file `.sig`; ký bằng `go run ./tools/genservers -sign-file <file> -sign-env SERVERLIST_SIGNING_KEY` như `servers.json`.
 - Trình gỡ cài đặt NSIS: thêm `--remove-certs` và xoá dự phòng các luật firewall mới.
 - README (EN + VI) và hướng dẫn sử dụng: mục DNS server (máy này, LAN, iOS, Android, router), Fake SNI (cảnh báo, giới hạn chỉ máy này, Firefox), gỡ chứng chỉ bằng tay.
 - `release-checklist.md`: thêm các mục kiểm tra thủ công ở mục 12 và bước xác nhận lại nội dung preset.
@@ -429,7 +429,7 @@ internal/
   certstore/        store.go, api_windows.go
   dnsserver/        listen.go, filter.go, setuppage.go, setuppage_{vi,en}.html
   proxy/mitm/       mitm.go, verify.go
-lists/fakesni/      google.txt, fastly.txt, … kèm .minisig
+lists/fakesni/      google.txt, fastly.txt, … kèm .sig (ký bằng `tools/genservers -sign-file`)
 frontend/src/modes/advanced/pages/{dnsserver,fakesni}/
 ```
 
