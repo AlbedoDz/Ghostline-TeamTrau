@@ -22,8 +22,11 @@ export function initI18n(lang: Lang) {
  */
 export function tCode(key: string, params?: Record<string, unknown>): string {
   if (i18n.exists(key)) return i18n.t(key, params as any) as string;
+  // Untranslated: show the code (or free text such as "HTTP 404") between
+  // the prefix and the suffix, never the suffix ("message") alone.
   const parts = key.split(".");
-  return parts.length > 1 && /^[A-Z0-9_]+$/.test(parts[1]) ? parts[1] : parts[parts.length - 1];
+  if (parts.length > 2) return parts.slice(1, -1).join(".");
+  return parts.length > 1 ? parts[1] : key;
 }
 
 export default i18n;
