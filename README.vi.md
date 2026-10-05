@@ -59,10 +59,10 @@ Ghostline chạy một DNS server cục bộ trên `127.0.0.1` / `::1`, trỏ m�
 
 ## Video hướng dẫn
 
-Video 90 giây hướng dẫn kết nối bằng một nút bấm, quét máy chủ và trang vượt DPI. Có cả [bản tiếng Anh](docs/videos/guide-en.mp4).
+Video 90 giây hướng dẫn kết nối bằng một nút bấm, quét máy chủ và trang vượt DPI. Ảnh động bên dưới được tua nhanh, bấm vào để xem bản đầy đủ. Có cả [bản tiếng Anh](docs/videos/guide-en.mp4).
 
 <p align="center">
-  <a href="docs/videos/guide-vi.mp4"><img src="docs/videos/guide-vi.jpg" width="720" alt="Xem video hướng dẫn Ghostline"></a>
+  <a href="docs/videos/guide-vi.mp4"><img src="docs/videos/guide-vi.webp" width="720" alt="Video hướng dẫn Ghostline (tua nhanh); bấm để xem bản đầy đủ"></a>
 </p>
 
 ## Ảnh chụp màn hình

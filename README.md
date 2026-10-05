@@ -60,10 +60,10 @@ Ghostline runs a local DNS server on `127.0.0.1` / `::1`, points every network a
 
 ## Video
 
-A 90-second walkthrough: one-click connect, scanning servers and the DPI bypass page. A [Vietnamese version](docs/videos/guide-vi.mp4) is also available.
+A 90-second walkthrough: one-click connect, scanning servers and the DPI bypass page. The preview below plays sped up; click it for the full video. A [Vietnamese version](docs/videos/guide-vi.mp4) is also available.
 
 <p align="center">
-  <a href="docs/videos/guide-en.mp4"><img src="docs/videos/guide-en.jpg" width="720" alt="Watch the Ghostline video guide"></a>
+  <a href="docs/videos/guide-en.mp4"><img src="docs/videos/guide-en.webp" width="720" alt="Ghostline video guide (sped up); click for the full video"></a>
 </p>
 
 ## Screenshots
