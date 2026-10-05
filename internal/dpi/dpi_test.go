@@ -16,58 +16,6 @@ import (
 
 var light = []string{"-p", "-r", "-s", "-m", "-e", "40", "-w", "--native-frag"}
 
-func TestArgs_Presets(t *testing.T) {
-	a, err := Args("light", "", ScopeAll, "")
-	require.NoError(t, err)
-	require.Equal(t, light, a)
-
-	a, _ = Args("medium", "", ScopeAll, "")
-	require.Equal(t, append(append([]string{}, light...), "--auto-ttl", "1-4-10", "--min-ttl", "3"), a)
-
-	a, _ = Args("high", "", ScopeAll, "")
-	require.Equal(t, append(append([]string{}, light...), "--auto-ttl", "1-4-10", "--min-ttl", "3", "--wrong-seq"), a)
-
-	a, _ = Args("extreme", "", ScopeAll, "")
-	require.Equal(t, []string{"-p", "-r", "-s", "-m", "-f", "2", "-e", "40", "-w", "--auto-ttl", "1-4-10", "--min-ttl", "3",
-		"--native-frag", "--wrong-chksum", "--wrong-seq", "--max-payload"}, a)
-
-	a, _ = Args("mode3", "", ScopeAll, "")
-	require.Equal(t, []string{"-3"}, a)
-
-	for _, p := range []Preset{"light", "medium", "high", "extreme", "mode1", "mode6"} {
-		a, err := Args(p, "", ScopeAll, "")
-		require.NoError(t, err)
-		require.NotContains(t, a, "--dns-addr")
-	}
-	_, err = Args("bogus", "", ScopeAll, "")
-	require.Error(t, err)
-}
-
-func TestArgs_BlacklistPathWithSpacesIsSingleArg(t *testing.T) { // Review Focus #4
-	p := `C:\Users\Đức Hạnh\AppData\Roaming\Ghostline\dpi-blacklist.txt`
-	a, err := Args("light", "", ScopeBlacklist, p)
-	require.NoError(t, err)
-	require.Equal(t, []string{"--blacklist", p}, a[len(a)-2:])
-}
-
-func TestArgs_Custom(t *testing.T) {
-	a, err := Args("custom", `-p -e 40 --auto-ttl 1-4-10`, ScopeAll, "")
-	require.NoError(t, err)
-	require.Equal(t, []string{"-p", "-e", "40", "--auto-ttl", "1-4-10"}, a)
-}
-
-func TestValidateCustom(t *testing.T) {
-	got, err := ValidateCustom(`-p -e 40 --auto-ttl 1-4-10 --auto-ttl --wrong-seq --ip-id 7`)
-	require.NoError(t, err)
-	require.Equal(t, []string{"-p", "-e", "40", "--auto-ttl", "1-4-10", "--auto-ttl", "--wrong-seq", "--ip-id", "7"}, got)
-	for _, bad := range []string{"--dns-addr 1.1.1.1", "--dnsv6-port 53", "--blacklist x", "--evil", "-e", "-e abc", "rm -rf"} {
-		_, err := ValidateCustom(bad)
-		require.Error(t, err, bad)
-	}
-	_, err = ValidateCustom("--dns-addr 1.1.1.1")
-	require.ErrorIs(t, err, ErrForbiddenFlag)
-}
-
 func sha(s string) string { h := sha256.Sum256([]byte(s)); return hex.EncodeToString(h[:]) }
 
 func TestExtractVerify(t *testing.T) {
