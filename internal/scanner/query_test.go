@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net"
 	"testing"
+	"time"
 
 	"github.com/hashcott/ghostline/internal/scanner"
 	"github.com/miekg/dns"
@@ -46,4 +47,20 @@ func TestClassify(t *testing.T) {
 	var ne net.Error = timeoutErr{}
 	require.Equal(t, "timeout", scanner.Classify(ne, nil))
 	require.Equal(t, "error", scanner.Classify(errors.New("refused"), nil))
+}
+
+func TestExchange_HonoursContextWhenUpstreamDoesNot(t *testing.T) {
+	block := make(chan struct{})
+	defer close(block)
+	u := &answerUp{fn: func(context.Context, *dns.Msg) (*dns.Msg, error) {
+		<-block // ignores ctx, like dnsproxy's plain upstream
+		return nil, errors.New("late")
+	}}
+	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
+	defer cancel()
+	start := time.Now()
+	_, _, err := scanner.Exchange(ctx, u, "example.com", dns.TypeA, false)
+	require.ErrorIs(t, err, context.DeadlineExceeded)
+	require.Less(t, time.Since(start), time.Second)
+	require.Equal(t, "timeout", scanner.Classify(err, ctx.Err()))
 }
