@@ -8,7 +8,7 @@ import { initI18n } from "../../../i18n";
 
 const device = {
   dnsAddrs: ["192.168.1.5"], dohUrls: ["https://192.168.1.5/dns-query"], fingerprint: "AB:CD:EF",
-  ssid: "Nhà", public: false, setupUrl: "", setupRemainingSec: 0,
+  ssid: "Nhà", public: false, setupUrl: "", setupRemainingSec: 0, wifiSuggestions: ["Nhà", "Nhà 5G", "Hàng xóm"],
 };
 
 const svc = vi.hoisted(() => ({
@@ -90,12 +90,12 @@ test("the phone setup page shows a QR code and a countdown, then hides", async (
   await waitFor(() => expect(screen.queryByRole("img", { name: /8053/ })).not.toBeInTheDocument());
 });
 
-test("the iOS profile needs a Wi-Fi name", async () => {
-  svc.GetDeviceInfo.mockResolvedValue({ ...device, ssid: "" });
+test("an empty home Wi-Fi name is warned about while sharing", async () => {
+  svc.GetDeviceInfo.mockResolvedValue({ ...device, ssid: "", wifiSuggestions: [] });
   render(<DnsServer />);
-  expect(await screen.findByText(/nhập tên Wi-Fi nhà/)).toBeInTheDocument();
-  fireEvent.change(screen.getByRole("textbox", { name: "tên Wi-Fi nhà" }), { target: { value: "Home" } });
-  fireEvent.blur(screen.getByRole("textbox", { name: "tên Wi-Fi nhà" }));
+  expect(await screen.findByText(/chưa có tên Wi-Fi nhà/i)).toBeInTheDocument();
+  fireEvent.change(screen.getByRole("combobox", { name: "tên Wi-Fi nhà" }), { target: { value: "Home" } });
+  fireEvent.blur(screen.getByRole("combobox", { name: "tên Wi-Fi nhà" }));
   await waitFor(() => expect(svc.SetIOSSSID).toHaveBeenCalledWith("Home"));
 });
 
@@ -129,4 +129,18 @@ test("overview and simple mode show the DNS server", async () => {
   render(<SimpleView onOpenLogs={() => {}} />);
   expect(screen.getByText(/DNS cho LAN/)).toBeInTheDocument();
   expect(screen.getAllByText(/192\.168\.1\.5/).length).toBeGreaterThan(0);
+});
+
+test("Wi-Fi names to pick from are offered", async () => {
+  render(<DnsServer />);
+  const input = await screen.findByRole("combobox", { name: "tên Wi-Fi nhà" });
+  const list = document.getElementById(input.getAttribute("list")!)!;
+  expect(Array.from(list.querySelectorAll("option")).map((o) => o.getAttribute("value"))).toEqual(["Nhà", "Nhà 5G", "Hàng xóm"]);
+});
+
+test("no warning once a home Wi-Fi name is saved", async () => {
+  useGhost.getState().setSettings({ ...structuredClone(settings), dnsServer: { ...settings.dnsServer, iosSsid: "Nhà" } } as any);
+  render(<DnsServer />);
+  await screen.findByText("https://192.168.1.5/dns-query");
+  expect(screen.queryByText(/chưa có tên Wi-Fi nhà/i)).not.toBeInTheDocument();
 });

@@ -247,6 +247,13 @@ func Run(o Options) error {
 			}
 			return ssid
 		},
+		WifiNames: func() []string {
+			names, err := winutil.WifiNames()
+			if err != nil {
+				log.Warn("wifi names", "err", err)
+			}
+			return names
+		},
 		SaveFile: func(name string, data []byte) error {
 			if wapp == nil {
 				return errors.New("no window")

@@ -162,3 +162,12 @@ func TestCurrentSSID_NoPanic(t *testing.T) {
 	require.NoError(t, err)
 	require.LessOrEqual(t, len(ssid), 32)
 }
+
+func TestWifiNames_NoPanic(t *testing.T) {
+	names, err := WifiNames()
+	require.NoError(t, err)
+	for _, n := range names {
+		require.NotEmpty(t, n)
+		require.LessOrEqual(t, len(n), 32)
+	}
+}

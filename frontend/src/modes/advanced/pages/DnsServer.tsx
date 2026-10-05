@@ -150,10 +150,15 @@ export function DnsServer() {
         )}
         <div className={css.setting}>
           <span>{t("dnsserver.devices.ssid")}</span>
-          <input aria-label={t("dnsserver.devices.ssid")} value={ssid} maxLength={32}
+          <input aria-label={t("dnsserver.devices.ssid")} value={ssid} maxLength={32} list="ghostline-wifi-names"
             onChange={(e) => setSsid(e.target.value)} onBlur={commitSsid} />
         </div>
-        {!ssid && <div className={css.dim}>{t("dnsserver.devices.ssidNeeded")}</div>}
+        <datalist id="ghostline-wifi-names">
+          {(device?.wifiSuggestions ?? []).map((n) => (
+            <option key={n} value={n} />
+          ))}
+        </datalist>
+        {ds.shareLan && !ds.iosSsid && <div className={css.warn}>⚠ {t("dnsserver.devices.ssidWarning")}</div>}
         <div className={css.row} style={{ flexWrap: "wrap" }}>
           {setup ? (
             <Chip onClick={() => void run(Service.CloseSetupPage().then(() => useGhost.getState().setSetup({ url: "", remainingSec: 0 })))}>

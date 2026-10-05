@@ -242,3 +242,11 @@ func TestSaveSettings_StaleCopyKeepsFakeSNIAndDNSServer(t *testing.T) {
 	require.False(t, got.DNSServer.Enabled)
 	require.Equal(t, 8443, got.DNSServer.DoHPort)
 }
+
+func TestGetDeviceInfo_WifiSuggestions(t *testing.T) {
+	h := newSvc2B(t)
+	h.ssid = "Cafe"
+	h.svc.x.WifiNames = func() []string { return []string{"Home", "Cafe", "Office"} }
+	info := h.svc.GetDeviceInfo()
+	require.Equal(t, []string{"Cafe", "Home", "Office"}, info.WifiSuggestions, "current Wi-Fi first, no duplicates")
+}

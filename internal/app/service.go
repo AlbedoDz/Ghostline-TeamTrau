@@ -108,6 +108,8 @@ type ServiceDeps struct {
 	// Phase 2B.
 	NewSetupPage func(files dnsserver.SetupFiles, onStop func()) SetupPage
 	CurrentSSID  func() string
+	// WifiNames lists Wi-Fi networks this PC knows (saved and in range).
+	WifiNames func() []string
 	// SaveFile asks where to save data (native dialog) and writes it.
 	SaveFile func(name string, data []byte) error
 }

@@ -271,7 +271,7 @@ Chia sẻ DNS mã hoá của Ghostline cho trình duyệt trên máy này và ch
 | Steam Deck | đặt DNS thủ công cho riêng Wi-Fi nhà (không đặt cho mọi mạng) |
 | iPhone / iPad | *Cài đặt › Wi-Fi › (i) › Định cấu hình DNS › Thủ công* với IP máy tính — hoặc cài profile DoH bên dưới |
 
-**Profile DoH cho iPhone:** nhập tên Wi-Fi nhà, bấm **mở trang cài đặt cho điện thoại** rồi quét mã QR. Trang mở trong 10 phút. So vân tay trên điện thoại với vân tay trong Ghostline, tải profile, cài, rồi bật chứng chỉ trong *Cài đặt › Cài đặt chung › Giới thiệu › Cài đặt tin cậy chứng chỉ*. DNS mã hoá chỉ dùng khi ở Wi-Fi nhà. Nếu máy tính tắt khi bạn đang ở nhà, hãy tắt profile trong *Cài đặt › VPN và quản lý thiết bị*. **lưu file…** ghi chứng chỉ và profile ra đĩa thay vì mở trang.
+**Profile DoH cho iPhone:** chọn hoặc nhập tên Wi-Fi nhà (Ghostline liệt kê các Wi-Fi máy biết; máy cắm dây có thể không có), bấm **mở trang cài đặt cho điện thoại** rồi quét mã QR. Trang mở trong 10 phút. So vân tay trên điện thoại với vân tay trong Ghostline, kiểm tra tên Wi-Fi trên trang (có thể nhập ngay ở đó), tải profile, cài, rồi bật chứng chỉ trong *Cài đặt › Cài đặt chung › Giới thiệu › Cài đặt tin cậy chứng chỉ*. DNS mã hoá chỉ dùng khi ở Wi-Fi nhà. Nếu máy tính tắt khi bạn đang ở nhà, hãy tắt profile trong *Cài đặt › VPN và quản lý thiết bị*. **lưu file…** ghi chứng chỉ và profile ra đĩa thay vì mở trang.
 
 **CA LAN:** chứng chỉ mà thiết bị khác tin. Nó chỉ ký được cho IP nội bộ và `*.ghostline.lan`, nên không thể dùng để giả mạo trang web. **tạo lại** sinh CA mới (thiết bị phải cài lại); **gỡ** xoá CA và tắt DNS server.
 

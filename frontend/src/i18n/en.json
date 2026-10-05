@@ -679,13 +679,13 @@
       "doh": "DoH URL",
       "fingerprint": "LAN CA fingerprint",
       "ssid": "home Wi-Fi name",
-      "ssidNeeded": "enter your home Wi-Fi name to build the iOS profile",
       "openSetup": "open the phone setup page",
       "closeSetup": "close the setup page",
       "setupQr": "QR code for {{url}}",
       "remaining": "closes in {{time}}",
       "saveFiles": "save files…",
-      "notShared": "turn on \"share on the LAN\" and connect so other devices can use it"
+      "notShared": "turn on \"share on the LAN\" and connect so other devices can use it",
+      "ssidWarning": "No home Wi-Fi name yet: pick or type it here (exactly as on the phone). If you leave it empty, iPhone users must type the Wi-Fi name on the setup page."
     },
     "ca": {
       "title": "LAN CA",

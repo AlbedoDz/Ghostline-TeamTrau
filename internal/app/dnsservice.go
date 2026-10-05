@@ -5,16 +5,20 @@ import (
 	"errors"
 	"fmt"
 	"net/netip"
+	"slices"
 
 	"github.com/hashcott/ghostline/internal/store"
 )
 
 // DeviceInfo is what the "Use on other devices" card shows.
 type DeviceInfo struct {
-	DNSAddrs          []string `json:"dnsAddrs"`
-	DoHURLs           []string `json:"dohUrls"`
-	Fingerprint       string   `json:"fingerprint"`
-	SSID              string   `json:"ssid"` // saved home Wi-Fi, else the current one
+	DNSAddrs    []string `json:"dnsAddrs"`
+	DoHURLs     []string `json:"dohUrls"`
+	Fingerprint string   `json:"fingerprint"`
+	SSID        string   `json:"ssid"` // saved home Wi-Fi, else the current one
+	// WifiSuggestions are names to pick from: the current Wi-Fi first,
+	// then saved and nearby networks.
+	WifiSuggestions   []string `json:"wifiSuggestions"`
 	Public            bool     `json:"public"`
 	SetupURL          string   `json:"setupUrl"`
 	SetupRemainingSec int      `json:"setupRemainingSec"`
@@ -23,9 +27,23 @@ type DeviceInfo struct {
 // GetDeviceInfo describes how other devices can use the DNS server.
 func (s *Service) GetDeviceInfo() DeviceInfo {
 	st := s.x.Settings.Get()
-	info := DeviceInfo{DNSAddrs: []string{}, DoHURLs: []string{}, SSID: st.DNSServer.IOSSSID}
-	if info.SSID == "" && s.x.CurrentSSID != nil {
-		info.SSID = s.x.CurrentSSID()
+	info := DeviceInfo{DNSAddrs: []string{}, DoHURLs: []string{}, SSID: st.DNSServer.IOSSSID, WifiSuggestions: []string{}}
+	current := ""
+	if s.x.CurrentSSID != nil {
+		current = s.x.CurrentSSID()
+	}
+	if info.SSID == "" {
+		info.SSID = current
+	}
+	if current != "" {
+		info.WifiSuggestions = append(info.WifiSuggestions, current)
+	}
+	if s.x.WifiNames != nil {
+		for _, n := range s.x.WifiNames() {
+			if !slices.Contains(info.WifiSuggestions, n) {
+				info.WifiSuggestions = append(info.WifiSuggestions, n)
+			}
+		}
 	}
 	if s.x.LANInfo != nil {
 		info.Public = s.x.LANInfo().Public

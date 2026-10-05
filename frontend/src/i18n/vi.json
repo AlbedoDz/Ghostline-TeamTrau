@@ -679,13 +679,13 @@
       "doh": "URL DoH",
       "fingerprint": "vân tay CA LAN",
       "ssid": "tên Wi-Fi nhà",
-      "ssidNeeded": "hãy nhập tên Wi-Fi nhà để tạo profile iOS",
       "openSetup": "mở trang cài đặt cho điện thoại",
       "closeSetup": "đóng trang cài đặt",
       "setupQr": "mã QR cho {{url}}",
       "remaining": "tự đóng sau {{time}}",
       "saveFiles": "lưu file…",
-      "notShared": "bật \"chia sẻ cho LAN\" và kết nối để thiết bị khác dùng được"
+      "notShared": "bật \"chia sẻ cho LAN\" và kết nối để thiết bị khác dùng được",
+      "ssidWarning": "Chưa có tên Wi-Fi nhà: chọn hoặc nhập ở đây (đúng như trên điện thoại). Nếu để trống, người dùng iPhone phải tự nhập tên Wi-Fi trên trang cài đặt."
     },
     "ca": {
       "title": "CA LAN",
