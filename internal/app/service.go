@@ -177,6 +177,9 @@ func (s *Service) saveSettings(n store.Settings, owned bool) error {
 	if err := store.ValidateProxy(n.Proxy); err != nil {
 		return err
 	}
+	if err := store.ValidateTools(n.Tools); err != nil {
+		return err
+	}
 	if n.DNSBlockMode != "zero" && n.DNSBlockMode != "nxdomain" {
 		return fmt.Errorf("settings: dnsBlockMode must be zero or nxdomain")
 	}

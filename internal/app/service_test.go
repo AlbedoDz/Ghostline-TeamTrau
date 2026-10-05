@@ -228,3 +228,14 @@ func TestBus_StateAndLogEmit(t *testing.T) {
 	require.Positive(t, s.em.count(EventLog))
 	require.NotEmpty(t, s.svc.GetLogs())
 }
+
+func TestSaveSettings_RejectsBadTools(t *testing.T) {
+	s := newSvc(t)
+	st := store.DefaultSettings()
+	st.Tools.CFScan.Host = "1.1.1.1"
+	require.Error(t, s.svc.SaveSettings(st))
+	st = store.DefaultSettings()
+	st.Tools.Scanner.Rounds = 21
+	require.Error(t, s.svc.SaveSettings(st))
+	require.NoError(t, s.svc.SaveSettings(store.DefaultSettings()))
+}

@@ -29,7 +29,7 @@ func TestLoadSettings_V1Upgrades(t *testing.T) {
 	s, recovered, err := store.LoadSettings(path)
 	require.NoError(t, err)
 	require.False(t, recovered)
-	require.Equal(t, 4, s.Version)
+	require.Equal(t, 5, s.Version)
 	require.Equal(t, "goodbyedpi", s.DPI.Engine)
 	require.Equal(t, store.DefaultSettings().Proxy, s.Proxy)
 	require.Equal(t, "zero", s.DNSBlockMode)

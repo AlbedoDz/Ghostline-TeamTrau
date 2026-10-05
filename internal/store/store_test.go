@@ -41,7 +41,7 @@ func TestWriteJSONAtomic_RoundTripLeavesNoTemp(t *testing.T) {
 
 func TestDefaultSettings_MatchSpec(t *testing.T) {
 	s := store.DefaultSettings()
-	require.Equal(t, 4, s.Version)
+	require.Equal(t, 5, s.Version)
 	require.Equal(t, "vi", s.Language)
 	require.Equal(t, "simple", s.Mode)
 	require.True(t, s.CloseToTray)
