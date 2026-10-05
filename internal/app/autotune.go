@@ -23,9 +23,24 @@ func (o *Orchestrator) Autotune(ctx context.Context, onProgress func(engine, pre
 	}
 	ctx, cancel := o.background(ctx)
 	defer cancel()
+	o.mu.Lock()
+	bg := o.bgCtx // cancelled by Disconnect
+	o.mu.Unlock()
 	o.opMu.Lock()
 	defer o.opMu.Unlock()
 	s := o.d.Settings()
+	before := s
+	// giveUp leaves DPI as auto-tune found it: running the saved engine and
+	// strategy again, unless DPI was off or Disconnect is tearing down.
+	giveUp := func() {
+		o.stopDPI()
+		if !before.DPI.Enabled || bg.Err() != nil || !o.connected() {
+			return
+		}
+		if err := o.startDPI(context.Background(), before); err != nil {
+			o.log("dpi", errCode(err))
+		}
+	}
 	sites := o.Snapshot().BlockedSites
 	if len(sites) == 0 {
 		sites = s.ProbeSites
@@ -39,7 +54,7 @@ func (o *Orchestrator) Autotune(ctx context.Context, onProgress func(engine, pre
 	for i := 0; i < len(steps); i++ {
 		p := steps[i].ID
 		if err := ctx.Err(); err != nil {
-			o.stopDPI()
+			giveUp()
 			return err
 		}
 		if onProgress != nil {
@@ -62,12 +77,13 @@ func (o *Orchestrator) Autotune(ctx context.Context, onProgress func(engine, pre
 				steps, i = g.Strategies(), -1
 				continue
 			}
+			giveUp()
 			return ae // hash mismatch / AV: further presets will fail the same way
 		}
 		o.d.Sleep(dpiSettleDelay)
 		results := o.d.Prober.ProbeAll(ctx, sites)
 		if err := ctx.Err(); err != nil {
-			o.stopDPI()
+			giveUp()
 			return err
 		}
 		ok := true
@@ -99,8 +115,7 @@ func (o *Orchestrator) Autotune(ctx context.Context, onProgress func(engine, pre
 		o.log("ok", "AUTOTUNE_FOUND", "engine", engine, "preset", p)
 		return nil
 	}
-	o.stopDPI()
-	o.update(func(sn *Snapshot) { sn.DPI.Running, sn.DPI.Engine, sn.DPI.Fallback = false, "", false })
+	giveUp()
 	return appErr(CodeAutotuneNoPreset, nil)
 }
 

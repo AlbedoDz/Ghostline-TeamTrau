@@ -328,3 +328,56 @@ func TestRestartDPI_ShowsStartingWhileSwitching(t *testing.T) {
 	require.Equal(t, "zapret2", h.o.Snapshot().DPI.Engine)
 	require.True(t, h.o.Snapshot().DPI.Running)
 }
+
+// A cancelled or fruitless auto-tune must leave DPI as it found it, not
+// stopped with the switch still on ("starting…" forever).
+func TestAutotune_CancelRestoresPreviousEngine(t *testing.T) {
+	h := zapretHarness(t)
+	require.NoError(t, h.o.SetDPIEnabled(context.Background(), true))
+	h.setSettings(func(s *store.Settings) { s.DPI.Zapret2.Strategy = "z-fake" })
+	require.NoError(t, h.o.RestartDPI(context.Background()))
+	ctx, cancel := context.WithCancel(context.Background())
+	h.prober.stage = func(string, int) probe.Stage { cancel(); return probe.StageTLS }
+	require.Error(t, h.o.Autotune(ctx, nil))
+	st := h.dpi.lastStart()
+	require.Equal(t, "zapret2", st.engine)
+	require.Equal(t, "z-fake", st.plan.Strategy)
+	sn := h.o.Snapshot().DPI
+	require.True(t, sn.Running)
+	require.Equal(t, "z-fake", sn.Preset)
+}
+
+func TestAutotune_NoPresetRestoresPreviousEngine(t *testing.T) {
+	h := zapretHarness(t)
+	require.NoError(t, h.o.SetDPIEnabled(context.Background(), true))
+	h.prober.stage = func(string, int) probe.Stage { return probe.StageTLS }
+	requireCode(t, h.o.Autotune(context.Background(), nil), CodeAutotuneNoPreset)
+	require.True(t, h.dpi.Running())
+	require.Equal(t, "z-split", h.dpi.lastStart().plan.Strategy)
+	require.True(t, h.o.Snapshot().DPI.Running)
+}
+
+func TestAutotune_NoPresetLeavesDPIOffWhenItWasOff(t *testing.T) {
+	h := zapretHarness(t)
+	h.prober.stage = func(string, int) probe.Stage { return probe.StageTLS }
+	requireCode(t, h.o.Autotune(context.Background(), nil), CodeAutotuneNoPreset)
+	require.False(t, h.dpi.Running())
+	sn := h.o.Snapshot().DPI
+	require.False(t, sn.Running)
+	require.False(t, sn.Enabled)
+}
+
+func TestStartAutotune_FinalEventNamesTheResult(t *testing.T) {
+	s := zapretSvc(t)
+	require.NoError(t, s.svc.StartAutotune())
+	require.Eventually(t, func() bool {
+		s.em.mu.Lock()
+		defer s.em.mu.Unlock()
+		ev := s.em.events[EventAutotune]
+		if len(ev) == 0 {
+			return false
+		}
+		last := ev[len(ev)-1].(AutotuneProgress)
+		return !last.Running && last.Engine == "zapret2" && last.Preset == "z-split" && last.Error == nil
+	}, 2*time.Second, 10*time.Millisecond)
+}
