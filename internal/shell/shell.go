@@ -10,14 +10,12 @@ import (
 	"math/rand"
 	"net"
 	"os"
-	"path/filepath"
 	"slices"
 	"time"
 
 	"github.com/hashcott/ghostline/internal/app"
 	"github.com/hashcott/ghostline/internal/brand"
 	"github.com/hashcott/ghostline/internal/cli"
-	"github.com/hashcott/ghostline/internal/dpi"
 	"github.com/hashcott/ghostline/internal/engine"
 	"github.com/hashcott/ghostline/internal/logx"
 	"github.com/hashcott/ghostline/internal/model"
@@ -35,10 +33,12 @@ import (
 
 // Options carries what main provides.
 type Options struct {
-	Mode       cli.Mode
-	Assets     fs.FS
-	DPIAssets  fs.FS
-	Executable string
+	Mode   cli.Mode
+	Assets fs.FS
+	// GoodbyeDPIAssets and Zapret2Assets hold the embedded engine files.
+	GoodbyeDPIAssets fs.FS
+	Zapret2Assets    fs.FS
+	Executable       string
 }
 
 // Run starts the UI process.
@@ -75,7 +75,8 @@ func Run(o Options) error {
 	}
 	states := store.NewStateStore(paths.State, lock)
 	dnsMgr := sysdns.NewManager(sysdns.NewWindowsAPI(), time.Sleep)
-	dpiMgr := dpi.NewManager(filepath.Join(paths.BinDir, "goodbyedpi"), o.DPIAssets, dpi.NewWindowsRunner(), dpi.NewWindowsServices(), time.Sleep)
+	strats := newStrategyBox(paths, serverListKey(), log)
+	dpiMgr := NewDPIManager(paths, o.GoodbyeDPIAssets, o.Zapret2Assets, strats.get)
 	recoverDeps := watchdog.Deps{States: states, DNS: dnsMgr, StopDPI: dpiMgr.Stop, Alive: winutil.ProcessAlive, Log: log,
 		RestoreSysProxy: sysproxy.Manager{API: sysproxy.NewWindowsAPI()}.RestoreIfOurs,
 		DeleteFirewall:  winutil.DeleteFirewallRule,
@@ -145,10 +146,11 @@ func Run(o Options) error {
 			t := time.NewTicker(d)
 			return t.C, t.Stop
 		},
-		BlacklistPath: paths.DPIBlacklist,
-		Proxy:         pw,
-		SysProxy:      sysproxy.Manager{API: sysproxy.NewWindowsAPI()},
-		Firewall:      firewall{exe: o.Executable},
+		BlacklistPath:    paths.DPIBlacklist,
+		AutoHostlistPath: paths.DPIAutoHostlist,
+		Proxy:            pw,
+		SysProxy:         sysproxy.Manager{API: sysproxy.NewWindowsAPI()},
+		Firewall:         firewall{exe: o.Executable},
 		ConfirmOverride: func(ctx context.Context, server, pac string) bool {
 			return svc != nil && app.AskOverride(ctx, svc, server, pac, 60*time.Second)
 		},
@@ -281,7 +283,7 @@ func Run(o Options) error {
 	defer proxyTick.Stop()
 	go runProxyStats(ctx, pw, proxyTick.C)
 	go runLists(ctx, svc)
-	go runUpdates(ctx, paths, box, cat, checker, log)
+	go runUpdates(ctx, paths, box, cat, strats, checker, log)
 
 	if o.Mode.Kind == cli.KindAutostart && box.Get().AutoConnect {
 		go func() { _ = orch.Connect(context.Background()) }()

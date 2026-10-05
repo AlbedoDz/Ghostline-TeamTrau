@@ -14,7 +14,10 @@ const (
 
 	ServerListURL    = "https://raw.githubusercontent.com/hashcott/ghostline/main/lists/servers.json"
 	ServerListSigURL = ServerListURL + ".sig"
-	ReleasesAPI      = "https://api.github.com/repos/hashcott/ghostline/releases/latest"
+	// The zapret2 strategy list is signed with the server-list key.
+	StrategyListURL    = "https://raw.githubusercontent.com/hashcott/ghostline/main/lists/strategies.json"
+	StrategyListSigURL = StrategyListURL + ".sig"
+	ReleasesAPI        = "https://api.github.com/repos/hashcott/ghostline/releases/latest"
 
 	DNSCryptMinisignKey = "RWQf6LRCGA9i53mlYecO4IzT51TGPpvWucNSCh1CBM0QTaLn73Y7GFO3"
 )

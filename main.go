@@ -6,6 +6,7 @@ import (
 	"os"
 
 	goodbyedpi "github.com/hashcott/ghostline/assets/goodbyedpi"
+	zapret2 "github.com/hashcott/ghostline/assets/zapret2"
 	"github.com/hashcott/ghostline/internal/cli"
 	"github.com/hashcott/ghostline/internal/shell"
 )
@@ -29,7 +30,7 @@ func main() {
 	if err != nil {
 		os.Exit(1)
 	}
-	if err := shell.Run(shell.Options{Mode: mode, Assets: assets, DPIAssets: goodbyedpi.FS, Executable: exe}); err != nil {
+	if err := shell.Run(shell.Options{Mode: mode, Assets: assets, GoodbyeDPIAssets: goodbyedpi.FS, Zapret2Assets: zapret2.FS, Executable: exe}); err != nil {
 		os.Exit(1)
 	}
 }
