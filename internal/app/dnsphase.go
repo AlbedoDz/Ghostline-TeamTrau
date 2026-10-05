@@ -179,6 +179,7 @@ func (o *Orchestrator) deleteDNSRules() error {
 
 // stopDNSPhase undoes the DNS server phase. Callers hold opMu.
 func (o *Orchestrator) stopDNSPhase(ctx context.Context) {
+	o.closeSetup()
 	if o.dns.running {
 		_ = o.d.DNSServer.StopServe(ctx)
 	}

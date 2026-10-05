@@ -48,6 +48,9 @@ type Orchestrator struct {
 	sni sniState
 	// sniTimer stops the pending debounced rotation; guarded by mu.
 	sniTimer func() bool
+	// setup is the open phone setup page; guarded by mu.
+	setup    SetupPage
+	setupURL string
 	// pending is a system proxy restore that failed; guarded by mu.
 	pending *pendingRestore
 }
