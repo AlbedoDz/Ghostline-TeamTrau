@@ -45,6 +45,7 @@ Chạy trên Windows 11 x64, terminal **admin**. Đánh dấu từng mục; mụ
 - [ ] **Phạm vi danh sách đen + tự phát hiện:** mở một trang bị chặn không có trong danh sách ba lần → domain hiện trong danh sách tự thêm, lần sau mở được.
 - [ ] **Tự chạy một `winws2` ngoài Ghostline rồi Connect:** lỗi `DPI_START_FAILED` với gợi ý đúng.
 - [ ] **Defender với bản build:** `ghostline.exe` (đã nhúng `winws2.exe`) không bị Defender xoá khi tải về và khi chạy.
+- [ ] **Nâng zapret2:** `grep -n "_G\[\|load(" assets/zapret2/lua/*.lua` — mọi khoá tham số mới mà thư viện tra như tên hàm phải được thêm vào `funcKeys` trong `internal/dpi/zapret2/validate.go`.
 - [ ] **Ký danh sách chiến lược** (tăng `version` mỗi lần đổi): `go run ./tools/genservers -sign-file lists/strategies.json -sign-env SERVERLIST_SIGNING_KEY`, commit cả `lists/strategies.json.sig`.
 - [ ] **Gửi `winws2.exe` và `ghostline.exe`** lên https://www.microsoft.com/wdsi/filesubmission (báo nhầm); ghi lại mã gửi.
 

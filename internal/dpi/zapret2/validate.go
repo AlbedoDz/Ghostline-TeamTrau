@@ -18,6 +18,23 @@ var desyncFuncs = map[string]bool{
 	"http_hostcase": true, "http_methodeol": true, "http_unixeol": true, "udplen": true, "drop": true, "pass": true,
 }
 
+// funcKeys are desync args whose value the Lua library looks up as a global
+// and calls (_G[value]) or compiles (load). Any such value could reach a
+// function outside desyncFuncs, so only the listed values pass; a key with
+// an empty set is refused outright. Recheck `_G[` and `load(` in the Lua
+// files on every zapret2 upgrade.
+var funcKeys = map[string]map[string]bool{
+	"ipfrag":           {"ipfrag2": true},
+	"fool":             {},
+	"hostkey":          {},
+	"iff":              {},
+	"cond":             {},
+	"failure_detector": {},
+	"success_detector": {},
+	"code":             {},
+	"cond_code":        {},
+}
+
 // builtinBlobs are the blobs winws2 defines itself.
 var builtinBlobs = map[string]bool{"fake_default_tls": true, "fake_default_http": true, "fake_default_quic": true}
 
@@ -65,6 +82,12 @@ func validDesync(s string) bool {
 		k, v, _ := strings.Cut(p, "=")
 		if !argKey.MatchString(k) {
 			return false
+		}
+		if allowed, ok := funcKeys[k]; ok {
+			if !allowed[v] {
+				return false
+			}
+			continue
 		}
 		if k == "blob" || k == "seqovl_pattern" {
 			if !builtinBlobs[v] && !isHexBlob(v) {

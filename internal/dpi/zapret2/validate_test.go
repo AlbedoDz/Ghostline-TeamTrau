@@ -17,6 +17,7 @@ func TestValidateArgs(t *testing.T) {
 		"--lua-desync=fake:blob=0x1603",
 		"--lua-desync=fakeddisorder:pos=2:seqovl_pattern=fake_default_tls",
 		"--lua-desync=pass",
+		"--lua-desync=fake:blob=fake_default_tls:ipfrag=ipfrag2",
 		"--payload=tls_client_hello",
 		"--payload=tls_client_hello,quic_initial",
 		"--out-range=-n3",
@@ -27,6 +28,18 @@ func TestValidateArgs(t *testing.T) {
 	}
 	bad := []string{
 		"--lua-desync=luaexec:code=os.execute",
+		// Keys whose value names a Lua global the library calls (_G[v]) or loads.
+		"--lua-desync=fake:blob=fake_default_tls:fool=luaexec",
+		"--lua-desync=fake:fool=error",
+		"--lua-desync=multisplit:ipfrag=luaexec",
+		"--lua-desync=multisplit:ipfrag=",
+		"--lua-desync=fake:hostkey=luaexec",
+		"--lua-desync=fake:iff=luaexec",
+		"--lua-desync=fake:cond=luaexec",
+		"--lua-desync=fake:failure_detector=luaexec",
+		"--lua-desync=fake:success_detector=luaexec",
+		"--lua-desync=fake:code=x",
+		"--lua-desync=fake:cond_code=x",
 		"--lua-desync=pktdebug",
 		"--lua-desync=",
 		"--lua-desync=fake:blob=@C:/x.bin",
@@ -80,7 +93,8 @@ func TestValidateCustom(t *testing.T) {
 }
 
 func FuzzValidateCustom(f *testing.F) {
-	for _, s := range []string{"--lua-desync=fake:blob=fake_default_tls", `"--lua-init=@a b"`, "--payload=x,y --out-range=-n3", "@cfg"} {
+	for _, s := range []string{"--lua-desync=fake:blob=fake_default_tls", `"--lua-init=@a b"`, "--payload=x,y --out-range=-n3", "@cfg",
+		"--lua-desync=fake:fool=luaexec", "--lua-desync=multisplit:ipfrag=ipfrag2"} {
 		f.Add(s)
 	}
 	allowed := []string{"--lua-desync=", "--payload=", "--out-range=", "--in-range="}
@@ -94,7 +108,14 @@ func FuzzValidateCustom(f *testing.F) {
 			for _, p := range allowed {
 				okPrefix = okPrefix || strings.HasPrefix(a, p)
 			}
-			if !okPrefix || strings.ContainsAny(a, "@/\\ \t\r\n\x00") {
+			fnRef := false
+			for _, k := range []string{":fool=", ":hostkey=", ":iff=", ":cond=", ":code=", ":cond_code=", ":failure_detector=", ":success_detector="} {
+				fnRef = fnRef || strings.Contains(a, k)
+			}
+			if i := strings.Index(a, ":ipfrag="); i >= 0 && !strings.HasPrefix(a[i:], ":ipfrag=ipfrag2") {
+				fnRef = true
+			}
+			if !okPrefix || fnRef || strings.ContainsAny(a, "@/\\ \t\r\n\x00") {
 				t.Fatalf("accepted %q from %q", a, s)
 			}
 		}
