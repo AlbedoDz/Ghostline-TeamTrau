@@ -139,6 +139,11 @@
   padding: 8px 10px;
   line-height: 1.5;
 }
+.banner[data-tone="violet"] {
+  color: var(--violet);
+  border-color: rgba(179, 136, 255, 0.55);
+  background: rgba(179, 136, 255, 0.08);
+}
 .banner[data-tone="ok"] {
   border-color: rgba(0, 255, 156, 0.45);
   background: rgba(0, 255, 156, 0.06);

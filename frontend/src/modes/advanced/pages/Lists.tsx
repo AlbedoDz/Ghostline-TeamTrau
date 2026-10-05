@@ -55,6 +55,10 @@ export function Lists({ lists, upstreams, onChanged }: Props) {
   };
 
   const update = (l: List, patch: Partial<List>) => run(Service.UpdateList({ ...l, ...patch } as List));
+  const trust = (l: List, on: boolean) => {
+    if (on && !window.confirm(t("rules.lists.trustConfirm", { count: total(l.counts) }))) return;
+    run(Service.SetListTrustedForSNI(l.id, on));
+  };
   const actions = [...ACTIONS, ...upstreams.map((u) => `upstream=${u}`)];
 
   return (
@@ -71,7 +75,13 @@ export function Lists({ lists, upstreams, onChanged }: Props) {
           {lists.map((l, i) => (
             <tr key={l.id}>
               <td><Toggle label={t("rules.enableFor", { pattern: l.name })} checked={l.enabled} onChange={(v) => update(l, { enabled: v })} /></td>
-              <td title={l.url || l.path}>{l.name}</td>
+              <td title={l.url || l.path}>
+                {l.name}
+                {l.signed && l.signatureOk && <span className={css.ok}> · {t("rules.lists.signed")}</span>}
+              </td>
+              <td>
+                <Toggle label={t("rules.lists.trustFor", { name: l.name })} checked={!!l.trustedForSNI} onChange={(v) => trust(l, v)} />
+              </td>
               <td className={css.dim}>{l.detected || "—"}</td>
               <td>{total(l.counts)}</td>
               <td>
@@ -140,7 +150,8 @@ export function Lists({ lists, upstreams, onChanged }: Props) {
                   <span className={css.ok}>{t("rules.lists.added")}</span>
                 ) : (
                   <Chip label={t("rules.lists.addItem", { name: c.name })}
-                    onClick={() => run(Service.AddList({ name: c.name, source: "url", url: c.url, format: c.format, action: c.action } as any))}>
+                    onClick={() => run(Service.AddList({ name: c.name, source: "url", url: c.url, format: c.format, action: c.action,
+                      signed: c.signed, trustedForSNI: c.trustedForSNI } as any))}>
                     {t("rules.lists.addShort")}
                   </Chip>
                 )}

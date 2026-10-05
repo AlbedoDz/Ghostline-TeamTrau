@@ -5,6 +5,7 @@ import { useGhost } from "../../../app/store";
 import { initI18n } from "../../../i18n";
 
 const svc = vi.hoisted(() => ({
+  ListCerts: vi.fn(() => Promise.resolve([])),
   CheckUpdateNow: vi.fn(),
   ListAdapters: vi.fn(() => Promise.resolve([])),
   SaveSettings: vi.fn(() => Promise.resolve()),

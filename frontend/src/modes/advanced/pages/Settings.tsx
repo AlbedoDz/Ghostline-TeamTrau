@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Browser } from "@wailsio/runtime";
-import { Service, type Adapter } from "../../../app/api";
+import { Service, type Adapter, type Cert } from "../../../app/api";
 import { useGhost } from "../../../app/store";
 import { useUpdate } from "../../../app/format";
 import { saveSettings } from "../../../app/settings";
@@ -22,6 +22,21 @@ export function Settings() {
   const [testDomain, setTestDomain] = useState(settings?.testDomain ?? "");
   const [confirmService, setConfirmService] = useState<string | null>(null);
   const [check, setCheck] = useState<{ busy?: boolean; text?: string; error?: boolean } | null>(null);
+  const [certs, setCerts] = useState<Cert[]>([]);
+  const certsVersion = useGhost((s) => s.certsVersion);
+  const removeFailed = useGhost((s) => (s.snapshot.warnings ?? []).some((w) => w.code === "CERT_REMOVE_FAILED"));
+  const loadCerts = () => void Service.ListCerts().then((c) => setCerts(c ?? [])).catch(() => setCerts([]));
+  useEffect(loadCerts, [certsVersion]);
+  const removeAllCerts = () => {
+    if (!window.confirm(t("settings.certs.confirmRemoveAll"))) return;
+    Service.RemoveAllCerts()
+      .then(() => Service.GetSettings())
+      .then((s) => {
+        if (s) useGhost.getState().setSettings(s);
+        loadCerts();
+      })
+      .catch((e) => setError(describeError(e)));
+  };
 
   const checkUpdate = () => {
     setCheck({ busy: true });
@@ -152,6 +167,21 @@ export function Settings() {
             {t("settings.stopService", { name: busyService })}
           </button>
         )}
+      </div>
+
+      <div className={css.panel}>
+        <div className={css.panelTitle}>{t("settings.certs.title")}</div>
+        {certs.length === 0 && <div className={css.dim}>{t("settings.certs.none")}</div>}
+        {certs.map((c) => (
+          <div key={c.thumbprint} className={css.setting}>
+            <span>{c.subject}</span>
+            <span className={css.dim}>{String(c.notAfter).slice(0, 10)} · {c.thumbprint.slice(0, 12)}…</span>
+          </div>
+        ))}
+        <div className={css.row}>
+          {certs.length > 0 && <button className={css.danger} onClick={removeAllCerts}>{t("settings.certs.removeAll")}</button>}
+          {removeFailed && <Chip onClick={() => void Service.RetryCertRemoval().then(loadCerts).catch((e) => setError(describeError(e)))}>{t("settings.certs.retry")}</Chip>}
+        </div>
       </div>
 
       {confirmService && (

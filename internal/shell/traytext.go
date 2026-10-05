@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/hashcott/ghostline/internal/app"
+	"github.com/hashcott/ghostline/internal/brand"
 )
 
 // trayStrings is the tray menu copy for one language (the tray lives in Go,
@@ -11,6 +12,7 @@ import (
 type trayStrings struct {
 	connect, disconnect, dpi, open, quit, update string // update: "%s" is the tag
 	proxyOn, proxyOff                            string
+	fakeSNIOn                                    string
 	checkUpdate, upToDate, checkFailed           string
 	status                                       map[app.Status]string
 }
@@ -18,7 +20,7 @@ type trayStrings struct {
 var trayLangs = map[string]trayStrings{
 	"vi": {
 		connect: "Kết nối", disconnect: "Ngắt kết nối", dpi: "Vượt DPI", open: "Mở Ghostline", quit: "Thoát",
-		update: "Có bản mới %s ↗", proxyOn: "Proxy: bật", proxyOff: "Proxy: tắt",
+		update: "Có bản mới %s ↗", proxyOn: "Proxy: bật", proxyOff: "Proxy: tắt", fakeSNIOn: "Fake SNI: bật",
 		checkUpdate: "Kiểm tra cập nhật", upToDate: "Đã là bản mới nhất", checkFailed: "Không kiểm tra được cập nhật",
 		status: map[app.Status]string{
 			app.StatusDisconnected: "Chưa bảo vệ", app.StatusConnecting: "Đang kết nối", app.StatusProtected: "Đã bảo vệ",
@@ -27,7 +29,7 @@ var trayLangs = map[string]trayStrings{
 	},
 	"en": {
 		connect: "Connect", disconnect: "Disconnect", dpi: "DPI bypass", open: "Open Ghostline", quit: "Quit",
-		update: "New version %s ↗", proxyOn: "Proxy: on", proxyOff: "Proxy: off",
+		update: "New version %s ↗", proxyOn: "Proxy: on", proxyOff: "Proxy: off", fakeSNIOn: "Fake SNI: on",
 		checkUpdate: "Check for updates", upToDate: "Up to date", checkFailed: "Could not check for updates",
 		status: map[app.Status]string{
 			app.StatusDisconnected: "Unprotected", app.StatusConnecting: "Connecting", app.StatusProtected: "Protected",
@@ -44,6 +46,19 @@ func trayText(lang string) trayStrings {
 }
 
 func (t trayStrings) updateLabel(tag string) string { return fmt.Sprintf(t.update, tag) }
+
+// tooltip is the tray tooltip: status, a pending update, and Fake SNI
+// while it decrypts traffic (spec 2B 9.2).
+func (t trayStrings) tooltip(status app.Status, updateTag string, fakeSNI bool) string {
+	tip := brand.AppName + " · " + t.status[status]
+	if updateTag != "" {
+		tip += " · " + t.updateLabel(updateTag)
+	}
+	if fakeSNI {
+		tip += " · " + t.fakeSNIOn
+	}
+	return tip
+}
 
 func (t trayStrings) proxyLabel(on bool) string {
 	if on {

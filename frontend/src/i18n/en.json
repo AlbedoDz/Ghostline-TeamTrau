@@ -79,7 +79,9 @@
     "route": "127.0.0.1 → {{servers}}",
     "proxy": "proxy",
     "dnsserver": "DNS server",
-    "dnsDevices": "{{count}} LAN devices"
+    "dnsDevices": "{{count}} LAN devices",
+    "fakesni": "Fake SNI",
+    "fakesniDomains": "{{count}} domains"
   },
   "servers": {
     "title": "SERVERS",
@@ -258,7 +260,14 @@
     "update": "new version {{tag}} ↗",
     "checkUpdate": "check for updates",
     "checking": "checking…",
-    "upToDate": "up to date ({{version}})"
+    "upToDate": "up to date ({{version}})",
+    "certs": {
+      "title": "certificates",
+      "none": "no Ghostline certificate in Windows",
+      "removeAll": "remove all Ghostline certificates",
+      "confirmRemoveAll": "Remove every Ghostline certificate? The DNS server and Fake SNI will be turned off.",
+      "retry": "retry removal"
+    }
   },
   "errors": {
     "NOT_ADMIN": {
@@ -539,7 +548,6 @@
     "down": "move down {{pattern}}",
     "delete": "remove {{pattern}}",
     "empty": "no rules yet",
-    "needs2b": "needs phase 2B",
     "pattern": "pattern",
     "actionLabel": "action",
     "add": "+ add rule",
@@ -556,7 +564,9 @@
       "allow": "allow",
       "ip": "fake DNS → {{ips}}",
       "fragment": "fragment: {{mode}}",
-      "upstream": "upstream: {{id}}"
+      "upstream": "upstream: {{id}}",
+      "sni": "sni={{sni}}",
+      "connect": "connect={{host}}"
     },
     "frag": {
       "auto": "auto",
@@ -570,7 +580,9 @@
       "none": "no rule or list matches — goes direct",
       "direct": "direct",
       "rule": "rule #{{n}}",
-      "list": "list {{name}}, line {{line}}"
+      "list": "list {{name}}, line {{line}}",
+      "fakesni": "decrypted with Fake SNI (sni={{sni}}, connect={{connect}})",
+      "sniIgnored": "list not trusted for Fake SNI: sni= and connect= ignored"
     },
     "lists": {
       "title": "lists",
@@ -592,7 +604,10 @@
       },
       "all": "all",
       "search": "search lists",
-      "added": "added"
+      "added": "added",
+      "trustFor": "trust for Fake SNI: {{name}}",
+      "trustConfirm": "Trust this list for Fake SNI? It will choose the fake SNI and the address to connect to for {{count}} domains.",
+      "signed": "signed"
     },
     "blockMode": "DNS block answer",
     "blockModes": {
@@ -610,7 +625,8 @@
       "social": "social networks",
       "telemetry": "device telemetry",
       "vietnam": "Vietnam",
-      "bypass": "unblocking"
+      "bypass": "unblocking",
+      "fakesni": "Fake SNI"
     },
     "items": {
       "hagezi-light": "Basic protection: ads, trackers, metrics, telemetry. Small and safe.",
@@ -642,7 +658,8 @@
       "v2fly-twitter": "X (Twitter) domains: fragment through the proxy.",
       "v2fly-facebook": "Facebook domains: fragment through the proxy.",
       "v2fly-youtube": "YouTube domains: fragment through the proxy.",
-      "v2fly-reddit": "Reddit domains: fragment through the proxy."
+      "v2fly-reddit": "Reddit domains: fragment through the proxy.",
+      "fakesni-google": "Domain fronting through www.google.com for YouTube and Google services. Signed by Ghostline."
     }
   },
   "dnsserver": {
@@ -678,5 +695,38 @@
       "confirmReset": "Create a new LAN CA? Devices with the old one must install it again.",
       "confirmRemove": "Remove the LAN CA from this PC? The DNS server will be turned off."
     }
+  },
+  "fakesni": {
+    "title": "Fake SNI",
+    "warning": {
+      "title": "Read this before turning Fake SNI on",
+      "p1": "Fake SNI decrypts HTTPS for domains with an sni= rule, then opens a new connection to the server with a fake domain name so your ISP cannot see which site you visit.",
+      "p2": "Meanwhile Ghostline sees the decrypted content of those domains. It stays in RAM only and is never stored or logged.",
+      "p3": "Apps that pin certificates (some banking apps, native apps) will fail for those domains.",
+      "p4": "Do not use it for banking or important accounts.",
+      "p5": "The Ghostline root certificate installed in Windows can sign only the domains in your rules and is removed when you disconnect.",
+      "p6": "It applies only to browsers on this PC going through Ghostline's proxy.",
+      "understood": "I understand",
+      "continue": "continue"
+    },
+    "enabled": "turn Fake SNI on",
+    "needsProxy": "Fake SNI needs the proxy",
+    "enableProxy": "turn the proxy on",
+    "presets": "preset groups",
+    "rules": "hand-written sni= rules",
+    "noRules": "no hand-written sni= rules yet",
+    "ca": "session CA",
+    "caInfo": "{{domains}} domains · expires {{date}}",
+    "caNone": "no session CA (Fake SNI is not running)",
+    "stats": {
+      "fakesni": "decrypted: {{n}}",
+      "fallback": "fell back to fragment: {{n}}",
+      "clientRejected": "browser refused: {{n}}",
+      "verifyFailed": "bad server certificate: {{n}}"
+    },
+    "firefox": "Firefox: if it reports a certificate error, set security.enterprise_roots.enabled in about:config.",
+    "banner": "Fake SNI is on — Ghostline is decrypting HTTPS for {{count}} domains",
+    "view": "view",
+    "off": "turn Fake SNI off"
   }
 }

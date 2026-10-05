@@ -63,6 +63,14 @@ export function Overview() {
           )}
         </div>
         <div className={css.panel}>
+          <div className={css.panelTitle}>{t("overview.fakesni")}</div>
+          {snap.fakeSni?.active ? (
+            <div className={css.ok}>{t("overview.fakesniDomains", { count: snap.fakeSni.domains })}</div>
+          ) : (
+            <span className={css.dim}>{t("common.off")}</span>
+          )}
+        </div>
+        <div className={css.panel}>
           <div className={css.panelTitle}>{t("overview.inUse")}</div>
           {servers.length === 0 ? (
             <span className={css.dim}>—</span>

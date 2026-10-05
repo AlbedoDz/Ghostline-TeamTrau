@@ -5,6 +5,7 @@ import { Service } from "./app/api";
 import { TitleBar } from "./components/neon/TitleBar";
 import { SimpleView } from "./modes/simple/SimpleView";
 import { AdvancedView } from "./modes/advanced/AdvancedView";
+import { FakeSniBanner } from "./components/FakeSniBanner";
 import i18n, { initI18n, type Lang } from "./i18n";
 import css from "./App.module.css";
 
@@ -32,6 +33,7 @@ function App() {
   return (
     <div className={css.app}>
       <TitleBar mode={mode} onMode={onMode} lang={lang} onLang={onLang} />
+      <FakeSniBanner />
       <main className={css.main} data-mode={mode}>
         {mode === "simple" ? (
           <SimpleView

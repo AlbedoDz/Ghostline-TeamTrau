@@ -79,7 +79,9 @@
     "route": "127.0.0.1 → {{servers}}",
     "proxy": "proxy",
     "dnsserver": "DNS server",
-    "dnsDevices": "{{count}} thiết bị LAN"
+    "dnsDevices": "{{count}} thiết bị LAN",
+    "fakesni": "Fake SNI",
+    "fakesniDomains": "{{count}} tên miền"
   },
   "servers": {
     "title": "MÁY CHỦ",
@@ -258,7 +260,14 @@
     "update": "có bản mới {{tag}} ↗",
     "checkUpdate": "kiểm tra cập nhật",
     "checking": "đang kiểm tra…",
-    "upToDate": "đã là bản mới nhất ({{version}})"
+    "upToDate": "đã là bản mới nhất ({{version}})",
+    "certs": {
+      "title": "chứng chỉ",
+      "none": "không có chứng chỉ Ghostline nào trong Windows",
+      "removeAll": "gỡ tất cả chứng chỉ Ghostline",
+      "confirmRemoveAll": "Gỡ mọi chứng chỉ Ghostline? DNS server và Fake SNI sẽ bị tắt.",
+      "retry": "thử gỡ lại"
+    }
   },
   "errors": {
     "NOT_ADMIN": {
@@ -539,7 +548,6 @@
     "down": "xuống {{pattern}}",
     "delete": "xoá {{pattern}}",
     "empty": "chưa có rule nào",
-    "needs2b": "cần giai đoạn 2B",
     "pattern": "mẫu",
     "actionLabel": "hành động",
     "add": "+ thêm rule",
@@ -556,7 +564,9 @@
       "allow": "cho phép",
       "ip": "DNS giả → {{ips}}",
       "fragment": "fragment: {{mode}}",
-      "upstream": "upstream: {{id}}"
+      "upstream": "upstream: {{id}}",
+      "sni": "sni={{sni}}",
+      "connect": "connect={{host}}"
     },
     "frag": {
       "auto": "tự động",
@@ -570,7 +580,9 @@
       "none": "không rule hay danh sách nào khớp — đi thẳng",
       "direct": "đi thẳng",
       "rule": "rule số {{n}}",
-      "list": "danh sách {{name}}, dòng {{line}}"
+      "list": "danh sách {{name}}, dòng {{line}}",
+      "fakesni": "sẽ giải mã bằng Fake SNI (sni={{sni}}, connect={{connect}})",
+      "sniIgnored": "danh sách chưa được tin cho Fake SNI: bỏ qua sni= và connect="
     },
     "lists": {
       "title": "danh sách",
@@ -592,7 +604,10 @@
       },
       "all": "tất cả",
       "search": "tìm danh sách",
-      "added": "đã thêm"
+      "added": "đã thêm",
+      "trustFor": "tin cho Fake SNI: {{name}}",
+      "trustConfirm": "Tin danh sách này cho Fake SNI? Nó sẽ quyết định SNI giả và IP kết nối cho {{count}} tên miền.",
+      "signed": "đã ký"
     },
     "blockMode": "chặn ở DNS trả về",
     "blockModes": {
@@ -610,7 +625,8 @@
       "social": "mạng xã hội",
       "telemetry": "telemetry thiết bị",
       "vietnam": "Việt Nam",
-      "bypass": "vượt chặn"
+      "bypass": "vượt chặn",
+      "fakesni": "Fake SNI"
     },
     "items": {
       "hagezi-light": "bảo vệ cơ bản: quảng cáo, tracker, đo lường, telemetry; nhỏ và an toàn",
@@ -642,7 +658,8 @@
       "v2fly-twitter": "domain của X (Twitter): fragment qua proxy",
       "v2fly-facebook": "domain của Facebook: fragment qua proxy",
       "v2fly-youtube": "domain của YouTube: fragment qua proxy",
-      "v2fly-reddit": "domain của Reddit: fragment qua proxy"
+      "v2fly-reddit": "domain của Reddit: fragment qua proxy",
+      "fakesni-google": "Domain fronting qua www.google.com cho YouTube và dịch vụ Google. Có chữ ký của Ghostline."
     }
   },
   "dnsserver": {
@@ -678,5 +695,38 @@
       "confirmReset": "Tạo CA LAN mới? Các thiết bị đã cài CA cũ phải cài lại.",
       "confirmRemove": "Gỡ CA LAN khỏi máy này? DNS server sẽ bị tắt."
     }
+  },
+  "fakesni": {
+    "title": "Fake SNI",
+    "warning": {
+      "title": "Đọc trước khi bật Fake SNI",
+      "p1": "Fake SNI giải mã HTTPS của các tên miền có rule sni=, rồi mở kết nối mới tới máy chủ với một tên miền giả để nhà mạng không thấy trang bạn vào.",
+      "p2": "Trong lúc đó Ghostline thấy nội dung đã giải mã của các tên miền này. Nội dung chỉ nằm trong RAM, không được lưu hay ghi log.",
+      "p3": "Ứng dụng ghim chứng chỉ (một số app ngân hàng, app native) sẽ lỗi với các tên miền này.",
+      "p4": "Không dùng cho ngân hàng hay tài khoản quan trọng.",
+      "p5": "Chứng chỉ gốc Ghostline cài vào Windows chỉ ký được cho đúng các tên miền trong rule và bị gỡ khi ngắt kết nối.",
+      "p6": "Chỉ áp dụng cho trình duyệt trên máy này khi đi qua proxy của Ghostline.",
+      "understood": "tôi đã hiểu",
+      "continue": "tiếp tục"
+    },
+    "enabled": "bật Fake SNI",
+    "needsProxy": "Fake SNI cần bật proxy",
+    "enableProxy": "bật proxy",
+    "presets": "nhóm preset",
+    "rules": "rule sni= viết tay",
+    "noRules": "chưa có rule sni= viết tay",
+    "ca": "CA phiên",
+    "caInfo": "{{domains}} tên miền · hết hạn {{date}}",
+    "caNone": "chưa có CA phiên (Fake SNI chưa chạy)",
+    "stats": {
+      "fakesni": "đã giải mã: {{n}}",
+      "fallback": "quay về fragment: {{n}}",
+      "clientRejected": "trình duyệt từ chối: {{n}}",
+      "verifyFailed": "chứng chỉ máy chủ sai: {{n}}"
+    },
+    "firefox": "Firefox: nếu báo lỗi chứng chỉ, bật security.enterprise_roots.enabled trong about:config.",
+    "banner": "Fake SNI đang bật — Ghostline đang giải mã HTTPS của {{count}} tên miền",
+    "view": "xem",
+    "off": "tắt Fake SNI"
   }
 }
