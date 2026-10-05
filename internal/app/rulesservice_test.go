@@ -156,7 +156,7 @@ func TestMoveList(t *testing.T) {
 
 func TestCatalogBinding(t *testing.T) {
 	rh := newRulesSvc(t)
-	require.Len(t, rh.svc.Catalog(), 30)
+	require.Len(t, rh.svc.Catalog(), 31)
 }
 
 func TestRulesLoadedAtStart(t *testing.T) {

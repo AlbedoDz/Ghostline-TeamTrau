@@ -29,7 +29,7 @@ func TestLoadSettings_V1Upgrades(t *testing.T) {
 	s, recovered, err := store.LoadSettings(path)
 	require.NoError(t, err)
 	require.False(t, recovered)
-	require.Equal(t, 3, s.Version)
+	require.Equal(t, 4, s.Version)
 	require.Equal(t, "goodbyedpi", s.DPI.Engine)
 	require.Equal(t, store.DefaultSettings().Proxy, s.Proxy)
 	require.Equal(t, "zero", s.DNSBlockMode)
@@ -99,7 +99,7 @@ func TestState_V1ReadsWithoutProxy(t *testing.T) {
 	require.Equal(t, store.PhaseDNSSet, st.Phase)
 	require.Nil(t, st.SysProxy)
 	require.Nil(t, st.Firewall)
-	require.Equal(t, 2, store.CleanState().Version)
+	require.Equal(t, 3, store.CleanState().Version)
 	require.Equal(t, store.PhaseClean, store.CleanState().Phase)
 }
 
@@ -109,13 +109,13 @@ func TestState_SysProxyRoundTrip(t *testing.T) {
 	want := &store.SysProxyState{Set: true, Ours: "127.0.0.1:8080", Snapshot: &store.SysProxySnapshot{Flags: 1, Bypass: "<local>"}}
 	require.NoError(t, s.Update(func(st *store.State) error {
 		st.SysProxy = want
-		st.Firewall = &store.FirewallState{Rule: "Ghostline Proxy"}
+		st.AddFirewallRule("Ghostline Proxy")
 		return nil
 	}))
 	st, err := s.Load()
 	require.NoError(t, err)
 	require.Equal(t, want, st.SysProxy)
-	require.Equal(t, "Ghostline Proxy", st.Firewall.Rule)
+	require.Equal(t, []string{"Ghostline Proxy"}, st.Firewall.Rules)
 }
 
 func TestRulesFile_RoundTripAndCorrupt(t *testing.T) {

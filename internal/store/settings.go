@@ -15,27 +15,29 @@ import (
 
 // Settings is the user configuration (spec §9).
 type Settings struct {
-	Version          int              `json:"version"`
-	Language         string           `json:"language"`
-	Mode             string           `json:"mode"`
-	StartWithWindows bool             `json:"startWithWindows"`
-	AutoConnect      bool             `json:"autoConnect"`
-	CloseToTray      bool             `json:"closeToTray"`
-	Adapters         string           `json:"adapters"` // "auto" | "manual"
-	AdapterGUIDs     []string         `json:"adapterGuids,omitempty"`
-	TestDomain       string           `json:"testDomain"`
-	Bootstrap        []string         `json:"bootstrap"`
-	MaxUpstreams     int              `json:"maxUpstreams"`
-	IncludeTags      []string         `json:"includeTags"`
-	Pinned           []string         `json:"pinned"`
-	PinnedOnly       bool             `json:"pinnedOnly"`
-	ProbeSites       []string         `json:"probeSites"`
-	DPI              DPISettings      `json:"dpi"`
-	FragmentDNS      FragmentSettings `json:"fragmentDns"`
-	Updates          UpdateSettings   `json:"updates"`
-	AdvancedWindow   WindowSize       `json:"advancedWindow"`
-	Proxy            ProxySettings    `json:"proxy"`
-	DNSBlockMode     string           `json:"dnsBlockMode"` // "zero" | "nxdomain"
+	Version          int               `json:"version"`
+	Language         string            `json:"language"`
+	Mode             string            `json:"mode"`
+	StartWithWindows bool              `json:"startWithWindows"`
+	AutoConnect      bool              `json:"autoConnect"`
+	CloseToTray      bool              `json:"closeToTray"`
+	Adapters         string            `json:"adapters"` // "auto" | "manual"
+	AdapterGUIDs     []string          `json:"adapterGuids,omitempty"`
+	TestDomain       string            `json:"testDomain"`
+	Bootstrap        []string          `json:"bootstrap"`
+	MaxUpstreams     int               `json:"maxUpstreams"`
+	IncludeTags      []string          `json:"includeTags"`
+	Pinned           []string          `json:"pinned"`
+	PinnedOnly       bool              `json:"pinnedOnly"`
+	ProbeSites       []string          `json:"probeSites"`
+	DPI              DPISettings       `json:"dpi"`
+	FragmentDNS      FragmentSettings  `json:"fragmentDns"`
+	Updates          UpdateSettings    `json:"updates"`
+	AdvancedWindow   WindowSize        `json:"advancedWindow"`
+	Proxy            ProxySettings     `json:"proxy"`
+	DNSBlockMode     string            `json:"dnsBlockMode"` // "zero" | "nxdomain"
+	DNSServer        DNSServerSettings `json:"dnsServer"`
+	FakeSNI          FakeSNISettings   `json:"fakeSni"`
 }
 
 // ProxySettings configures the local proxy (phase 2A).
@@ -150,7 +152,7 @@ type WindowSize struct {
 // DefaultSettings returns the spec §9 defaults.
 func DefaultSettings() Settings {
 	return Settings{
-		Version:        3,
+		Version:        4,
 		Language:       "vi",
 		Mode:           "simple",
 		CloseToTray:    true,
@@ -171,7 +173,39 @@ func DefaultSettings() Settings {
 			Upstreams: []UpstreamProxy{},
 		},
 		DNSBlockMode: "zero",
+		DNSServer:    DNSServerSettings{DoHPort: 443},
 	}
+}
+
+// DNSServerSettings configure the DNS server for this PC and the LAN.
+type DNSServerSettings struct {
+	Enabled  bool   `json:"enabled"`  // DoH on loopback
+	ShareLAN bool   `json:"shareLan"` // DoH and port 53 on LAN addresses too
+	DoHPort  int    `json:"dohPort"`
+	IOSSSID  string `json:"iosSsid"` // home Wi-Fi for the iOS profile
+}
+
+// FakeSNISettings configure Fake SNI. AckVersion is the warning version the
+// user confirmed; Fake SNI runs only when it is current.
+type FakeSNISettings struct {
+	Enabled    bool `json:"enabled"`
+	AckVersion int  `json:"ackVersion"`
+}
+
+// SetupPagePort is the phone setup page's port (spec 2B 7.2).
+const SetupPagePort = 8053
+
+// ValidateDNSServer checks DNS server settings (spec 2B 10).
+func ValidateDNSServer(d DNSServerSettings, proxyPort int) error {
+	switch {
+	case d.DoHPort < 1 || d.DoHPort > 65535:
+		return fmt.Errorf("dnsServer: dohPort must be 1..65535")
+	case d.DoHPort == 53 || d.DoHPort == SetupPagePort || d.DoHPort == proxyPort:
+		return fmt.Errorf("dnsServer: dohPort must differ from 53, %d and the proxy port", SetupPagePort)
+	case len(d.IOSSSID) > 32:
+		return fmt.Errorf("dnsServer: the Wi-Fi name is longer than 32 bytes")
+	}
+	return nil
 }
 
 // LoadSettings reads settings, filling missing fields with defaults. A file
@@ -203,7 +237,10 @@ func LoadSettings(path string) (s Settings, recovered bool, err error) {
 	if s.DPI.Engine != EngineGoodbyeDPI && s.DPI.Engine != EngineZapret2 {
 		s.DPI.Engine = EngineZapret2
 	}
-	s.Version = 3
+	s.Version = 4
+	if s.DNSServer.DoHPort == 0 {
+		s.DNSServer.DoHPort = 443
+	}
 	if s.Proxy.Upstreams == nil {
 		s.Proxy.Upstreams = []UpstreamProxy{}
 	}

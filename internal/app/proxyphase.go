@@ -168,12 +168,12 @@ func (o *Orchestrator) startProxyPhase(ctx context.Context) error {
 				return nil
 			}
 			if err := ignoreNoChange(o.setSysProxyState(func(st *store.State) {
-				st.Firewall = &store.FirewallState{Rule: winutil.FirewallRuleName}
+				st.AddFirewallRule(winutil.FirewallRuleName)
 			})); err != nil {
 				return appErr(CodeProxyFirewall, err, "detail", err.Error())
 			}
 			if err := o.d.Firewall.Add(port); err != nil {
-				_ = ignoreNoChange(o.setSysProxyState(func(st *store.State) { st.Firewall = nil }))
+				_ = ignoreNoChange(o.setSysProxyState(func(st *store.State) { st.RemoveFirewallRule(winutil.FirewallRuleName) }))
 				return appErr(CodeProxyFirewall, err, "detail", err.Error())
 			}
 			o.px.fwSet = true
@@ -184,7 +184,7 @@ func (o *Orchestrator) startProxyPhase(ctx context.Context) error {
 			}
 			o.px.fwSet = false
 			err := o.d.Firewall.Delete()
-			return errors.Join(err, ignoreNoChange(o.setSysProxyState(func(st *store.State) { st.Firewall = nil })))
+			return errors.Join(err, ignoreNoChange(o.setSysProxyState(func(st *store.State) { st.RemoveFirewallRule(winutil.FirewallRuleName) })))
 		}},
 		{name: "sysproxy.apply", do: func(context.Context) error {
 			if !wantSys || skipSys {
@@ -249,7 +249,10 @@ func (o *Orchestrator) stopProxyPhase(ctx context.Context) {
 		_ = o.d.Proxy.Stop(ctx)
 	}
 	if px.running || px.sysSet || px.fwSet || px.snap != nil {
-		_ = o.setSysProxyState(func(st *store.State) { st.SysProxy, st.Firewall = nil, nil })
+		_ = o.setSysProxyState(func(st *store.State) {
+			st.SysProxy = nil
+			st.RemoveFirewallRule(winutil.FirewallRuleName)
+		})
 	}
 	o.px = proxyState{}
 	o.update(func(sn *Snapshot) { sn.Proxy = ProxyStatus{} })

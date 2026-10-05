@@ -17,7 +17,7 @@ var proxySnap = store.SysProxySnapshot{Flags: 1, Bypass: "<local>"}
 func dirtyWithProxy() *store.State {
 	st := dirty()
 	st.SysProxy = &store.SysProxyState{Set: true, Ours: "127.0.0.1:8080", Snapshot: &proxySnap}
-	st.Firewall = &store.FirewallState{Rule: "Ghostline Proxy"}
+	st.AddFirewallRule("Ghostline Proxy")
 	return st
 }
 

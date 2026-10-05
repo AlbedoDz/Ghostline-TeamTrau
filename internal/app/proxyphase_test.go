@@ -133,7 +133,7 @@ func TestConnect_ProxyPhaseRunsAfterProtected(t *testing.T) {
 	require.Equal(t, []ProxyRun{{Listen: listenFor(8080, true, true), ShareLAN: true}}, h.proxy.runs)
 	st, _ := h.states.Load()
 	require.True(t, st.SysProxy.Set)
-	require.Equal(t, winutil.FirewallRuleName, st.Firewall.Rule)
+	require.Equal(t, []string{winutil.FirewallRuleName}, st.Firewall.Rules)
 }
 
 func TestProxyPhase_FailureAtEachStep(t *testing.T) {
