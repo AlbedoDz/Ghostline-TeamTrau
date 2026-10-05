@@ -29,6 +29,7 @@ Ghostline chạy một DNS server cục bộ trên `127.0.0.1` / `::1`, trỏ m�
 ## Mục lục
 
 - [Tính năng](#tính-năng)
+- [Video hướng dẫn](#video-hướng-dẫn)
 - [Ảnh chụp màn hình](#ảnh-chụp-màn-hình)
 - [Cài đặt](#cài-đặt)
 - [Sử dụng](#sử-dụng)
@@ -55,6 +56,14 @@ Ghostline chạy một DNS server cục bộ trên `127.0.0.1` / `::1`, trỏ m�
 - **Chế độ Đơn giản và Nâng cao**, icon khay, giao diện tiếng Việt và tiếng Anh, phong cách neon-terminal.
 - **Bản cài đặt hoặc portable:** bản portable lưu mọi dữ liệu trong thư mục `data\` cạnh file exe.
 - **Chỉ thông báo khi có bản mới:** không bao giờ tự cập nhật ngầm.
+
+## Video hướng dẫn
+
+Video 90 giây hướng dẫn kết nối bằng một nút bấm, quét máy chủ và trang vượt DPI. Có cả [bản tiếng Anh](docs/videos/guide-en.mp4).
+
+<p align="center">
+  <a href="docs/videos/guide-vi.mp4"><img src="docs/videos/guide-vi.jpg" width="720" alt="Xem video hướng dẫn Ghostline"></a>
+</p>
 
 ## Ảnh chụp màn hình
 

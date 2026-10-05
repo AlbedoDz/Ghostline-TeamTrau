@@ -29,6 +29,7 @@ Ghostline runs a local DNS server on `127.0.0.1` / `::1`, points every network a
 ## Table of contents
 
 - [Features](#features)
+- [Video](#video)
 - [Screenshots](#screenshots)
 - [Install](#install)
 - [Usage](#usage)
@@ -56,6 +57,14 @@ Ghostline runs a local DNS server on `127.0.0.1` / `::1`, points every network a
 - **Simple and Advanced modes**, a tray icon, Vietnamese and English UI, and a neon-terminal look.
 - **Installer or portable:** the portable build keeps all data in a `data\` folder next to the exe.
 - **Update notifications only:** Ghostline tells you about a new version and never updates itself silently.
+
+## Video
+
+A 90-second walkthrough: one-click connect, scanning servers and the DPI bypass page. A [Vietnamese version](docs/videos/guide-vi.mp4) is also available.
+
+<p align="center">
+  <a href="docs/videos/guide-en.mp4"><img src="docs/videos/guide-en.jpg" width="720" alt="Watch the Ghostline video guide"></a>
+</p>
 
 ## Screenshots
 
