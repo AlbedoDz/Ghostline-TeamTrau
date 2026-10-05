@@ -328,5 +328,18 @@
     "url": "https://raw.githubusercontent.com/v2fly/domain-list-community/master/data/reddit",
     "format": "v2fly",
     "action": "fragment=on"
+  },
+  {
+    "id": "fakesni-google",
+    "name": "Fake SNI: Google & YouTube",
+    "description": "Domain fronting through www.google.com for YouTube and Google services. Signed by Ghostline.",
+    "category": "fakesni",
+    "repo": "https://github.com/hashcott/ghostline",
+    "license": "GPL-3.0",
+    "url": "https://raw.githubusercontent.com/hashcott/ghostline/main/lists/fakesni/google.txt",
+    "format": "ghostline",
+    "action": "perLine",
+    "signed": true,
+    "trustedForSNI": true
   }
 ]

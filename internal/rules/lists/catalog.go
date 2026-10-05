@@ -17,10 +17,14 @@ type CatalogItem struct {
 	URL         string `json:"url"`
 	Format      string `json:"format"`
 	Action      string `json:"action"`
+	// Signed items are verified with Ghostline's list key; TrustedForSNI
+	// lets their sni= and connect= take effect (Fake SNI presets).
+	Signed        bool `json:"signed,omitempty"`
+	TrustedForSNI bool `json:"trustedForSNI,omitempty"`
 }
 
 // Categories are the catalog groups, in display order.
-var Categories = []string{"ads", "security", "adult", "gambling", "social", "telemetry", "vietnam", "bypass"}
+var Categories = []string{"ads", "security", "adult", "gambling", "social", "telemetry", "vietnam", "bypass", "fakesni"}
 
 //go:embed catalog.json
 var catalogJSON []byte
