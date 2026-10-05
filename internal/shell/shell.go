@@ -184,7 +184,12 @@ func Run(o Options) error {
 		orch.AddWarning(w)
 	}
 
-	ui := &ui{orch: orch, box: box, log: log}
+	ui := &ui{orch: orch, box: box, log: log, lanDNSClients: func() int {
+		if !orch.Snapshot().DNSServer.Running {
+			return 0
+		}
+		return eng.ServeStats().Clients10m
+	}}
 	update := &updateState{}
 	checker := newUpdateChecker(&metaFile{path: paths.Meta}, update, bus, log, func(tag, url string) { ui.onUpdate(tag, url) })
 	ui.checker = checker

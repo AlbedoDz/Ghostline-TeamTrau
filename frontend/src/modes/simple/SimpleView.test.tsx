@@ -1,4 +1,4 @@
-import { beforeAll, beforeEach, expect, test, vi } from "vitest";
+import { beforeAll, beforeEach, describe, expect, test, vi } from "vitest";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { SimpleView } from "./SimpleView";
 import { useGhost } from "../../app/store";
@@ -160,4 +160,41 @@ test("auto-tune progress and result name the strategy", async () => {
   useGhost.getState().setAutotune({ running: false, engine: "zapret2", preset: "z-split", index: 0, total: 0 } as any);
   rerender(<SimpleView onOpenLogs={() => {}} />);
   expect(await screen.findByText("✓ tự dò đã chọn Nhẹ (zapret2)")).toBeInTheDocument();
+});
+
+describe("disconnect while LAN devices use this PC's DNS", () => {
+  const lanSnap = (n: number) => {
+    useGhost.getState().setSnapshot(snap({ status: "protected", servers: ["Cloudflare"], since: new Date().toISOString(),
+      dnsServer: { running: true, addrs: ["192.168.1.8:443"] } }));
+    useGhost.getState().setDnsStats({ queries: 10, clients10m: n, clientIps: [] } as any);
+  };
+
+  test("asks first and stays connected on cancel", () => {
+    lanSnap(2);
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
+    render(<SimpleView onOpenLogs={() => {}} />);
+    fireEvent.click(screen.getByRole("button", { name: /ĐÃ BẢO VỆ/ }));
+    expect(confirm.mock.calls[0][0]).toMatch(/2 thiết bị/);
+    expect(svc.Disconnect).not.toHaveBeenCalled();
+    confirm.mockRestore();
+  });
+
+  test("disconnects after confirming", () => {
+    lanSnap(1);
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(true);
+    render(<SimpleView onOpenLogs={() => {}} />);
+    fireEvent.click(screen.getByRole("button", { name: /ĐÃ BẢO VỆ/ }));
+    expect(svc.Disconnect).toHaveBeenCalled();
+    confirm.mockRestore();
+  });
+
+  test("no question when no LAN device used it", () => {
+    lanSnap(0);
+    const confirm = vi.spyOn(window, "confirm");
+    render(<SimpleView onOpenLogs={() => {}} />);
+    fireEvent.click(screen.getByRole("button", { name: /ĐÃ BẢO VỆ/ }));
+    expect(confirm).not.toHaveBeenCalled();
+    expect(svc.Disconnect).toHaveBeenCalled();
+    confirm.mockRestore();
+  });
 });

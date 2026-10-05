@@ -1,6 +1,7 @@
 package shell
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/hashcott/ghostline/internal/app"
@@ -47,4 +48,13 @@ func TestTrayText_FakeSNI(t *testing.T) {
 	require.Equal(t, "Ghostline · Đã bảo vệ · Fake SNI: bật", trayText("vi").tooltip(app.StatusProtected, "", true))
 	require.Equal(t, "Ghostline · Protected · Fake SNI: on", trayText("en").tooltip(app.StatusProtected, "", true))
 	require.Equal(t, "Ghostline · Protected · New version v1 ↗", trayText("en").tooltip(app.StatusProtected, "v1", false))
+}
+
+func TestTrayText_DisconnectAsk(t *testing.T) {
+	if got := trayText("vi").disconnectAsk(2); !strings.Contains(got, "2 thiết bị") || !strings.Contains(got, "mất mạng") {
+		t.Errorf("vi = %q", got)
+	}
+	if got := trayText("en").disconnectAsk(1); !strings.Contains(got, ": 1.") || !strings.Contains(got, "lose the internet") {
+		t.Errorf("en = %q", got)
+	}
 }

@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { Service } from "../../app/api";
+import { confirmDisconnect } from "../../app/disconnect";
 import { useGhost } from "../../app/store";
 import { Browser } from "@wailsio/runtime";
 import { isConnected, powerState, serverSummary, useUptime, useUpdate } from "../../app/format";
@@ -33,7 +34,7 @@ export function SimpleView({ onOpenLogs, onOpenServers = () => {} }: { onOpenLog
 
   const onPower = () => {
     if (status === "connecting") void Service.CancelConnect();
-    else if (isConnected(status)) void Service.Disconnect();
+    else if (isConnected(status)) { if (confirmDisconnect(t)) void Service.Disconnect(); }
     else if (status !== "disconnecting") void Service.Connect();
   };
 

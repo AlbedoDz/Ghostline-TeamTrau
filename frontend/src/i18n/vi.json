@@ -663,6 +663,7 @@
     }
   },
   "dnsserver": {
+    "disconnectConfirm": "{{count}} thiết bị trong mạng đang dùng DNS của máy này và sẽ mất mạng. Vẫn ngắt kết nối?",
     "title": "DNS server",
     "enabled": "bật DoH cục bộ",
     "shareLan": "chia sẻ cho LAN",

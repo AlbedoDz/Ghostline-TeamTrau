@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { Service } from "../../app/api";
+import { confirmDisconnect } from "../../app/disconnect";
 import { useGhost, type Page } from "../../app/store";
 import { isConnected } from "../../app/format";
 import { Sidebar } from "../../components/neon/Sidebar";
@@ -29,7 +30,7 @@ export function AdvancedView() {
 
   const onPower = () => {
     if (status === "connecting") void Service.CancelConnect();
-    else if (isConnected(status)) void Service.Disconnect();
+    else if (isConnected(status)) { if (confirmDisconnect(t)) void Service.Disconnect(); }
     else if (status !== "disconnecting") void Service.Connect();
   };
 

@@ -663,6 +663,7 @@
     }
   },
   "dnsserver": {
+    "disconnectConfirm": "Devices on your network using this PC's DNS: {{count}}. They will lose the internet. Disconnect anyway?",
     "title": "DNS server",
     "enabled": "local DoH",
     "shareLan": "share on the LAN",

@@ -81,7 +81,10 @@ type ui struct {
 	lastState   app.Status
 	lastFakeSNI bool
 	updTag      string // newer release, "" if none
-	updURL      string
+	// lanDNSClients counts LAN devices that used the DNS server in the
+	// last 10 minutes (0 while it is off); nil means none.
+	lanDNSClients func() int
+	updURL        string
 }
 
 // createWindow opens the main window. Closing it to the tray destroys it
@@ -178,6 +181,9 @@ func (u *ui) createTray() {
 	u.connItem = menu.Add(tt.connect).OnClick(func(*application.Context) {
 		go func() {
 			if st := u.orch.Snapshot().Status; st == app.StatusProtected || st == app.StatusDegraded {
+				if !u.confirmDisconnect(tt) {
+					return
+				}
 				_ = u.orch.Disconnect(context.Background())
 			} else {
 				_ = u.orch.Connect(context.Background())
@@ -295,4 +301,25 @@ func (u *ui) checkUpdate() {
 	}
 	u.tray.SetTooltip(brand.AppName + " · " + msg)
 	time.AfterFunc(10*time.Second, u.onLanguage) // back to the status tooltip
+}
+
+// confirmDisconnect asks before a tray disconnect while LAN devices use
+// this PC's DNS: they lose the internet with it. Shutdown and Quit do not
+// ask.
+func (u *ui) confirmDisconnect(tt trayStrings) bool {
+	if u.lanDNSClients == nil || u.app == nil {
+		return true
+	}
+	n := u.lanDNSClients()
+	if n == 0 {
+		return true
+	}
+	ok := false
+	d := u.app.Dialog.Question().SetTitle(brand.AppName).SetMessage(tt.disconnectAsk(n))
+	// Windows shows a system Yes/No box and matches callbacks by these
+	// labels; the buttons themselves are in the OS language.
+	d.AddButton("Yes").OnClick(func() { ok = true })
+	no := d.AddButton("No")
+	d.SetDefaultButton(no).SetCancelButton(no).Show()
+	return ok
 }
