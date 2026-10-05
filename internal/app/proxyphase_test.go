@@ -88,6 +88,14 @@ func (f *fFirewall) Add(int) error {
 	return f.r.add("firewall.add")
 }
 func (f *fFirewall) Delete() error { return f.r.add("firewall.delete") }
+func (f *fFirewall) AddNamed(r winutil.FirewallRule) error {
+	st, err := f.states.Load()
+	require.NoError(f.t, err)
+	require.NotNil(f.t, st.Firewall, "firewall rule created before it was persisted")
+	require.Contains(f.t, st.Firewall.Rules, r.Name, "firewall rule created before it was persisted")
+	return f.r.add("firewall.add:" + r.Name)
+}
+func (f *fFirewall) DeleteNamed(name string) error { return f.r.add("firewall.delete:" + name) }
 
 type proxyHarness struct {
 	*harness

@@ -71,6 +71,7 @@ func (o *Orchestrator) healthLoop(ctx context.Context, ticks <-chan time.Time) {
 		case now = <-ticks:
 		}
 		o.checkProxyHealth(ctx)
+		o.checkDNSHealth(ctx)
 		failing := o.d.Engine.SelfTest(ctx) != nil || o.upstreamsFailing(o.d.Engine.Stats())
 		if !failing {
 			failingSince = time.Time{}

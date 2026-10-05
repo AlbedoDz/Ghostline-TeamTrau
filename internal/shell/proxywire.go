@@ -181,8 +181,10 @@ func (w *proxyWiring) Stats() proxy.Stats {
 // firewall implements app.Firewall.
 type firewall struct{ exe string }
 
-func (f firewall) Add(port int) error { return winutil.AddFirewallRule(port, f.exe) }
-func (f firewall) Delete() error      { return winutil.DeleteFirewallRule() }
+func (f firewall) Add(port int) error                    { return winutil.AddFirewallRule(port, f.exe) }
+func (f firewall) Delete() error                         { return winutil.DeleteFirewallRule() }
+func (f firewall) AddNamed(r winutil.FirewallRule) error { return winutil.AddNamedRule(r, f.exe) }
+func (f firewall) DeleteNamed(name string) error         { return winutil.DeleteNamedRule(name) }
 
 // lanInfo lists the addresses other devices can use to reach the proxy.
 func (w *proxyWiring) lanInfo() app.LANInfo {
