@@ -62,7 +62,7 @@ Ghostline chạy một DNS server cục bộ trên `127.0.0.1` / `::1`, trỏ m�
 
 ## Video hướng dẫn
 
-Video 90 giây hướng dẫn kết nối bằng một nút bấm, quét máy chủ và trang vượt DPI. Ảnh động bên dưới được tua nhanh, bấm vào để xem bản đầy đủ. Có cả [bản tiếng Anh](docs/videos/guide-en.mp4).
+Video khoảng 2 phút rưỡi có lồng tiếng: kết nối bằng một nút bấm, máy chủ, vượt DPI, proxy, rules, DNS server kèm cài đặt cho iPhone, và Fake SNI. Ảnh động bên dưới được tua nhanh, không có tiếng; bấm vào để xem bản đầy đủ có tiếng. Có cả [bản tiếng Anh](docs/videos/guide-en.mp4).
 
 <p align="center">
   <a href="docs/videos/guide-vi.mp4"><img src="docs/videos/guide-vi.webp" width="720" alt="Video hướng dẫn Ghostline (tua nhanh); bấm để xem bản đầy đủ"></a>
