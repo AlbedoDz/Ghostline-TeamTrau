@@ -3,7 +3,7 @@ import css from "./neon.module.css";
 
 export type BannerAction = { label: string; onClick: () => void; primary?: boolean };
 
-type Props = { tone: "ok" | "warn" | "err"; children: ReactNode; actions?: BannerAction[] };
+type Props = { tone: "ok" | "warn" | "err" | "violet"; children: ReactNode; actions?: BannerAction[] };
 
 export function Banner({ tone, children, actions = [] }: Props) {
   return (

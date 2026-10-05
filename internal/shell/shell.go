@@ -10,12 +10,16 @@ import (
 	"math/rand"
 	"net"
 	"os"
+	"path/filepath"
 	"slices"
 	"time"
 
 	"github.com/hashcott/ghostline/internal/app"
 	"github.com/hashcott/ghostline/internal/brand"
+	"github.com/hashcott/ghostline/internal/certs"
+	"github.com/hashcott/ghostline/internal/certstore"
 	"github.com/hashcott/ghostline/internal/cli"
+	"github.com/hashcott/ghostline/internal/dnsserver"
 	"github.com/hashcott/ghostline/internal/engine"
 	"github.com/hashcott/ghostline/internal/logx"
 	"github.com/hashcott/ghostline/internal/model"
@@ -47,7 +51,7 @@ func Run(o Options) error {
 		messageBox(brand.AppName, "Ghostline cần Microsoft Edge WebView2 Runtime.\nGhostline needs the Microsoft Edge WebView2 Runtime.\n\nhttps://go.microsoft.com/fwlink/p/?LinkId=2124703")
 		return errors.New("webview2 missing")
 	}
-	paths := store.ResolvePaths(o.Executable, os.Getenv("APPDATA"))
+	paths := store.WithMachineDir(store.ResolvePaths(o.Executable, os.Getenv("APPDATA")), filepath.Join(os.Getenv("ProgramData"), brand.AppName))
 	if err := os.MkdirAll(paths.DataDir, 0o755); err != nil {
 		fatalBox(err)
 		return err
@@ -77,9 +81,18 @@ func Run(o Options) error {
 	dnsMgr := sysdns.NewManager(sysdns.NewWindowsAPI(), time.Sleep)
 	strats := newStrategyBox(paths, serverListKey(), log)
 	dpiMgr := NewDPIManager(paths, o.GoodbyeDPIAssets, o.Zapret2Assets, strats.get)
+	roots := certstore.NewWindows(certstore.LocalMachine)
 	recoverDeps := watchdog.Deps{States: states, DNS: dnsMgr, StopDPI: dpiMgr.Stop, Alive: winutil.ProcessAlive, Log: log,
 		RestoreSysProxy: sysproxy.Manager{API: sysproxy.NewWindowsAPI()}.RestoreIfOurs,
-		DeleteFirewall:  winutil.DeleteFirewallRule,
+		DeleteRule:      winutil.DeleteNamedRule,
+		RemoveCert: func(t string) error {
+			// state.json is user-writable: remove only Fake SNI roots.
+			return certstore.RemoveIfPrefix(roots, t, certs.SessionPrefix)
+		},
+		SweepSession: func(keep []string) error {
+			_, err := certstore.Sweep(roots, certs.SessionPrefix, keep)
+			return err
+		},
 	}
 
 	// Safety layer 3: restore whatever a dead previous run left behind.
@@ -125,6 +138,8 @@ func Run(o Options) error {
 	bus := app.NewBus(em)
 	eng := engine.New(bus.Query)
 	pw := newProxyWiring(box, eng, paths, o.Executable, bus, log)
+	cw := newCertWiring(paths)
+	dw := &dnsWiring{eng: eng, certs: cw}
 	var svc *app.Service // assigned below; ConfirmOverride runs only after startup
 	orch := app.New(app.Deps{
 		Engine: eng, DNS: dnsMgr, DPI: dpiMgr, Safety: safety{exe: o.Executable}, System: system{},
@@ -155,6 +170,12 @@ func Run(o Options) error {
 			return svc != nil && app.AskOverride(ctx, svc, server, pac, 60*time.Second)
 		},
 		Rules: pw.holder.Load,
+
+		DNSServer:    dw,
+		Certs:        cw,
+		LANAddrs:     winutil.LocalLANAddrs,
+		SetMITM:      pw.mitm.set,
+		MITMSelfTest: pw.mitm.selfTest,
 	})
 	if settingsReset {
 		orch.AddWarning(app.AppError{Code: app.CodeSettingsReset})
@@ -213,6 +234,28 @@ func Run(o Options) error {
 		CheckServer: func(ctx context.Context, id string) error {
 			_, err := picker.CheckOne(ctx, id)
 			return err
+		},
+		NewSetupPage: func(files dnsserver.SetupFiles, onStop func()) app.SetupPage {
+			p := dnsserver.NewSetupPage(files, time.Now)
+			p.OnStop = onStop
+			return p
+		},
+		CurrentSSID: func() string {
+			ssid, err := winutil.CurrentSSID()
+			if err != nil {
+				log.Warn("wifi name", "err", err)
+			}
+			return ssid
+		},
+		SaveFile: func(name string, data []byte) error {
+			if wapp == nil {
+				return errors.New("no window")
+			}
+			path, err := wapp.Dialog.SaveFile().SetFilename(name).PromptForSingleSelection()
+			if err != nil || path == "" {
+				return err // cancelled: nothing to save
+			}
+			return os.WriteFile(path, data, 0o644)
 		},
 	})
 	ui.svc = svc
@@ -282,6 +325,9 @@ func Run(o Options) error {
 	proxyTick := time.NewTicker(time.Second)
 	defer proxyTick.Stop()
 	go runProxyStats(ctx, pw, proxyTick.C)
+	dnsTick := time.NewTicker(time.Second)
+	defer dnsTick.Stop()
+	go runDNSServerStats(ctx, eng, orch, bus, dnsTick.C)
 	go runLists(ctx, svc)
 	go runUpdates(ctx, paths, box, cat, strats, checker, log)
 

@@ -2,7 +2,10 @@
 // and the service bound to the UI.
 package app
 
-import "time"
+import (
+	"maps"
+	"time"
+)
 
 // Status is the connection state shown to the user.
 type Status string
@@ -30,6 +33,24 @@ type DPIStatus struct {
 const ReasonDPIFallback = "dpiFallback"
 
 // ProxyStatus summarises the local proxy for the UI.
+// DNSServerStatus is the DNS server phase (spec 2B 6.1).
+type DNSServerStatus struct {
+	Running bool              `json:"running"`
+	Addrs   []string          `json:"addrs"`
+	Skipped map[string]string `json:"skipped,omitempty"` // address → bind error
+	Error   *AppError         `json:"error,omitempty"`
+}
+
+// FakeSNIStatus is the Fake SNI phase (spec 2B 6.2).
+type FakeSNIStatus struct {
+	Active     bool      `json:"active"`
+	Domains    int       `json:"domains"`
+	Thumbprint string    `json:"thumbprint,omitempty"`
+	NotAfter   time.Time `json:"notAfter"`
+	NeedsProxy bool      `json:"needsProxy"`
+	Error      *AppError `json:"error,omitempty"`
+}
+
 type ProxyStatus struct {
 	Running     bool      `json:"running"`
 	Addr        string    `json:"addr"`
@@ -51,8 +72,10 @@ type Snapshot struct {
 	DPI          DPIStatus  `json:"dpi"`
 	BlockedSites []string   `json:"blockedSites"`
 	// Reasons lists why the connection is degraded: "upstreams", "proxy".
-	Reasons []string    `json:"reasons"`
-	Proxy   ProxyStatus `json:"proxy"`
+	Reasons   []string        `json:"reasons"`
+	Proxy     ProxyStatus     `json:"proxy"`
+	DNSServer DNSServerStatus `json:"dnsServer"`
+	FakeSNI   FakeSNIStatus   `json:"fakeSni"`
 }
 
 func (s Snapshot) clone() Snapshot {
@@ -68,6 +91,16 @@ func (s Snapshot) clone() Snapshot {
 	if s.Error != nil {
 		e := *s.Error
 		c.Error = &e
+	}
+	if s.FakeSNI.Error != nil {
+		e := *s.FakeSNI.Error
+		c.FakeSNI.Error = &e
+	}
+	c.DNSServer.Addrs = append([]string(nil), s.DNSServer.Addrs...)
+	c.DNSServer.Skipped = maps.Clone(s.DNSServer.Skipped)
+	if s.DNSServer.Error != nil {
+		e := *s.DNSServer.Error
+		c.DNSServer.Error = &e
 	}
 	return c
 }

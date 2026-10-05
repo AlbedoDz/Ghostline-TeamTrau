@@ -6,6 +6,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/hashcott/ghostline/internal/proxy/mitm"
+	"github.com/hashcott/ghostline/internal/proxy/wire"
+
 	"github.com/stretchr/testify/require"
 )
 
@@ -44,4 +47,14 @@ func TestAlive_FalseWhenListenerDies(t *testing.T) {
 	s.mu.Unlock()
 	ln.Close()
 	require.Eventually(t, func() bool { return !s.Alive() }, 2*time.Second, 10*time.Millisecond)
+}
+
+// Fake SNI is for browsers on this PC only (spec 2B §2): devices on the
+// LAN would not trust the session CA, so they always take the 2A path.
+func TestFakeSNI_OnlyForLoopbackClients(t *testing.T) {
+	asked := false
+	s := New(Config{MITM: func() mitm.LeafSource { asked = true; return nil }})
+	handled := s.fakeSNI(nil, nil, netip.MustParseAddr("192.168.1.9"), wire.Target{Host: "youtube.com", Port: 443}, []byte{0x16})
+	require.False(t, handled)
+	require.False(t, asked, "LAN clients must not reach the MITM decision")
 }

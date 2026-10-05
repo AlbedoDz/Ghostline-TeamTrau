@@ -34,3 +34,12 @@ describe("i18n", () => {
     expect(tCode("errors.UNKNOWN_CODE.message")).toBe("UNKNOWN_CODE");
   });
 });
+
+describe("tCode fallback", () => {
+  test("a non-code error (HTTP 404) is shown as is, not as the key's last part", async () => {
+    await initI18n("vi");
+    expect(tCode("errors.HTTP 404.message")).toBe("HTTP 404");
+    expect(tCode("errors.UNKNOWN_CODE.message")).toBe("UNKNOWN_CODE");
+    expect(tCode("log.SOME_CODE")).toBe("SOME_CODE");
+  });
+});

@@ -29,7 +29,12 @@ type Paths struct {
 	Rules              string
 	FragCache          string
 	ListsDir           string
-	Portable           bool
+	// LAN CA files live in MachineDir (see WithMachineDir); until it is
+	// set they default to DataDir, which tests use.
+	MachineDir string
+	LANCACert  string
+	LANCAKey   string
+	Portable   bool
 }
 
 // ResolvePaths picks the data directory: <exe dir>\data when a "portable"
@@ -46,6 +51,8 @@ func ResolvePaths(exePath, appData string) Paths {
 	j := func(name string) string { return filepath.Join(p.DataDir, name) }
 	p.Settings = j("settings.json")
 	p.State = j("state.json")
+	p.LANCACert = j("lan-ca.crt")
+	p.LANCAKey = j("lan-ca.key")
 	p.Meta = j("meta.json")
 	p.ScanCache = j("scan-cache.json")
 	p.ServersRemote = j("servers-remote.json")
@@ -62,5 +69,16 @@ func ResolvePaths(exePath, appData string) Paths {
 	p.Rules = j("rules.json")
 	p.FragCache = j("frag-cache.json")
 	p.ListsDir = j("lists")
+	return p
+}
+
+// WithMachineDir moves the LAN CA files to dir, a machine-wide directory
+// only SYSTEM and Administrators can open (%ProgramData%\Ghostline): the
+// user-writable data directory must never hold a key that ends up in the
+// Root store.
+func WithMachineDir(p Paths, dir string) Paths {
+	p.MachineDir = dir
+	p.LANCACert = filepath.Join(dir, "lan-ca.crt")
+	p.LANCAKey = filepath.Join(dir, "lan-ca.key")
 	return p
 }

@@ -88,6 +88,14 @@ func (f *fFirewall) Add(int) error {
 	return f.r.add("firewall.add")
 }
 func (f *fFirewall) Delete() error { return f.r.add("firewall.delete") }
+func (f *fFirewall) AddNamed(r winutil.FirewallRule) error {
+	st, err := f.states.Load()
+	require.NoError(f.t, err)
+	require.NotNil(f.t, st.Firewall, "firewall rule created before it was persisted")
+	require.Contains(f.t, st.Firewall.Rules, r.Name, "firewall rule created before it was persisted")
+	return f.r.add("firewall.add:" + r.Name)
+}
+func (f *fFirewall) DeleteNamed(name string) error { return f.r.add("firewall.delete:" + name) }
 
 type proxyHarness struct {
 	*harness
@@ -133,7 +141,7 @@ func TestConnect_ProxyPhaseRunsAfterProtected(t *testing.T) {
 	require.Equal(t, []ProxyRun{{Listen: listenFor(8080, true, true), ShareLAN: true}}, h.proxy.runs)
 	st, _ := h.states.Load()
 	require.True(t, st.SysProxy.Set)
-	require.Equal(t, winutil.FirewallRuleName, st.Firewall.Rule)
+	require.Equal(t, []string{winutil.FirewallRuleName}, st.Firewall.Rules)
 }
 
 func TestProxyPhase_FailureAtEachStep(t *testing.T) {

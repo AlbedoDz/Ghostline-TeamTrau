@@ -54,6 +54,8 @@ Ghostline runs a local DNS server on `127.0.0.1` / `::1`, points every network a
 - **Local proxy (HTTP / HTTPS / SOCKS4/5):** runs with Connect, can become the Windows system proxy, and can be shared with phones and other devices on your Wi-Fi (QR code included). Names are always resolved through Ghostline's encrypted DNS.
 - **Web fragmentation without a driver:** traffic through the proxy gets its TLS ClientHello split automatically when a site is blocked by SNI, and the fix is remembered per network.
 - **Rules and community lists:** block, allow, fake DNS, fragment or route through an upstream proxy by domain, keyword, regexp or CIDR. Import hosts, AdBlock/AdGuard, dnsmasq, Unbound, RPZ, Clash, v2ray, sing-box or CIDR lists straight from a GitHub link, updated on a schedule.
+- **DNS server for your home network:** encrypted DNS for phones, TVs, consoles and routers on your Wi-Fi: plain DNS on port 53 (no certificate needed) or DNS-over-HTTPS, with a QR-code setup page and an iOS profile.
+- **Fake SNI (advanced, off by default):** for sites behind CDNs that allow domain fronting, the proxy sends a different, allowed domain name to the network. It decrypts HTTPS only for domains you choose, with a certificate that can sign only those domains and is removed on disconnect.
 - **Signed server list:** updated daily and verified with ed25519; the DNSCrypt list is checked with minisign.
 - **Simple and Advanced modes**, a tray icon, Vietnamese and English UI, and a neon-terminal look.
 - **Installer or portable:** the portable build keeps all data in a `data\` folder next to the exe.
@@ -143,6 +145,9 @@ Design details live in [`docs/superpowers/specs`](docs/superpowers/specs).
 - If you approve UAC with a **different administrator account**, `%APPDATA%` and the system proxy belong to that account, so "use for this PC" does not affect the signed-in user.
 - Web fragmentation only helps apps that go through the proxy. Apps that ignore the Windows proxy (some games, Firefox with its own proxy settings) need GoodbyeDPI instead.
 - LAN sharing works only on networks marked **Private** in Windows; Ghostline never changes the network profile itself.
+
+- **Fake SNI** works only for browsers on this PC going through the proxy, only for domains with an `sni=` rule, and breaks apps that pin certificates. Firefox may need `security.enterprise_roots.enabled`.
+- **iPhone with the DoH profile:** if this PC is off or disconnected while the iPhone is on your home Wi-Fi, turn the profile off in *Settings › VPN & Device Management*. Android's Private DNS cannot use Ghostline; set a static DNS for your Wi-Fi instead.
 
 ## Building from source
 

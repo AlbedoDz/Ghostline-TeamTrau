@@ -67,20 +67,21 @@ type ui struct {
 	mu sync.Mutex
 	// win is the open window, nil while Ghostline sits in the tray. Only
 	// touched on the main thread (or before the app runs).
-	win       *application.WebviewWindow
-	tray      *application.SystemTray
-	connItem  *application.MenuItem
-	dpiItem   *application.MenuItem
-	proxyItem *application.MenuItem
-	checkItem *application.MenuItem
-	checker   *updateChecker
-	svc       *app.Service
-	openItem  *application.MenuItem
-	quitItem  *application.MenuItem
-	updItem   *application.MenuItem
-	lastState app.Status
-	updTag    string // newer release, "" if none
-	updURL    string
+	win         *application.WebviewWindow
+	tray        *application.SystemTray
+	connItem    *application.MenuItem
+	dpiItem     *application.MenuItem
+	proxyItem   *application.MenuItem
+	checkItem   *application.MenuItem
+	checker     *updateChecker
+	svc         *app.Service
+	openItem    *application.MenuItem
+	quitItem    *application.MenuItem
+	updItem     *application.MenuItem
+	lastState   app.Status
+	lastFakeSNI bool
+	updTag      string // newer release, "" if none
+	updURL      string
 }
 
 // createWindow opens the main window. Closing it to the tray destroys it
@@ -213,8 +214,9 @@ func (u *ui) createTray() {
 
 func (u *ui) onState(s app.Snapshot) {
 	u.mu.Lock()
-	changed := s.Status != u.lastState
+	changed := s.Status != u.lastState || s.FakeSNI.Active != u.lastFakeSNI
 	u.lastState = s.Status
+	u.lastFakeSNI = s.FakeSNI.Active
 	u.mu.Unlock()
 	if !changed || u.tray == nil {
 		return
@@ -233,13 +235,12 @@ func (u *ui) relabel(status app.Status) {
 	tt := trayText(u.box.Get().Language)
 	u.mu.Lock()
 	tag := u.updTag
+	fakeSNI := u.lastFakeSNI
 	u.mu.Unlock()
-	tip := brand.AppName + " · " + tt.status[status]
 	if tag != "" {
-		tip += " · " + tt.updateLabel(tag)
 		u.updItem.SetLabel(tt.updateLabel(tag)).SetHidden(false)
 	}
-	u.tray.SetTooltip(tip)
+	u.tray.SetTooltip(tt.tooltip(status, tag, fakeSNI))
 	if status == app.StatusProtected || status == app.StatusDegraded {
 		u.connItem.SetLabel(tt.disconnect)
 	} else {

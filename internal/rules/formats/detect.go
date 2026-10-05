@@ -80,6 +80,9 @@ func Detect(name string, data []byte) (Format, error) {
 	if isBinary(data) {
 		return "", ErrUnsupported
 	}
+	if isGhostline(data) {
+		return Ghostline, nil
+	}
 	if i := strings.IndexAny(name, "?#"); i >= 0 {
 		name = name[:i]
 	}

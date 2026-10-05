@@ -132,7 +132,7 @@ Không có file nào cho CA phiên.
 - **Khoá chỉ nằm trong RAM**, không bao giờ được serialize. Khi pha S dừng, tham chiếu bị bỏ và cache chứng chỉ lá được xoá.
 - **Name Constraints cho phép:** DNS theo các rule `sni=` đang có hiệu lực:
   - `youtube.com` → `youtube.com` (domain và mọi subdomain).
-  - `*.googlevideo.com` → `.googlevideo.com` (chỉ subdomain).
+  - `*.googlevideo.com` → `googlevideo.com`. RFC 5280 không có dạng "chỉ subdomain" dùng được ở mọi trình duyệt (dấu chấm đầu không chuẩn cho dNSName), nên mở rộng sang cả domain gốc.
   - `=example.com` → `example.com`. Rộng hơn rule gốc (gồm cả subdomain), nhưng proxy vẫn chỉ giải mã đúng theo rule.
   - **Cấm mọi IP:** `ExcludedIPRanges: 0.0.0.0/0, ::/0`.
 - **Tối đa 1000 domain.** Vượt thì pha S lỗi với `FAKESNI_TOO_MANY{count}`.

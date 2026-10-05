@@ -31,3 +31,9 @@ func TestParse_UnknownFlagFails(t *testing.T) {
 	_, err := cli.Parse([]string{"--bogus"})
 	require.Error(t, err)
 }
+
+func TestParse_RemoveCerts(t *testing.T) {
+	m, err := cli.Parse([]string{"--remove-certs"})
+	require.NoError(t, err)
+	require.Equal(t, cli.KindRemoveCerts, m.Kind)
+}

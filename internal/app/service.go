@@ -14,6 +14,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/hashcott/ghostline/internal/dnsserver"
 	"github.com/hashcott/ghostline/internal/dpi"
 	"github.com/hashcott/ghostline/internal/engine"
 	"github.com/hashcott/ghostline/internal/model"
@@ -103,6 +104,12 @@ type ServiceDeps struct {
 	CheckUpdate func(ctx context.Context) (UpdateCheck, error)
 	// CheckServer re-tests one server and updates the cached scan.
 	CheckServer func(ctx context.Context, id string) error
+
+	// Phase 2B.
+	NewSetupPage func(files dnsserver.SetupFiles, onStop func()) SetupPage
+	CurrentSSID  func() string
+	// SaveFile asks where to save data (native dialog) and writes it.
+	SaveFile func(name string, data []byte) error
 }
 
 // Service is bound to the frontend by Wails; its exported methods are the
@@ -167,7 +174,13 @@ func (s *Service) SaveSettings(n store.Settings) error {
 	if err := s.validateDPI(n.DPI); err != nil {
 		return err
 	}
+	if err := store.ValidateDNSServer(n.DNSServer, n.Proxy.Port); err != nil {
+		return err
+	}
 	old := s.x.Settings.Get()
+	if n.FakeSNI.Enabled && n.FakeSNI.AckVersion < FakeSNIWarningVersion {
+		return appErr(CodeFakeSNINotAcked, nil)
+	}
 	if n.DPI.Scope == string(dpi.ScopeBlacklist) && old.DPI.Scope != n.DPI.Scope {
 		if txt, _ := s.GetDPIBlacklist(); dpi.BlacklistEntries(txt) == 0 {
 			return appErr(CodeDPIBlacklistEmpty, nil)
@@ -196,6 +209,12 @@ func (s *Service) SaveSettings(n store.Settings) error {
 	if proxyPhaseChanged(old.Proxy, n.Proxy) {
 		// May wait for the SYSPROXY_EXISTING answer: do not block the UI call.
 		s.background(func(ctx context.Context) { _ = s.o.ReapplyProxy(ctx) })
+	}
+	if dnsServerChanged(old.DNSServer, n.DNSServer) {
+		s.background(func(ctx context.Context) { _ = s.o.ReapplyDNSServer(ctx) })
+	}
+	if old.FakeSNI != n.FakeSNI {
+		s.background(func(ctx context.Context) { _ = s.o.ReapplyFakeSNI(ctx) })
 	}
 	return nil
 }

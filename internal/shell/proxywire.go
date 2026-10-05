@@ -22,6 +22,7 @@ import (
 	"github.com/hashcott/ghostline/internal/store"
 	"github.com/hashcott/ghostline/internal/tlsfrag"
 	"github.com/hashcott/ghostline/internal/winutil"
+	builtinLists "github.com/hashcott/ghostline/lists"
 )
 
 // proxyWiring connects the proxy, rules, fragment cache and list
@@ -35,6 +36,8 @@ type proxyWiring struct {
 	holder *rules.Holder
 	frag   *store.FragCache
 	log    *slog.Logger
+	// mitm is the Fake SNI certificate source (phase S sets it).
+	mitm mitmBox
 
 	mu     sync.Mutex
 	srv    *proxy.Server
@@ -51,7 +54,8 @@ func newProxyWiring(box *app.SettingsBox, eng *engine.Engine, paths store.Paths,
 }
 
 func (w *proxyWiring) fetcher() *lists.Fetcher {
-	return &lists.Fetcher{Client: &http.Client{Timeout: 30 * time.Second}, Dir: w.paths.ListsDir, Now: time.Now, WriteFile: store.WriteFileAtomic}
+	return &lists.Fetcher{Client: &http.Client{Timeout: 30 * time.Second}, Dir: w.paths.ListsDir, Now: time.Now,
+		WriteFile: store.WriteFileAtomic, SigKey: serverListKey(), Fallback: builtinLists.FakeSNIFallback}
 }
 
 // fragCache adapts store.FragCache to the dialer for the current network.
@@ -128,6 +132,7 @@ func (w *proxyWiring) Start(ctx context.Context, run app.ProxyRun) error {
 		ShareLAN: run.ShareLAN,
 		Dialer:   w.newDialer(port, func() dialer.Matcher { return w.holder.Load() }),
 		OnConn:   w.bus.ProxyConn,
+		MITM:     w.mitm.get,
 	})
 	if err := srv.Start(ctx); err != nil {
 		return err
@@ -181,8 +186,10 @@ func (w *proxyWiring) Stats() proxy.Stats {
 // firewall implements app.Firewall.
 type firewall struct{ exe string }
 
-func (f firewall) Add(port int) error { return winutil.AddFirewallRule(port, f.exe) }
-func (f firewall) Delete() error      { return winutil.DeleteFirewallRule() }
+func (f firewall) Add(port int) error                    { return winutil.AddFirewallRule(port, f.exe) }
+func (f firewall) Delete() error                         { return winutil.DeleteFirewallRule() }
+func (f firewall) AddNamed(r winutil.FirewallRule) error { return winutil.AddNamedRule(r, f.exe) }
+func (f firewall) DeleteNamed(name string) error         { return winutil.DeleteNamedRule(name) }
 
 // lanInfo lists the addresses other devices can use to reach the proxy.
 func (w *proxyWiring) lanInfo() app.LANInfo {
@@ -231,6 +238,27 @@ func runLists(ctx context.Context, svc *app.Service) {
 		Jitter: func() time.Duration { return time.Duration(r.Int63n(int64(10 * time.Minute))) },
 	}
 	s.Loop(ctx)
+}
+
+// runDNSServerStats emits dnsserver:stats and the setup page countdown
+// every second while they are active.
+func runDNSServerStats(ctx context.Context, eng *engine.Engine, orch *app.Orchestrator, bus *app.Bus, ticks <-chan time.Time) {
+	wasOpen := false
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticks:
+		}
+		if orch.Snapshot().DNSServer.Running {
+			bus.Emit(app.EventDNSServerStats, eng.ServeStats())
+		}
+		url, left := orch.SetupInfo()
+		if url != "" || wasOpen {
+			bus.Emit(app.EventSetupCountdown, app.SetupCountdown{URL: url, RemainingSec: int(left.Seconds())})
+		}
+		wasOpen = url != ""
+	}
 }
 
 // runProxyStats emits proxy:stats every second while the proxy runs.

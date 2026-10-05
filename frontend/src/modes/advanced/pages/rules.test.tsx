@@ -89,9 +89,10 @@ test("table: move buttons reorder rules", async () => {
   expect(saved.map((r: any) => r.pattern)).toEqual(["youtube.com", "ads.com", "x.com"]);
 });
 
-test("rules using sni are labelled as phase 2B", async () => {
+test("rules using sni show their fake SNI", async () => {
   render(<Rules />);
-  expect(await screen.findByText(/cần giai đoạn 2B/)).toBeInTheDocument();
+  expect(await screen.findByText(/sni=/)).toBeInTheDocument();
+  expect(screen.queryByText(/giai đoạn 2B/)).not.toBeInTheDocument();
 });
 
 test("lists: add from URL and show detection results", async () => {

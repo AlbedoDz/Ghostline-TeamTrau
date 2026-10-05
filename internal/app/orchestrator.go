@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/netip"
 	"net/url"
+	"slices"
 	"sync"
 	"time"
 
@@ -42,6 +43,15 @@ type Orchestrator struct {
 	bgCancel context.CancelFunc
 	// px is the proxy phase state; guarded by opMu.
 	px proxyState
+	// dns is the DNS server phase state; guarded by opMu.
+	dns dnsState
+	// sni is the Fake SNI phase state; guarded by opMu.
+	sni sniState
+	// sniTimer stops the pending debounced rotation; guarded by mu.
+	sniTimer func() bool
+	// setup is the open phone setup page; guarded by mu.
+	setup    SetupPage
+	setupURL string
 	// pending is a system proxy restore that failed; guarded by mu.
 	pending *pendingRestore
 }
@@ -53,6 +63,9 @@ func New(d Deps) *Orchestrator {
 	}
 	if d.Sleep == nil {
 		d.Sleep = time.Sleep
+	}
+	if d.AfterFunc == nil {
+		d.AfterFunc = func(dur time.Duration, f func()) func() bool { return time.AfterFunc(dur, f).Stop }
 	}
 	if !d.ListenV4.IsValid() {
 		d.ListenV4 = netip.MustParseAddrPort("127.0.0.1:53")
@@ -210,6 +223,8 @@ func (o *Orchestrator) Connect(ctx context.Context) error {
 	})
 	o.log("ok", "CONNECTED", "servers", len(o.servers))
 	_ = o.startProxyPhase(context.WithoutCancel(ctx))
+	_ = o.startDNSPhase(context.WithoutCancel(ctx))
+	_ = o.startSNIPhase(context.WithoutCancel(ctx))
 	o.afterConnect()
 	return nil
 }
@@ -460,6 +475,8 @@ func (o *Orchestrator) disconnectLocked(ctx context.Context) []sysdns.RestoreErr
 	o.mu.Unlock()
 
 	// System proxy first, then firewall and proxy, then DNS (spec 2A 6.2).
+	o.stopSNIPhase(ctx)
+	o.stopDNSPhase(ctx)
 	o.stopProxyPhase(ctx)
 	errs := o.d.DNS.Restore(snaps)
 	_ = o.d.DNS.Flush()
@@ -481,6 +498,11 @@ func (o *Orchestrator) disconnectLocked(ctx context.Context) []sysdns.RestoreErr
 	_ = o.d.Engine.Stop(ctx)
 	_ = o.d.States.Update(func(s *store.State) error {
 		*s = store.CleanState()
+		// A session CA that could not be removed stays recorded so
+		// recovery and "retry removal" still find it (spec 2B 6.5).
+		if len(o.sni.installed) > 0 {
+			s.Certs = &store.CertsState{Session: slices.Clone(o.sni.installed)}
+		}
 		return nil
 	})
 	if stopWD != nil {

@@ -19,3 +19,14 @@ func TestDPAPI_RoundTrip(t *testing.T) {
 	_, err = UnprotectString("aGVsbG8=") // valid base64, not a DPAPI blob
 	require.Error(t, err)
 }
+
+func TestProtectMachine_RoundTrip(t *testing.T) {
+	enc, err := ProtectMachine([]byte("key bytes"))
+	require.NoError(t, err)
+	require.NotContains(t, string(enc), "key bytes")
+	got, err := UnprotectMachine(enc)
+	require.NoError(t, err)
+	require.Equal(t, []byte("key bytes"), got)
+	_, err = UnprotectMachine([]byte("junk"))
+	require.Error(t, err)
+}

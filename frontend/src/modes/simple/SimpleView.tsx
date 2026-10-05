@@ -25,6 +25,10 @@ export function SimpleView({ onOpenLogs, onOpenServers = () => {} }: { onOpenLog
   const uptime = useUptime(snap.since);
   const update = useUpdate();
   const status = String(snap.status);
+  // The first LAN (non-loopback) DNS server address, without its port.
+  const lanDNS = (snap.dnsServer?.running ? snap.dnsServer.addrs ?? [] : [])
+    .map((x) => x.replace(/:\d+$/, "").replace(/^\[|\]$/g, ""))
+    .find((h) => h !== "127.0.0.1" && h !== "::1");
   const label = `[ ${t(`status.${status}`)} ]`;
 
   const onPower = () => {
@@ -61,6 +65,7 @@ export function SimpleView({ onOpenLogs, onOpenServers = () => {} }: { onOpenLog
           { k: t("simple.dpi"), v: snap.dpi.running ? `${strategyName} ✓` : t("common.off"), tone: snap.dpi.running ? "ok" : "dim" },
           { k: t("simple.uptime"), v: uptime },
           ...(snap.proxy?.running ? [{ k: t("simple.proxy"), v: snap.proxy.addr }] : []),
+          ...(lanDNS ? [{ k: t("simple.dnsLan"), v: lanDNS }] : []),
         ]}
       />
     );

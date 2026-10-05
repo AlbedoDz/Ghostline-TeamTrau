@@ -42,3 +42,9 @@ func TestTrayText_CheckUpdate(t *testing.T) {
 	require.Equal(t, "Không kiểm tra được cập nhật", trayText("vi").checkFailed)
 	require.Equal(t, "Could not check for updates", trayText("en").checkFailed)
 }
+
+func TestTrayText_FakeSNI(t *testing.T) {
+	require.Equal(t, "Ghostline · Đã bảo vệ · Fake SNI: bật", trayText("vi").tooltip(app.StatusProtected, "", true))
+	require.Equal(t, "Ghostline · Protected · Fake SNI: on", trayText("en").tooltip(app.StatusProtected, "", true))
+	require.Equal(t, "Ghostline · Protected · New version v1 ↗", trayText("en").tooltip(app.StatusProtected, "v1", false))
+}

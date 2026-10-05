@@ -44,6 +44,20 @@ const (
 	CodeAutotuneEngineSwitched = "AUTOTUNE_ENGINE_SWITCHED"
 	CodeStrategyListInvalid    = "STRATEGY_LIST_INVALID"
 	CodeDPICustomRejected      = "DPI_CUSTOM_REJECTED"
+
+	// Phase 2B.
+	CodeDNSServerPortInUse   = "DNSSERVER_PORT_IN_USE"
+	CodeDNSServerFirewall    = "DNSSERVER_FIREWALL"
+	CodeDNSServerSelfTest    = "DNSSERVER_SELFTEST_FAILED"
+	CodeCertInstallFailed    = "CERT_INSTALL_FAILED"
+	CodeCertRemoveFailed     = "CERT_REMOVE_FAILED"
+	CodeCertKeyUnreadable    = "CERT_KEY_UNREADABLE"
+	CodeListSignatureInvalid = "LIST_SIGNATURE_INVALID"
+	CodeSetupPageFailed      = "SETUP_PAGE_FAILED"
+	CodeFakeSNINeedsProxy    = "FAKESNI_NEEDS_PROXY"
+	CodeFakeSNITooMany       = "FAKESNI_TOO_MANY"
+	CodeFakeSNISelfTest      = "FAKESNI_SELFTEST_FAILED"
+	CodeFakeSNINotAcked      = "FAKESNI_NOT_ACKED"
 )
 
 // AppError is a coded error the UI can translate.

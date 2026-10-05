@@ -6,10 +6,13 @@ import (
 	"time"
 
 	"github.com/AdguardTeam/dnsproxy/upstream"
+	"github.com/hashcott/ghostline/internal/certs"
+	"github.com/hashcott/ghostline/internal/certstore"
 	"github.com/hashcott/ghostline/internal/dpi"
 	"github.com/hashcott/ghostline/internal/engine"
 	"github.com/hashcott/ghostline/internal/model"
 	"github.com/hashcott/ghostline/internal/probe"
+	"github.com/hashcott/ghostline/internal/proxy/mitm"
 	"github.com/hashcott/ghostline/internal/rules"
 	"github.com/hashcott/ghostline/internal/store"
 	"github.com/hashcott/ghostline/internal/sysdns"
@@ -117,10 +120,31 @@ type SysProxy interface {
 	RestoreIfOurs(addr string, snap store.SysProxySnapshot) (bool, error)
 }
 
-// Firewall manages the LAN-sharing inbound rule.
+// Firewall manages Ghostline's inbound rules.
 type Firewall interface {
-	Add(port int) error
+	Add(port int) error // the proxy's LAN-sharing rule
 	Delete() error
+	AddNamed(r winutil.FirewallRule) error // DNS server and setup page rules
+	DeleteNamed(name string) error
+}
+
+// DNSServer runs the DoH and LAN DNS listeners (engine.Serve).
+type DNSServer interface {
+	Serve(ctx context.Context, sc engine.ServeConfig) (engine.ServeResult, error)
+	StopServe(ctx context.Context) error
+	// SelfTest queries the engine through DoH on loopback.
+	SelfTest(ctx context.Context) error
+}
+
+// Certs manages Ghostline's root certificates in the system store.
+type Certs interface {
+	// LANCA loads or creates the LAN CA and makes sure it is installed.
+	LANCA(ctx context.Context) (*certs.CA, error)
+	ResetLANCA(ctx context.Context) (*certs.CA, error)
+	RemoveLANCA(ctx context.Context) error
+	InstallSession(der []byte) error
+	RemoveSession(thumbprint string) error
+	List() ([]certstore.Cert, error)
 }
 
 // Deps wires the orchestrator.
@@ -159,4 +183,16 @@ type Deps struct {
 	Rules    func() *rules.Compiled
 	ListenV4 netip.AddrPort // default 127.0.0.1:53
 	ListenV6 netip.AddrPort // default [::1]:53
+	// DNS server and Fake SNI (phase 2B). A nil DNSServer or Certs
+	// disables the phases that need them.
+	DNSServer DNSServer
+	Certs     Certs
+	LANAddrs  func() []netip.Addr
+	// SetMITM hands the Fake SNI certificate source to the proxy; nil
+	// turns Fake SNI off. MITMSelfTest intercepts a loopback test server.
+	SetMITM      func(mitm.LeafSource)
+	MITMSelfTest func(ctx context.Context) error
+	// AfterFunc is time.AfterFunc (tests replace it); the result stops
+	// the timer.
+	AfterFunc func(d time.Duration, f func()) (stop func() bool)
 }

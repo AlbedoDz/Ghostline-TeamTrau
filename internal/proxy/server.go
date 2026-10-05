@@ -5,6 +5,7 @@ package proxy
 import (
 	"bufio"
 	"context"
+	"crypto/x509"
 	"errors"
 	"fmt"
 	"io"
@@ -17,6 +18,7 @@ import (
 	"time"
 
 	"github.com/hashcott/ghostline/internal/proxy/dialer"
+	"github.com/hashcott/ghostline/internal/proxy/mitm"
 	"github.com/hashcott/ghostline/internal/proxy/wire"
 	"github.com/hashcott/ghostline/internal/rules"
 )
@@ -63,6 +65,17 @@ type Config struct {
 	Dialer   Opener
 	OnConn   func(ConnEvent) // nil: not recorded (RAM-only live view)
 	Limits   Limits
+	// MITM returns the Fake SNI certificate source; nil (or a nil func)
+	// means Fake SNI is inactive and every connection takes the 2A path.
+	MITM func() mitm.LeafSource
+	// MITMRoots verifies real servers during Fake SNI; nil = system roots.
+	MITMRoots *x509.CertPool
+}
+
+// fakeSNIOpener is implemented by *dialer.Dialer.
+type fakeSNIOpener interface {
+	Plan(t wire.Target, hello []byte) (rules.Decision, string, bool)
+	OpenRaw(ctx context.Context, client netip.Addr, t wire.Target, dec rules.Decision) (net.Conn, error)
 }
 
 // ConnEvent describes one finished handshake for the live view.
@@ -299,6 +312,9 @@ func (s *Server) tunnel(c net.Conn, br *bufio.Reader, ip netip.Addr, req wire.Re
 		return
 	}
 	_ = c.SetReadDeadline(time.Time{})
+	if s.fakeSNI(c, br, ip, req.Target, hello) {
+		return
+	}
 	res, err := s.cfg.Dialer.Open(s.ctx, ip, req.Target, hello)
 	s.event(ip, req.Target, res.Outcome, res.Source)
 	if err != nil {

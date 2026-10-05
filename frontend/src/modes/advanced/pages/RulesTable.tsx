@@ -48,7 +48,6 @@ export function RulesTable({ rules, upstreams, onSave }: Props) {
               <td>{r.pattern}</td>
               <td className={css.dim}>
                 {actionText(r as any, t)}
-                {(r as any).sni && <span className={css.warn}> · sni={(r as any).sni} ({t("rules.needs2b")})</span>}
               </td>
               <td className={css.dim}>{r.comment}</td>
               <td>

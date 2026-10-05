@@ -10,6 +10,7 @@ export function Overview() {
   const latency = useGhost((s) => s.latency);
   const queries = useGhost((s) => s.queries);
   const proxyStats = useGhost((s) => s.proxyStats);
+  const dnsStats = useGhost((s) => s.dnsStats);
   const uptime = useUptime(snap.since);
   const status = String(snap.status);
   const servers = snap.servers ?? [];
@@ -44,6 +45,27 @@ export function Overview() {
                 {t("proxy.stats.open", { count: proxyStats?.open ?? 0 })} · {t("proxy.stats.lan", { count: proxyStats?.lanClients ?? 0 })}
               </div>
             </>
+          ) : (
+            <span className={css.dim}>{t("common.off")}</span>
+          )}
+        </div>
+        <div className={css.panel}>
+          <div className={css.panelTitle}>{t("overview.dnsserver")}</div>
+          {snap.dnsServer?.running ? (
+            <>
+              {(snap.dnsServer.addrs ?? []).map((a) => (
+                <div key={a} className={css.ok}>{a}</div>
+              ))}
+              <div className={css.dim}>{t("overview.dnsDevices", { count: dnsStats?.clients10m ?? 0 })}</div>
+            </>
+          ) : (
+            <span className={css.dim}>{t("common.off")}</span>
+          )}
+        </div>
+        <div className={css.panel}>
+          <div className={css.panelTitle}>{t("overview.fakesni")}</div>
+          {snap.fakeSni?.active ? (
+            <div className={css.ok}>{t("overview.fakesniDomains", { count: snap.fakeSni.domains })}</div>
           ) : (
             <span className={css.dim}>{t("common.off")}</span>
           )}

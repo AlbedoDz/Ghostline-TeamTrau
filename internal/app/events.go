@@ -4,6 +4,7 @@ import (
 	"log/slog"
 	"sync/atomic"
 
+	"github.com/hashcott/ghostline/internal/certstore"
 	"github.com/hashcott/ghostline/internal/engine"
 	"github.com/hashcott/ghostline/internal/proxy"
 	"github.com/hashcott/ghostline/internal/scanner"
@@ -24,7 +25,17 @@ const (
 	EventProxyConn     = "proxy:conn"
 	EventRulesCompiled = "rules:compiled"
 	EventListsProgress = "lists:progress"
+
+	EventDNSServerStats = "dnsserver:stats"
+	EventCertsChanged   = "certs:changed"
+	EventSetupCountdown = "setup:countdown"
 )
+
+// SetupCountdown is the phone setup page's remaining time (0: closed).
+type SetupCountdown struct {
+	URL          string `json:"url"`
+	RemainingSec int    `json:"remainingSec"`
+}
 
 // StatsEvent is emitted every second while protected.
 type StatsEvent struct {
@@ -76,6 +87,9 @@ func init() {
 	application.RegisterEvent[proxy.ConnEvent](EventProxyConn)
 	application.RegisterEvent[RulesCompiled](EventRulesCompiled)
 	application.RegisterEvent[ListsProgress](EventListsProgress)
+	application.RegisterEvent[engine.ServeStats](EventDNSServerStats)
+	application.RegisterEvent[[]certstore.Cert](EventCertsChanged)
+	application.RegisterEvent[SetupCountdown](EventSetupCountdown)
 }
 
 // Emitter sends events to the UI.

@@ -1,0 +1,180 @@
+package engine_test
+
+import (
+	"bytes"
+	"context"
+	"crypto/tls"
+	"crypto/x509"
+	"encoding/base64"
+	"errors"
+	"io"
+	"net"
+	"net/http"
+	"net/netip"
+	"sync/atomic"
+	"testing"
+	"time"
+
+	"github.com/hashcott/ghostline/internal/certs"
+	"github.com/hashcott/ghostline/internal/engine"
+	"github.com/miekg/dns"
+	"github.com/stretchr/testify/require"
+)
+
+type lanCert struct {
+	ca   *certs.CA
+	cur  atomic.Pointer[tls.Certificate]
+	pool *x509.CertPool
+}
+
+func newLANCert(t *testing.T) *lanCert {
+	ca, err := certs.NewLANCA("T", time.Now())
+	require.NoError(t, err)
+	l := &lanCert{ca: ca, pool: x509.NewCertPool()}
+	l.pool.AddCert(ca.Cert)
+	l.reissue(t)
+	return l
+}
+
+func (l *lanCert) reissue(t *testing.T) *tls.Certificate {
+	c, err := l.ca.IssueServer([]string{"dns.ghostline.lan"}, []netip.Addr{netip.MustParseAddr("127.0.0.1")}, time.Hour, time.Now())
+	require.NoError(t, err)
+	l.cur.Store(c)
+	return c
+}
+
+func serve(t *testing.T, e *engine.Engine, sc engine.ServeConfig) engine.ServeResult {
+	t.Helper()
+	res, err := e.Serve(context.Background(), sc)
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = e.StopServe(context.Background()) })
+	return res
+}
+
+func dohClient(l *lanCert) *http.Client {
+	return &http.Client{Timeout: 5 * time.Second, Transport: &http.Transport{ForceAttemptHTTP2: true,
+		TLSClientConfig: &tls.Config{RootCAs: l.pool}}}
+}
+
+func packQuery(t *testing.T, name string, qtype uint16) []byte {
+	m := new(dns.Msg).SetQuestion(name, qtype)
+	m.Id = 0
+	b, err := m.Pack()
+	require.NoError(t, err)
+	return b
+}
+
+func readDNS(t *testing.T, resp *http.Response) *dns.Msg {
+	t.Helper()
+	defer resp.Body.Close()
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	b, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	m := new(dns.Msg)
+	require.NoError(t, m.Unpack(b))
+	return m
+}
+
+func trapSystemDNS(t *testing.T) {
+	old := net.DefaultResolver
+	net.DefaultResolver = &net.Resolver{PreferGo: true, Dial: func(context.Context, string, string) (net.Conn, error) {
+		t.Error("system DNS used")
+		return nil, errors.New("system DNS forbidden")
+	}}
+	t.Cleanup(func() { net.DefaultResolver = old })
+}
+
+func TestServe_DoHGetPost(t *testing.T) {
+	trapSystemDNS(t)
+	up := &fakeUp{ip: net.IPv4(192, 0, 2, 80), name: "fake1"}
+	e := start(t, nil, up)
+	l := newLANCert(t)
+	res := serve(t, e, engine.ServeConfig{DoH: []netip.AddrPort{netip.MustParseAddrPort("127.0.0.1:0")}, Cert: l.cur.Load})
+	require.Len(t, res.Bound, 1)
+	base := "https://" + res.Bound[0].String() + "/dns-query"
+	c := dohClient(l)
+
+	q := packQuery(t, "example.com.", dns.TypeA)
+	resp, err := c.Get(base + "?dns=" + base64.RawURLEncoding.EncodeToString(q))
+	require.NoError(t, err)
+	require.Equal(t, "HTTP/2.0", resp.Proto)
+	m := readDNS(t, resp)
+	require.Equal(t, "192.0.2.80", m.Answer[0].(*dns.A).A.String())
+
+	resp, err = c.Post(base, "application/dns-message", bytes.NewReader(q))
+	require.NoError(t, err)
+	m = readDNS(t, resp)
+	require.Equal(t, "192.0.2.80", m.Answer[0].(*dns.A).A.String())
+	require.Equal(t, uint64(2), e.ServeStats().Queries)
+}
+
+func freePort(t *testing.T) uint16 {
+	pc, err := net.ListenPacket("udp", "127.0.0.1:0")
+	require.NoError(t, err)
+	defer pc.Close()
+	return uint16(pc.LocalAddr().(*net.UDPAddr).Port)
+}
+
+func TestServe_PlainUDPTCP(t *testing.T) {
+	up := &fakeUp{ip: net.IPv4(192, 0, 2, 81), name: "fake1"}
+	e := start(t, nil, up)
+	l := newLANCert(t)
+	plain := netip.AddrPortFrom(netip.MustParseAddr("127.0.0.1"), freePort(t))
+	res := serve(t, e, engine.ServeConfig{DoH: []netip.AddrPort{netip.MustParseAddrPort("127.0.0.1:0")}, Plain: []netip.AddrPort{plain}, Cert: l.cur.Load})
+	require.Contains(t, res.Bound, plain)
+	for _, netw := range []string{"udp", "tcp"} {
+		c := &dns.Client{Net: netw, Timeout: 2 * time.Second}
+		r, _, err := c.Exchange(new(dns.Msg).SetQuestion("example.com.", dns.TypeA), plain.String())
+		require.NoError(t, err, netw)
+		require.Equal(t, "192.0.2.81", r.Answer[0].(*dns.A).A.String(), netw)
+	}
+}
+
+func TestServe_RefusesANY(t *testing.T) {
+	up := &fakeUp{ip: net.IPv4(192, 0, 2, 81), name: "fake1"}
+	e := start(t, nil, up)
+	l := newLANCert(t)
+	plain := netip.AddrPortFrom(netip.MustParseAddr("127.0.0.1"), freePort(t))
+	serve(t, e, engine.ServeConfig{DoH: []netip.AddrPort{netip.MustParseAddrPort("127.0.0.1:0")}, Plain: []netip.AddrPort{plain}, Cert: l.cur.Load})
+	r, _, err := (&dns.Client{Timeout: 2 * time.Second}).Exchange(new(dns.Msg).SetQuestion("example.com.", dns.TypeANY), plain.String())
+	require.NoError(t, err)
+	require.Equal(t, dns.RcodeRefused, r.Rcode)
+	require.Zero(t, up.calls.Load())
+}
+
+func TestServe_SkipsBusyAddr(t *testing.T) {
+	e := start(t, nil, &fakeUp{ip: net.IPv4(192, 0, 2, 80)})
+	l := newLANCert(t)
+	busy, err := net.Listen("tcp", "127.0.0.2:0")
+	require.NoError(t, err)
+	defer busy.Close()
+	busyAP := netip.MustParseAddrPort(busy.Addr().String())
+	res := serve(t, e, engine.ServeConfig{DoH: []netip.AddrPort{busyAP, netip.MustParseAddrPort("127.0.0.1:0")}, Cert: l.cur.Load})
+	require.Contains(t, res.Skipped, busyAP)
+	require.Len(t, res.Bound, 1)
+}
+
+func TestServe_NoLoopbackBoundFails(t *testing.T) {
+	e := start(t, nil, &fakeUp{ip: net.IPv4(192, 0, 2, 80)})
+	l := newLANCert(t)
+	busy, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+	defer busy.Close()
+	_, err = e.Serve(context.Background(), engine.ServeConfig{DoH: []netip.AddrPort{netip.MustParseAddrPort(busy.Addr().String())}, Cert: l.cur.Load})
+	require.ErrorIs(t, err, engine.ErrNoLoopbackDoH)
+}
+
+func TestServe_CertRotates(t *testing.T) {
+	e := start(t, nil, &fakeUp{ip: net.IPv4(192, 0, 2, 80)})
+	l := newLANCert(t)
+	res := serve(t, e, engine.ServeConfig{DoH: []netip.AddrPort{netip.MustParseAddrPort("127.0.0.1:0")}, Cert: l.cur.Load})
+	serial := func() string {
+		conn, err := tls.Dial("tcp", res.Bound[0].String(), &tls.Config{RootCAs: l.pool, ServerName: "dns.ghostline.lan"})
+		require.NoError(t, err)
+		defer conn.Close()
+		return conn.ConnectionState().PeerCertificates[0].SerialNumber.String()
+	}
+	first := serial()
+	l.reissue(t)
+	require.NotEqual(t, first, serial())
+}

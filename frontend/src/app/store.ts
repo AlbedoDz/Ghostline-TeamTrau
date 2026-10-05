@@ -7,6 +7,8 @@ import type {
   ProxyStats,
   QueryEvent,
   ScanProgress,
+  ServeStats,
+  SetupCountdown,
   Settings,
   Snapshot,
   StatsEvent,
@@ -14,7 +16,7 @@ import type {
 } from "./api";
 
 export type Mode = "simple" | "advanced";
-export type Page = "overview" | "servers" | "dpi" | "proxy" | "rules" | "logs" | "settings";
+export type Page = "overview" | "servers" | "dpi" | "proxy" | "rules" | "dnsserver" | "fakesni" | "logs" | "settings";
 
 const emptySnapshot = {
   status: "disconnected",
@@ -47,6 +49,12 @@ type State = {
   proxyStats: ProxyStats | null;
   proxyConns: ConnEvent[];
   rulesVersion: number;
+  dnsStats: ServeStats | null;
+  setup: SetupCountdown | null;
+  certsVersion: number;
+  setDnsStats: (s: ServeStats) => void;
+  setSetup: (s: SetupCountdown) => void;
+  bumpCerts: () => void;
   setProxyStats: (s: ProxyStats) => void;
   pushProxyConn: (c: ConnEvent) => void;
   bumpRules: () => void;
@@ -84,6 +92,9 @@ const initial = {
   proxyStats: null as ProxyStats | null,
   proxyConns: [] as ConnEvent[],
   rulesVersion: 0,
+  dnsStats: null as ServeStats | null,
+  setup: null as SetupCountdown | null,
+  certsVersion: 0,
 };
 
 const tail = <T,>(arr: T[], v: T, n: number) => {
@@ -120,6 +131,9 @@ export const useGhost = create<State>((set) => ({
   dismissBanner: (bannerDismissed) => set({ bannerDismissed }),
   setQueryLog: (queryLog) => set(queryLog ? { queryLog } : { queryLog, proxyConns: [] }),
   setProxyStats: (proxyStats) => set({ proxyStats }),
+  setDnsStats: (dnsStats) => set({ dnsStats }),
+  setSetup: (setup) => set({ setup: setup.url ? setup : null }),
+  bumpCerts: () => set((s) => ({ certsVersion: s.certsVersion + 1 })),
   pushProxyConn: (c) => set((s) => ({ proxyConns: tail(s.proxyConns, c, 500) })),
   bumpRules: () => set((s) => ({ rulesVersion: s.rulesVersion + 1 })),
   reset: () => set({ ...initial }),

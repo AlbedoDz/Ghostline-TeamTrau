@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
+	"slices"
 	"time"
 
 	"github.com/hashcott/ghostline/internal/model"
@@ -40,6 +41,7 @@ type State struct {
 	DPI          DPIState                `json:"dpi"`
 	SysProxy     *SysProxyState          `json:"sysproxy,omitempty"`
 	Firewall     *FirewallState          `json:"firewall,omitempty"`
+	Certs        *CertsState             `json:"certs,omitempty"`
 }
 
 // SysProxySnapshot is the WinINET per-connection proxy configuration.
@@ -59,13 +61,77 @@ type SysProxyState struct {
 	Snapshot  *SysProxySnapshot `json:"snapshot"`
 }
 
-// FirewallState records the inbound rule created for LAN sharing.
+// FirewallState records the inbound rules Ghostline created, by name.
 type FirewallState struct {
-	Rule string `json:"rule"`
+	Rules []string `json:"rules"`
+}
+
+// UnmarshalJSON also reads the v2 form {"rule": "<name>"}.
+func (f *FirewallState) UnmarshalJSON(b []byte) error {
+	var v struct {
+		Rules []string `json:"rules"`
+		Rule  string   `json:"rule"`
+	}
+	if err := json.Unmarshal(b, &v); err != nil {
+		return err
+	}
+	f.Rules = v.Rules
+	if v.Rule != "" && !slices.Contains(f.Rules, v.Rule) {
+		f.Rules = append(f.Rules, v.Rule)
+	}
+	return nil
+}
+
+// CertsState records the Fake SNI session CAs installed in the Root
+// store (SHA-1 thumbprints), written before each install.
+type CertsState struct {
+	Session []string `json:"session"`
+}
+
+// AddFirewallRule records a rule name (once).
+func (s *State) AddFirewallRule(name string) {
+	if s.Firewall == nil {
+		s.Firewall = &FirewallState{}
+	}
+	if !slices.Contains(s.Firewall.Rules, name) {
+		s.Firewall.Rules = append(s.Firewall.Rules, name)
+	}
+}
+
+// RemoveFirewallRule forgets a rule name; no rule left clears the field.
+func (s *State) RemoveFirewallRule(name string) {
+	if s.Firewall == nil {
+		return
+	}
+	s.Firewall.Rules = slices.DeleteFunc(s.Firewall.Rules, func(x string) bool { return x == name })
+	if len(s.Firewall.Rules) == 0 {
+		s.Firewall = nil
+	}
+}
+
+// AddSessionCert records a session CA thumbprint (once).
+func (s *State) AddSessionCert(thumbprint string) {
+	if s.Certs == nil {
+		s.Certs = &CertsState{}
+	}
+	if !slices.Contains(s.Certs.Session, thumbprint) {
+		s.Certs.Session = append(s.Certs.Session, thumbprint)
+	}
+}
+
+// RemoveSessionCert forgets a thumbprint; none left clears the field.
+func (s *State) RemoveSessionCert(thumbprint string) {
+	if s.Certs == nil {
+		return
+	}
+	s.Certs.Session = slices.DeleteFunc(s.Certs.Session, func(x string) bool { return x == thumbprint })
+	if len(s.Certs.Session) == 0 {
+		s.Certs = nil
+	}
 }
 
 // CleanState is the state with nothing to restore.
-func CleanState() State { return State{Version: 2, Phase: PhaseClean} }
+func CleanState() State { return State{Version: 3, Phase: PhaseClean} }
 
 func cleanState() State { return CleanState() }
 

@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/hashcott/ghostline/internal/rules"
+	"github.com/hashcott/ghostline/internal/rules/formats"
 	"github.com/hashcott/ghostline/internal/rules/lists"
 	"github.com/hashcott/ghostline/internal/store"
 )
@@ -114,6 +115,7 @@ func (s *Service) recompileLocked(changed string) {
 		s.o.log("rules", CodeListTooLarge, "id", disabled)
 	}
 	s.x.Bus.Emit(EventRulesCompiled, RulesCompiled{Count: c.Count(), Ms: time.Since(start).Milliseconds()})
+	s.o.OnRulesCompiled()
 }
 
 func (s *Service) saveRulesLocked() error { return store.SaveRules(s.x.RulesPath, s.rf) }
@@ -194,7 +196,11 @@ func newListID(name string) string {
 }
 
 func (s *Service) validateList(l lists.List) error {
-	if _, err := lists.ToListSet(l, lists.Result{}); err != nil {
+	res := lists.Result{}
+	if l.Format == string(formats.Ghostline) {
+		res.Format = formats.Ghostline // per-line actions: no shared action to check
+	}
+	if _, err := lists.ToListSet(l, res); err != nil {
 		return err
 	}
 	if up, ok := strings.CutPrefix(l.Action, "upstream="); ok && !slices.Contains(s.upstreamIDs(), up) {
