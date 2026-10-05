@@ -106,12 +106,30 @@ func ValidateProxy(p ProxySettings) error {
 	return nil
 }
 
+// DPISettings configures the DPI bypass engine. Preset and CustomArgs are
+// GoodbyeDPI's (kept at this level for older files); zapret2 has its own.
 type DPISettings struct {
-	Enabled    bool   `json:"enabled"`
-	Preset     string `json:"preset"`
-	CustomArgs string `json:"customArgs"`
-	Scope      string `json:"scope"`
+	Enabled        bool            `json:"enabled"`
+	Engine         string          `json:"engine"` // "goodbyedpi" | "zapret2"
+	Preset         string          `json:"preset"`
+	CustomArgs     string          `json:"customArgs"`
+	Scope          string          `json:"scope"`
+	Zapret2        Zapret2Settings `json:"zapret2"`
+	HideEngineHint bool            `json:"hideEngineHint"`
 }
+
+// Zapret2Settings is the zapret2 engine's part of DPISettings.
+type Zapret2Settings struct {
+	Strategy     string `json:"strategy"`
+	CustomArgs   string `json:"customArgs"`
+	AutoHostlist bool   `json:"autoHostlist"`
+}
+
+// DPI engine IDs.
+const (
+	EngineGoodbyeDPI = "goodbyedpi"
+	EngineZapret2    = "zapret2"
+)
 
 type FragmentSettings struct {
 	Enabled bool `json:"enabled"`
@@ -132,7 +150,7 @@ type WindowSize struct {
 // DefaultSettings returns the spec §9 defaults.
 func DefaultSettings() Settings {
 	return Settings{
-		Version:        2,
+		Version:        3,
 		Language:       "vi",
 		Mode:           "simple",
 		CloseToTray:    true,
@@ -143,7 +161,7 @@ func DefaultSettings() Settings {
 		IncludeTags:    []string{"no-filter"},
 		Pinned:         []string{},
 		ProbeSites:     []string{"youtube.com", "discord.com", "x.com"},
-		DPI:            DPISettings{Preset: "light", Scope: "all"},
+		DPI:            DPISettings{Engine: EngineZapret2, Preset: "light", Scope: "all", Zapret2: Zapret2Settings{Strategy: "z-split"}},
 		FragmentDNS:    FragmentSettings{Chunks: 5, DelayMs: 5},
 		Updates:        UpdateSettings{CheckApp: true, UpdateServerList: true},
 		AdvancedWindow: WindowSize{Width: 1000, Height: 660},
@@ -175,7 +193,17 @@ func LoadSettings(path string) (s Settings, recovered bool, err error) {
 		}
 		return DefaultSettings(), true, nil
 	}
-	s.Version = 2 // v1 files gain the v2 defaults through the pre-filled struct
+	// v1 files gain the v2 defaults through the pre-filled struct. Files
+	// older than v3 predate zapret2: their users keep GoodbyeDPI.
+	var head struct{ Version int }
+	_ = json.Unmarshal(b, &head)
+	if head.Version < 3 {
+		s.DPI.Engine = EngineGoodbyeDPI
+	}
+	if s.DPI.Engine != EngineGoodbyeDPI && s.DPI.Engine != EngineZapret2 {
+		s.DPI.Engine = EngineZapret2
+	}
+	s.Version = 3
 	if s.Proxy.Upstreams == nil {
 		s.Proxy.Upstreams = []UpstreamProxy{}
 	}

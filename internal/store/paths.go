@@ -21,6 +21,9 @@ type Paths struct {
 	ServersDNSCryptSig string
 	ServersCustom      string
 	DPIBlacklist       string
+	DPIStrategies      string
+	DPIStrategiesSig   string
+	DPIAutoHostlist    string
 	LogDir             string
 	BinDir             string
 	Rules              string
@@ -51,6 +54,9 @@ func ResolvePaths(exePath, appData string) Paths {
 	p.ServersDNSCryptSig = j("servers-dnscrypt.md.minisig")
 	p.ServersCustom = j("servers-custom.json")
 	p.DPIBlacklist = j("dpi-blacklist.txt")
+	p.DPIStrategies = j("dpi-strategies.json")
+	p.DPIStrategiesSig = j("dpi-strategies.json.sig")
+	p.DPIAutoHostlist = j("dpi-autohostlist.txt")
 	p.LogDir = j("logs")
 	p.BinDir = j("bin")
 	p.Rules = j("rules.json")
