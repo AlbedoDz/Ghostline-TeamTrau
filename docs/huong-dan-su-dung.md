@@ -17,6 +17,8 @@ Hướng dẫn này dành cho người dùng Windows 10/11, không cần biết 
    - [Cài đặt](#45-cài-đặt)
    - [Proxy](#46-proxy)
    - [Rules và danh sách](#47-rules-và-danh-sách)
+   - [DNS server](#48-dns-server)
+   - [Fake SNI](#49-fake-sni)
 5. [Icon ở khay hệ thống](#5-icon-ở-khay-hệ-thống)
 6. [Khi một trang web vẫn bị chặn](#6-khi-một-trang-web-vẫn-bị-chặn)
 7. [Xử lý sự cố](#7-xử-lý-sự-cố)
@@ -252,6 +254,42 @@ Sửa rules ở tab **bảng** hoặc chuyển sang **text** (mỗi dòng một 
 
 **Thử tên miền** cho biết rule hay danh sách nào quyết định một tên, ví dụ *chặn — danh sách HaGeZi Light, dòng 120*.
 
+### 4.8. DNS server
+
+Chia sẻ DNS mã hoá của Ghostline cho trình duyệt trên máy này và cho thiết bị khác trong mạng nhà. DNS server chạy khi bạn đang kết nối.
+
+- **DoH cục bộ:** trình duyệt trên máy này có thể dùng `https://127.0.0.1/dns-query` làm DNS an toàn tuỳ chỉnh.
+- **Chia sẻ cho LAN:** trả lời thêm DNS cổng 53 và DoH trên IP LAN của máy. Chỉ thiết bị trong mạng **Private** dùng được; truy vấn từ nơi khác bị từ chối.
+- **Cổng DoH:** mặc định 443; đổi nếu chương trình khác đang dùng cổng này.
+
+**Dùng cho thiết bị khác** (DNS cổng 53 không cần chứng chỉ):
+
+| Thiết bị | Cách làm |
+| --- | --- |
+| Router, TV, máy chơi game | đặt DNS là IP của máy tính |
+| Android | tắt *DNS riêng tư*, rồi đặt DNS tĩnh cho Wi-Fi nhà |
+| Steam Deck | đặt DNS thủ công cho riêng Wi-Fi nhà (không đặt cho mọi mạng) |
+| iPhone / iPad | *Cài đặt › Wi-Fi › (i) › Định cấu hình DNS › Thủ công* với IP máy tính — hoặc cài profile DoH bên dưới |
+
+**Profile DoH cho iPhone:** nhập tên Wi-Fi nhà, bấm **mở trang cài đặt cho điện thoại** rồi quét mã QR. Trang mở trong 10 phút. So vân tay trên điện thoại với vân tay trong Ghostline, tải profile, cài, rồi bật chứng chỉ trong *Cài đặt › Cài đặt chung › Giới thiệu › Cài đặt tin cậy chứng chỉ*. DNS mã hoá chỉ dùng khi ở Wi-Fi nhà. Nếu máy tính tắt khi bạn đang ở nhà, hãy tắt profile trong *Cài đặt › VPN và quản lý thiết bị*. **lưu file…** ghi chứng chỉ và profile ra đĩa thay vì mở trang.
+
+**CA LAN:** chứng chỉ mà thiết bị khác tin. Nó chỉ ký được cho IP nội bộ và `*.ghostline.lan`, nên không thể dùng để giả mạo trang web. **tạo lại** sinh CA mới (thiết bị phải cài lại); **gỡ** xoá CA và tắt DNS server.
+
+### 4.9. Fake SNI
+
+Tính năng nâng cao cho trang nằm sau CDN cho phép *domain fronting*. Proxy giải mã HTTPS của trình duyệt cho những tên miền bạn chọn và kết nối tới máy chủ bằng một tên khác được phép, nên nhà mạng thấy tên đó thay vì trang thật.
+
+- Lần đầu phải đọc hết cảnh báo và xác nhận.
+- Cần bật **proxy** và **dùng cho máy này** (chỉ áp dụng cho trình duyệt trên máy này).
+- Bật một **nhóm preset** hoặc viết rule như `youtube.com sni=www.google.com connect=www.google.com`. `sni=none` không gửi tên nào. `connect=` chọn host để lấy địa chỉ kết nối.
+- Khi đang chạy, mọi trang có banner tím cho biết đang giải mã bao nhiêu tên miền. **tắt Fake SNI** dừng ngay.
+- Nếu máy chủ từ chối tên giả, Ghostline tự quay về fragment; bộ đếm trên trang cho thấy điều này.
+- Chứng chỉ được cài chỉ tồn tại khi đang kết nối, chỉ ký được cho các tên miền trong rule, và bị gỡ khi ngắt kết nối, khi app bị tắt đột ngột (watchdog gỡ) và khi gỡ cài đặt.
+- Không dùng cho ngân hàng hay tài khoản quan trọng; app ghim chứng chỉ sẽ lỗi với các tên miền này. Firefox có thể cần bật `security.enterprise_roots.enabled` trong `about:config`.
+
+Danh sách từ nguồn khác chỉ được dùng rule `sni=` sau khi bạn bật **tin cho Fake SNI**; preset của Ghostline có chữ ký.
+
+
 ## 5. Icon ở khay hệ thống
 
 Ghostline có icon hình vòng tròn ở khay (góc dưới bên phải, cạnh đồng hồ). Màu icon cho biết trạng thái. **Bấm chuột phải** để mở menu:
@@ -305,9 +343,11 @@ Làm lần lượt, dừng lại khi trang đã mở được:
 
 **Báo lỗi:** vào **Nhật ký → lưu file**, rồi mở issue tại [GitHub](https://github.com/hashcott/ghostline/issues) kèm file đó. Nhật ký không chứa tên các trang bạn đã truy cập.
 
+**Gỡ chứng chỉ Ghostline bằng tay:** trong app, vào **Cài đặt → chứng chỉ → gỡ tất cả chứng chỉ Ghostline**. Không có app thì chạy `certlm.msc`, mở *Trusted Root Certification Authorities → Certificates* và xoá các mục bắt đầu bằng `Ghostline`.
+
 ## 8. Gỡ cài đặt
 
-- **Bản cài đặt:** Settings → Apps → Ghostline → Uninstall. Trình gỡ cài đặt tự trả DNS về như cũ, xoá các tác vụ khởi động và driver WinDivert.
+- **Bản cài đặt:** Settings → Apps → Ghostline → Uninstall. Trình gỡ cài đặt tự trả DNS về như cũ, xoá các tác vụ khởi động, driver WinDivert và mọi chứng chỉ Ghostline.
 - **Bản portable:** trong app bấm **Ngắt kết nối**, tắt **khởi động cùng Windows**, thoát từ khay, rồi xoá thư mục.
 
 ## 9. Câu hỏi thường gặp

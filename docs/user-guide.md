@@ -17,6 +17,8 @@ This guide is for anyone running Windows 10/11; no technical background is neede
    - [Settings](#45-settings)
    - [Proxy](#46-proxy)
    - [Rules and lists](#47-rules-and-lists)
+   - [DNS server](#48-dns-server)
+   - [Fake SNI](#49-fake-sni)
 5. [The tray icon](#5-the-tray-icon)
 6. [When a site is still blocked](#6-when-a-site-is-still-blocked)
 7. [Troubleshooting](#7-troubleshooting)
@@ -252,6 +254,42 @@ Edit rules in the **table** or switch to **text** (one rule per line, `#` commen
 
 **Test a domain** tells you which rule or list decides a name, for example *block — list HaGeZi Light, line 120*.
 
+### 4.8. DNS server
+
+Share Ghostline's encrypted DNS with this PC's browsers and with other devices on your home network. It runs while you are connected.
+
+- **Local DoH:** browsers on this PC can use `https://127.0.0.1/dns-query` as their custom secure DNS.
+- **Share on the LAN:** also answers DNS on port 53 and DoH on this PC's LAN addresses. Only devices on a network marked **Private** can reach it; requests from elsewhere are refused.
+- **DoH port:** 443 by default; change it if another program uses that port.
+
+**Use on other devices** (no certificate needed for port 53):
+
+| Device | How |
+| --- | --- |
+| Router, TV, console | set the DNS server to this PC's IP |
+| Android | turn off *Private DNS*, then set a static DNS for your home Wi-Fi |
+| Steam Deck | set the DNS manually for your home Wi-Fi only (not for every network) |
+| iPhone / iPad | *Settings › Wi-Fi › (i) › Configure DNS › Manual* with this PC's IP — or install the DoH profile below |
+
+**iPhone DoH profile:** enter your home Wi-Fi name, press **open the phone setup page** and scan the QR code. The page stays open for 10 minutes. Compare the fingerprint on the phone with the one in Ghostline, download the profile, install it, then turn the certificate on in *Settings › General › About › Certificate Trust Settings*. The encrypted DNS is used only on your home Wi-Fi. If this PC is off while you are at home, turn the profile off in *Settings › VPN & Device Management*. **save files…** writes the certificate and profile to disk instead.
+
+**LAN CA:** the certificate other devices trust. It can only sign private addresses and `*.ghostline.lan`, so it cannot be used to impersonate websites. **recreate** makes a new one (devices must install it again); **remove** deletes it and turns the DNS server off.
+
+### 4.9. Fake SNI
+
+An advanced feature for sites behind CDNs that allow *domain fronting*. The proxy decrypts the browser's HTTPS for the domains you choose and connects to the server with a different, allowed name, so the network sees that name instead of the real site.
+
+- The first time, read the warning to the end and confirm.
+- It needs the **proxy** with **use for this PC** (it applies only to browsers on this PC).
+- Turn on a **preset group** or write rules such as `youtube.com sni=www.google.com connect=www.google.com`. `sni=none` sends no name. `connect=` chooses which host's address to connect to.
+- While it runs, a violet banner on every page says how many domains are decrypted. **turn Fake SNI off** stops it at once.
+- If a server refuses the fake name, Ghostline silently falls back to fragmentation; the counters on the page show this.
+- The certificate it installs exists only while you are connected, can sign only the domains in your rules, and is removed on disconnect, on a crash (by the watchdog) and on uninstall.
+- Do not use it for banking or important accounts; apps that pin certificates will fail for these domains. In Firefox you may need `security.enterprise_roots.enabled` in `about:config`.
+
+Lists from other sources can carry `sni=` rules only after you mark them **trust for Fake SNI**; Ghostline's own presets are signed.
+
+
 ## 5. The tray icon
 
 Ghostline puts a ring icon in the system tray (bottom right, next to the clock). Its colour shows the current status. **Right-click** it for the menu:
@@ -305,9 +343,11 @@ Work through these in order and stop as soon as the site opens:
 
 **Reporting a bug:** go to **Logs → save file**, then open an issue on [GitHub](https://github.com/hashcott/ghostline/issues) with that file attached. Logs never contain the sites you visited.
 
+**Removing Ghostline certificates by hand:** **Settings → certificates → remove all Ghostline certificates** does it from the app. Without the app, run `certlm.msc`, open *Trusted Root Certification Authorities → Certificates* and delete entries starting with `Ghostline`.
+
 ## 8. Uninstalling
 
-- **Installer build:** Settings → Apps → Ghostline → Uninstall. The uninstaller restores your DNS and removes the startup tasks and the WinDivert driver.
+- **Installer build:** Settings → Apps → Ghostline → Uninstall. The uninstaller restores your DNS and removes the startup tasks, the WinDivert driver and every Ghostline certificate.
 - **Portable build:** in the app click **Disconnect**, turn off **start with windows**, quit from the tray, then delete the folder.
 
 ## 9. FAQ

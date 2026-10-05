@@ -53,6 +53,8 @@ Ghostline chạy một DNS server cục bộ trên `127.0.0.1` / `::1`, trỏ m�
 - **Proxy cục bộ (HTTP / HTTPS / SOCKS4/5):** chạy cùng nút Connect, có thể đặt làm System Proxy của Windows, và chia sẻ cho điện thoại hay thiết bị khác cùng Wi-Fi (có mã QR). Tên miền luôn được phân giải qua DNS mã hoá của Ghostline.
 - **Fragment web không cần driver:** lưu lượng qua proxy được tự động cắt nhỏ ClientHello khi trang bị chặn theo SNI, và Ghostline ghi nhớ cách vượt cho từng mạng.
 - **Rules và danh sách cộng đồng:** chặn, cho phép, DNS giả, fragment hoặc đi qua upstream proxy theo domain, keyword, regexp hay CIDR. Import danh sách hosts, AdBlock/AdGuard, dnsmasq, Unbound, RPZ, Clash, v2ray, sing-box hoặc CIDR thẳng từ link GitHub, tự cập nhật theo lịch.
+- **DNS server cho mạng nhà:** DNS mã hoá cho điện thoại, TV, máy chơi game và router trong Wi-Fi: DNS cổng 53 (không cần chứng chỉ) hoặc DNS-over-HTTPS, có trang cài đặt qua mã QR và profile cho iOS.
+- **Fake SNI (nâng cao, mặc định tắt):** với trang nằm sau CDN cho phép domain fronting, proxy gửi ra mạng một tên miền khác được phép. Chỉ giải mã HTTPS của những tên miền bạn chọn, bằng chứng chỉ chỉ ký được cho đúng các tên miền đó và bị gỡ khi ngắt kết nối.
 - **Danh sách máy chủ có chữ ký:** cập nhật mỗi ngày, xác minh bằng ed25519; danh sách DNSCrypt được kiểm tra bằng minisign.
 - **Chế độ Đơn giản và Nâng cao**, icon khay, giao diện tiếng Việt và tiếng Anh, phong cách neon-terminal.
 - **Bản cài đặt hoặc portable:** bản portable lưu mọi dữ liệu trong thư mục `data\` cạnh file exe.
@@ -144,6 +146,9 @@ Chi tiết thiết kế nằm trong [`docs/superpowers/specs`](docs/superpowers/
 - Nếu bạn duyệt UAC bằng **tài khoản admin khác**, `%APPDATA%` và System Proxy là của tài khoản đó, nên "dùng cho máy này" không áp dụng cho người dùng đang đăng nhập.
 - Fragment web chỉ giúp được ứng dụng đi qua proxy. Ứng dụng bỏ qua proxy của Windows (một số game, Firefox có cài đặt proxy riêng) cần dùng GoodbyeDPI.
 - Chia sẻ LAN chỉ hoạt động trên mạng được Windows đánh dấu **Private**; Ghostline không bao giờ tự đổi profile mạng.
+
+- **Fake SNI** chỉ áp dụng cho trình duyệt trên máy này đi qua proxy, chỉ cho tên miền có rule `sni=`, và làm hỏng app ghim chứng chỉ. Firefox có thể cần bật `security.enterprise_roots.enabled`.
+- **iPhone dùng profile DoH:** nếu máy tính tắt hoặc ngắt kết nối khi iPhone đang ở Wi-Fi nhà, hãy tắt profile trong *Cài đặt › VPN và quản lý thiết bị*. Private DNS của Android không dùng được với Ghostline; hãy đặt DNS tĩnh cho Wi-Fi.
 
 ## Build từ mã nguồn
 

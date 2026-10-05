@@ -49,6 +49,20 @@ Chạy trên Windows 11 x64, terminal **admin**. Đánh dấu từng mục; mụ
 - [ ] **Ký danh sách chiến lược** (tăng `version` mỗi lần đổi): `go run ./tools/genservers -sign-file lists/strategies.json -sign-env SERVERLIST_SIGNING_KEY`, commit cả `lists/strategies.json.sig`.
 - [ ] **Gửi `winws2.exe` và `ghostline.exe`** lên https://www.microsoft.com/wdsi/filesubmission (báo nhầm); ghi lại mã gửi.
 
+## Kiểm tra thủ công giai đoạn 2B (spec 2B §12)
+
+- [ ] **Preset Fake SNI:** làm theo `lists/fakesni/README.md` trên mạng bị chặn, ghi kết quả; ký từng preset và commit `.sig`. `GHOSTLINE_RELEASE=1 go test ./lists/` phải qua.
+- [ ] **iPhone:** cài `.mobileconfig` qua trang cài đặt (QR), bật tin cậy hoàn toàn; DoH chạy ở Wi-Fi nhà; ra 4G vẫn có mạng; ghi lại hành vi khi Ghostline ngắt kết nối và cập nhật hướng dẫn.
+- [ ] **Android:** tắt DNS riêng tư, đặt DNS tĩnh là IP máy; duyệt web được.
+- [ ] **Steam Deck:** đặt DNS thủ công (ghi lại làm được ở Game Mode hay phải sang Desktop mode, cập nhật hướng dẫn).
+- [ ] **Router / TV:** đặt DNS là IP máy; truy vấn hiện trong số thiết bị LAN.
+- [ ] **Chrome, Edge, Firefox với Fake SNI:** trang trong preset mở được khi tắt cả hai engine vượt DPI; banner tím hiện ở cả hai chế độ.
+- [ ] **`certlm.msc`:** không còn `Ghostline Fake SNI` sau Disconnect, sau `taskkill /F`, sau khởi động lại máy; không còn chứng chỉ Ghostline nào sau gỡ cài đặt.
+- [ ] **Wireshark:** không có DNS plain do DoH server, DNS cho LAN hay Fake SNI gây ra (ngoài truy vấn LAN tới cổng 53 của máy).
+- [ ] **Mạng Public:** thiết bị khác không vào được; gợi ý đổi sang Private hiện ra.
+- [ ] **Cổng 53 bị ICS chiếm** (bật chia sẻ Internet): IP đó bị bỏ qua, các IP khác vẫn chạy.
+
+
 ## Cần xác minh trên máy thật (reviewer không kiểm chứng được)
 
 - [ ] **Luật firewall với đường dẫn có dấu cách và chữ có dấu** (`C:\Program Files\…`, `C:\Users\Đức Hạnh\…` cho bản portable): `netsh` tạo đúng luật `Ghostline Proxy` cho exe đó.
