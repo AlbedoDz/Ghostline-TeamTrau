@@ -78,6 +78,7 @@ func (o *Orchestrator) startSNIPhase(ctx context.Context) error {
 		}},
 		{name: "sni.install", do: func(context.Context) error {
 			if err := o.d.Certs.InstallSession(ca.DER); err != nil {
+				o.undoFailedInstall(ca.Thumbprint())
 				return appErr(CodeCertInstallFailed, err, "kind", "session")
 			}
 			o.sni.installed = append(o.sni.installed, ca.Thumbprint())
@@ -127,6 +128,27 @@ func (o *Orchestrator) setSNIStatus() {
 	})
 }
 
+// undoFailedInstall removes a CA whose install reported an error (it may
+// have been added before a failed read-back). It reports whether the CA is
+// gone; if not, it stays in o.sni.installed and recorded in state.json.
+func (o *Orchestrator) undoFailedInstall(thumb string) bool {
+	if err := o.d.Certs.RemoveSession(thumb); err != nil {
+		o.sni.installed = append(o.sni.installed, thumb)
+		o.AddWarning(AppError{Code: CodeCertRemoveFailed, Params: map[string]any{"thumbprint": thumb}})
+		return false
+	}
+	return true
+}
+
+// forgetSessionCert drops a removed session CA from state.json in any
+// phase (after Disconnect the state is clean but may still list one).
+func (o *Orchestrator) forgetSessionCert(thumb string) error {
+	return o.d.States.Update(func(st *store.State) error {
+		st.RemoveSessionCert(thumb)
+		return nil
+	})
+}
+
 // removeSessionCA removes one session CA from Root and, only then, from
 // state.json. A failure keeps it recorded for recovery and warns.
 func (o *Orchestrator) removeSessionCA(thumb string) error {
@@ -136,7 +158,7 @@ func (o *Orchestrator) removeSessionCA(thumb string) error {
 		return err
 	}
 	o.sni.installed = slices.DeleteFunc(o.sni.installed, func(x string) bool { return x == thumb })
-	return ignoreNoChange(o.setState(func(st *store.State) { st.RemoveSessionCert(thumb) }))
+	return o.forgetSessionCert(thumb)
 }
 
 // stopSNIPhase turns Fake SNI off and removes every session CA it
@@ -231,7 +253,9 @@ func (o *Orchestrator) rotateSession(ctx context.Context, force bool) {
 		return
 	}
 	if err := o.d.Certs.InstallSession(ca.DER); err != nil {
-		_ = ignoreNoChange(o.setState(func(st *store.State) { st.RemoveSessionCert(thumb) }))
+		if o.undoFailedInstall(thumb) {
+			_ = ignoreNoChange(o.setState(func(st *store.State) { st.RemoveSessionCert(thumb) }))
+		}
 		o.AddWarning(AppError{Code: CodeCertInstallFailed, Params: map[string]any{"kind": "session"}})
 		o.log("fakesni", CodeCertInstallFailed, "kind", "session")
 		return

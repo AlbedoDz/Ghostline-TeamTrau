@@ -181,15 +181,23 @@ func (o *Orchestrator) RetryCertRemoval() error {
 	o.opMu.Lock()
 	defer o.opMu.Unlock()
 	st, err := o.d.States.Load()
-	if err != nil || st.Certs == nil || o.d.Certs == nil {
+	if err != nil || o.d.Certs == nil {
 		return err
+	}
+	pending := slices.Clone(o.sni.installed)
+	if st.Certs != nil {
+		for _, t := range st.Certs.Session {
+			if !slices.Contains(pending, t) {
+				pending = append(pending, t)
+			}
+		}
 	}
 	current := ""
 	if o.sni.issuer != nil {
 		current = o.sni.issuer.CA().Thumbprint()
 	}
 	var errs []error
-	for _, t := range st.Certs.Session {
+	for _, t := range pending {
 		if t == current {
 			continue
 		}
@@ -198,9 +206,9 @@ func (o *Orchestrator) RetryCertRemoval() error {
 			continue
 		}
 		o.sni.installed = slices.DeleteFunc(o.sni.installed, func(x string) bool { return x == t })
-		_ = ignoreNoChange(o.setState(func(st *store.State) { st.RemoveSessionCert(t) }))
+		errs = append(errs, o.forgetSessionCert(t))
 	}
-	if len(errs) == 0 {
+	if errors.Join(errs...) == nil {
 		o.ClearWarning(CodeCertRemoveFailed)
 	}
 	return errors.Join(errs...)

@@ -60,6 +60,8 @@ type fCerts struct {
 	store  *certstore.Fake
 	lan    *certs.CA
 	lanErr error
+	// failAfterInstall adds the certificate, then reports a read-back error.
+	failAfterInstall bool
 }
 
 func (c *fCerts) LANCA(context.Context) (*certs.CA, error) {
@@ -97,7 +99,13 @@ func (c *fCerts) InstallSession(der []byte) error {
 	if err := c.r.add("certs.install"); err != nil {
 		return err
 	}
-	return c.store.Install(der)
+	if err := c.store.Install(der); err != nil {
+		return err
+	}
+	if c.failAfterInstall {
+		return certstore.ErrNotInstalled
+	}
+	return nil
 }
 func (c *fCerts) RemoveSession(thumb string) error {
 	if err := c.r.add("certs.remove"); err != nil {

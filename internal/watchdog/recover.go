@@ -104,6 +104,16 @@ func RestoreIfOrphaned(d Deps) (Outcome, error) {
 		}
 		if st.Phase == store.PhaseClean {
 			out = NothingToDo
+			// A session CA Disconnect could not remove stays listed.
+			if err := removeSessionCerts(d, st); err != nil {
+				return err
+			}
+			if st.Certs != nil {
+				st.Certs = nil
+				if err := d.States.Write(st); err != nil {
+					return err
+				}
+			}
 			d.sweep()
 			return nil
 		}

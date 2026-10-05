@@ -187,3 +187,37 @@ func TestReapplyProxy_RerunsSNI(t *testing.T) {
 	left, _ := h.certs.store.List(certs.SessionPrefix)
 	require.Len(t, left, 1, "the old session CA is gone")
 }
+
+// A session CA that cannot be removed at Disconnect stays recorded in
+// state.json (even though DNS is clean) so recovery and "retry" find it.
+func TestDisconnect_RemoveFailsKeepsThumbprint(t *testing.T) {
+	h := newSNIHarness(t)
+	require.NoError(t, h.o.Connect(context.Background()))
+	thumb := h.issuer().CA().Thumbprint()
+	h.r.fail["certs.remove"] = true
+	require.NoError(t, h.o.Disconnect(context.Background()))
+	st, _ := h.states.Load()
+	require.Equal(t, store.PhaseClean, st.Phase)
+	require.NotNil(t, st.Certs)
+	require.Equal(t, []string{thumb}, st.Certs.Session)
+	require.True(t, h.certs.store.Has(thumb))
+
+	h.r.fail["certs.remove"] = false
+	require.NoError(t, h.o.RetryCertRemoval())
+	st, _ = h.states.Load()
+	require.Nil(t, st.Certs)
+	require.False(t, h.certs.store.Has(thumb))
+	require.NotContains(t, warningCodes(h.o.Snapshot()), CodeCertRemoveFailed)
+}
+
+// Install added the CA but failed its read-back: the CA is removed again
+// before its thumbprint is forgotten.
+func TestPhaseS_InstallReadbackFailsRemovesCA(t *testing.T) {
+	h := newSNIHarness(t)
+	h.certs.failAfterInstall = true
+	require.NoError(t, h.o.Connect(context.Background()))
+	left, _ := h.certs.store.List(certs.SessionPrefix)
+	require.Empty(t, left)
+	st, _ := h.states.Load()
+	require.Nil(t, st.Certs)
+}

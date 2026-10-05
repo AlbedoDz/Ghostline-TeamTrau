@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/netip"
 	"net/url"
+	"slices"
 	"sync"
 	"time"
 
@@ -497,6 +498,11 @@ func (o *Orchestrator) disconnectLocked(ctx context.Context) []sysdns.RestoreErr
 	_ = o.d.Engine.Stop(ctx)
 	_ = o.d.States.Update(func(s *store.State) error {
 		*s = store.CleanState()
+		// A session CA that could not be removed stays recorded so
+		// recovery and "retry removal" still find it (spec 2B 6.5).
+		if len(o.sni.installed) > 0 {
+			s.Certs = &store.CertsState{Session: slices.Clone(o.sni.installed)}
+		}
 		return nil
 	})
 	if stopWD != nil {

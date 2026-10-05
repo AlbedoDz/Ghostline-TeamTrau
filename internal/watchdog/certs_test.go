@@ -119,3 +119,19 @@ func TestRecover_IgnoresUnknownRuleNames(t *testing.T) {
 	require.Contains(t, log, "rule:Ghostline DNS (UDP)")
 	require.NotContains(t, log, "rule:Block Telemetry")
 }
+
+// Disconnect could not remove a session CA: state is clean but still
+// lists it; recovery removes it and forgets it.
+func TestRecover_CleanStateWithCertsRemovesThem(t *testing.T) {
+	var log []string
+	st := store.CleanState()
+	st.AddSessionCert("aa")
+	d, _, _ := setup(t, false, &st)
+	d = certHooks(d, &log, nil)
+	out, err := watchdog.RestoreIfOrphaned(d)
+	require.NoError(t, err)
+	require.Equal(t, watchdog.NothingToDo, out)
+	require.Equal(t, []string{"cert:aa", "sweep"}, log)
+	got, _ := d.States.Load()
+	require.Nil(t, got.Certs)
+}
