@@ -65,6 +65,7 @@
     "overview": "tổng quan",
     "servers": "máy chủ",
     "dpi": "vượt dpi",
+    "tools": "công cụ",
     "logs": "nhật ký",
     "settings": "cài đặt",
     "proxy": "proxy",
@@ -462,6 +463,54 @@
     "FAKESNI_NOT_ACKED": {
       "message": "hãy đọc và xác nhận cảnh báo Fake SNI trước",
       "action": "Mở trang Fake SNI"
+    },
+    "TOOL_BUSY": {
+      "message": "Công cụ này đang chạy",
+      "action": "Đợi xong hoặc bấm Huỷ"
+    },
+    "LOOKUP_NOT_CONNECTED": {
+      "message": "Ghostline chưa kết nối, không tra qua Ghostline được",
+      "action": "Bấm Kết nối, hoặc bỏ chọn nguồn Ghostline"
+    },
+    "LOOKUP_BAD_NAME": {
+      "message": "Tên miền hoặc IP không hợp lệ",
+      "action": "Sửa ô tên miền"
+    },
+    "SCAN_TOO_MANY": {
+      "message": "Quá nhiều máy chủ (tối đa 500 một lần)",
+      "action": "Lọc bớt danh sách"
+    },
+    "CFSCAN_NO_NETWORK": {
+      "message": "Không kết nối được tới IP Cloudflare nào",
+      "action": "Kiểm tra mạng; tắt VPN hoặc firewall khác rồi thử lại"
+    },
+    "CFSCAN_HOST_INVALID": {
+      "message": "Host kiểm tra không phải tên miền hợp lệ",
+      "action": "Khôi phục mặc định"
+    },
+    "STAMP_INVALID": {
+      "message": "Stamp không hợp lệ",
+      "action": "Sửa trường được nêu"
+    },
+    "IMPORT_INVALID": {
+      "message": "File sao lưu không dùng được",
+      "action": "Chọn file khác"
+    },
+    "IMPORT_WHILE_CONNECTED": {
+      "message": "Chỉ nhập được khi đã ngắt kết nối",
+      "action": "Bấm Ngắt kết nối rồi nhập lại"
+    },
+    "IMPORT_EXPIRED": {
+      "message": "Bản xem trước đã hết hạn",
+      "action": "Chọn lại file"
+    },
+    "IMPORT_WRITE_FAILED": {
+      "message": "Không ghi được cài đặt; mọi thứ đã được khôi phục như cũ",
+      "action": "Thử lại hoặc mở nhật ký"
+    },
+    "EXPORT_WRITE_FAILED": {
+      "message": "Không ghi được file xuất",
+      "action": "Chọn thư mục khác"
     }
   },
   "tray": {
@@ -732,5 +781,84 @@
     "banner": "Fake SNI đang bật — Ghostline đang giải mã HTTPS của {{count}} tên miền",
     "view": "xem",
     "off": "tắt Fake SNI"
+  },
+  "tools": {
+    "title": "Công cụ",
+    "copy": "sao chép",
+    "tab": {
+      "lookup": "lookup",
+      "scanner": "scanner",
+      "cfscan": "ip cloudflare",
+      "stamp": "stamp"
+    },
+    "lookup": {
+      "name": "tên miền",
+      "placeholder": "ví dụ youtube.com, hoặc một IP khi tra PTR",
+      "type": "loại bản ghi",
+      "run": "tra",
+      "isp": "DNS nhà mạng {{ip}}",
+      "unencrypted": "không mã hoá",
+      "addSource": "thêm nguồn",
+      "addSourceHint": "URL/stamp của server, hoặc IP của DNS thường",
+      "add": "thêm",
+      "ispNote": "Nguồn DNS nhà mạng gửi truy vấn không mã hoá, nhà mạng thấy được tên miền đang tra. Chỉ dùng để so sánh khi chẩn đoán.",
+      "details": "chi tiết",
+      "col": {
+        "source": "nguồn",
+        "status": "trạng thái",
+        "latency": "độ trễ",
+        "answer": "trả lời"
+      },
+      "per": {
+        "poisoned": "đầu độc",
+        "differs": "khác",
+        "match": "khớp",
+        "failed": "lỗi"
+      },
+      "fail": {
+        "timeout": "hết thời gian",
+        "bootstrap": "không phân giải được server",
+        "error": "lỗi"
+      },
+      "verdict": {
+        "poisoned": {
+          "title": "Bị đầu độc DNS",
+          "body": "Ít nhất một nguồn trả về IP nội bộ hoặc báo tên miền không tồn tại trong khi nguồn khác có địa chỉ. Đó là dấu hiệu nhà mạng chặn bằng DNS."
+        },
+        "differs": {
+          "title": "Kết quả khác nhau",
+          "body": "Các nguồn trả về địa chỉ khác nhau. CDN có thể trả IP khác nhau theo vị trí, nên chưa chắc là bị chặn."
+        },
+        "match": {
+          "title": "Kết quả khớp nhau",
+          "body": "Các nguồn trả về cùng địa chỉ (hoặc cùng một CDN)."
+        },
+        "failed": {
+          "title": "Không nguồn nào trả lời",
+          "body": "Mọi nguồn đều lỗi hoặc hết thời gian. Kiểm tra kết nối mạng."
+        }
+      }
+    },
+    "stamp": {
+      "decodeTitle": "Giải mã",
+      "buildTitle": "Tạo stamp",
+      "input": "stamp cần giải mã",
+      "decode": "giải mã",
+      "add": "thêm vào danh sách server",
+      "added": "Đã thêm {{count}} máy chủ",
+      "notUsable": "Ghostline không dùng loại này",
+      "ipOptional": "IP (tuỳ chọn)",
+      "fromUrl": "điền từ URL",
+      "build": "tạo stamp",
+      "f": {
+        "proto": "giao thức",
+        "addr": "địa chỉ IP",
+        "host": "host",
+        "path": "đường dẫn",
+        "providerName": "tên provider",
+        "publicKey": "khoá công khai",
+        "hashes": "hash chứng chỉ"
+      }
+    }
   }
 }

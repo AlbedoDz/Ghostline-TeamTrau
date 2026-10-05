@@ -14,10 +14,11 @@ import { Rules } from "./pages/Rules";
 import { DnsServer } from "./pages/DnsServer";
 import { FakeSni } from "./pages/FakeSni";
 import { Logs } from "./pages/Logs";
+import { Tools } from "./pages/tools/Tools";
 import { Settings } from "./pages/Settings";
 import css from "./advanced.module.css";
 
-const pages: Page[] = ["overview", "servers", "dpi", "proxy", "rules", "dnsserver", "fakesni", "logs", "settings"];
+const pages: Page[] = ["overview", "servers", "dpi", "proxy", "rules", "dnsserver", "fakesni", "tools", "logs", "settings"];
 
 export function AdvancedView() {
   const { t } = useTranslation();
@@ -72,6 +73,7 @@ export function AdvancedView() {
         {page === "rules" && <Rules />}
         {page === "dnsserver" && <DnsServer />}
         {page === "fakesni" && <FakeSni />}
+        {page === "tools" && <Tools />}
         {page === "logs" && <Logs />}
         {page === "settings" && <Settings />}
       </div>

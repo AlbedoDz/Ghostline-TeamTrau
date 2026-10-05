@@ -1,0 +1,105 @@
+.grow {
+  flex: 1;
+  min-width: 160px;
+}
+
+.wide {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.sources {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin: 6px 0;
+}
+
+.plain {
+  color: var(--amber, #ffb000);
+}
+
+.warnTag {
+  font-size: 11px;
+}
+
+.verdict {
+  border-width: 2px;
+}
+
+.verdictTitle {
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.poisoned {
+  border-color: var(--red, #ff4d6d);
+}
+
+.poisoned .verdictTitle {
+  color: var(--red, #ff4d6d);
+}
+
+.differs {
+  border-color: var(--amber, #ffb000);
+}
+
+.differs .verdictTitle {
+  color: var(--amber, #ffb000);
+}
+
+.match .verdictTitle {
+  color: var(--green, #00ffa3);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.table th {
+  text-align: left;
+  color: var(--dim);
+  font-weight: 400;
+  border-bottom: 1px solid rgba(0, 255, 163, 0.15);
+}
+
+.table td {
+  padding: 3px 6px 3px 0;
+  vertical-align: top;
+  border-bottom: 1px solid rgba(0, 255, 163, 0.06);
+}
+
+.columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  align-items: start;
+}
+
+.card {
+  border: 1px dashed rgba(0, 208, 255, 0.3);
+  padding: 6px 8px;
+  margin-top: 6px;
+}
+
+.cardHead {
+  color: var(--cyan);
+  font-weight: 700;
+}
+
+.field {
+  word-break: break-all;
+}
+
+.bar {
+  height: 6px;
+  background: rgba(0, 255, 163, 0.12);
+  margin: 6px 0;
+}
+
+.barFill {
+  height: 100%;
+  background: var(--green, #00ffa3);
+}

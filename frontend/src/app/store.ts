@@ -16,7 +16,8 @@ import type {
 } from "./api";
 
 export type Mode = "simple" | "advanced";
-export type Page = "overview" | "servers" | "dpi" | "proxy" | "rules" | "dnsserver" | "fakesni" | "logs" | "settings";
+export type Page = "overview" | "servers" | "dpi" | "proxy" | "rules" | "dnsserver" | "fakesni" | "tools" | "logs" | "settings";
+export type ToolsTab = "lookup" | "scanner" | "cfscan" | "stamp";
 
 const emptySnapshot = {
   status: "disconnected",
@@ -52,6 +53,8 @@ type State = {
   dnsStats: ServeStats | null;
   setup: SetupCountdown | null;
   certsVersion: number;
+  toolsTab: ToolsTab;
+  setToolsTab: (t: ToolsTab) => void;
   setDnsStats: (s: ServeStats) => void;
   setSetup: (s: SetupCountdown) => void;
   bumpCerts: () => void;
@@ -95,6 +98,7 @@ const initial = {
   dnsStats: null as ServeStats | null,
   setup: null as SetupCountdown | null,
   certsVersion: 0,
+  toolsTab: "lookup" as ToolsTab,
 };
 
 const tail = <T,>(arr: T[], v: T, n: number) => {
@@ -128,6 +132,7 @@ export const useGhost = create<State>((set) => ({
   setAutotune: (autotune) => set({ autotune }),
   setUpdate: (update) => set({ update }),
   setPage: (page) => set({ page }),
+  setToolsTab: (toolsTab) => set({ toolsTab }),
   dismissBanner: (bannerDismissed) => set({ bannerDismissed }),
   setQueryLog: (queryLog) => set(queryLog ? { queryLog } : { queryLog, proxyConns: [] }),
   setProxyStats: (proxyStats) => set({ proxyStats }),

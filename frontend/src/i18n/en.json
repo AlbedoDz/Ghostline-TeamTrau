@@ -65,6 +65,7 @@
     "overview": "overview",
     "servers": "servers",
     "dpi": "dpi bypass",
+    "tools": "tools",
     "logs": "logs",
     "settings": "settings",
     "proxy": "proxy",
@@ -462,6 +463,54 @@
     "FAKESNI_NOT_ACKED": {
       "message": "read and confirm the Fake SNI warning first",
       "action": "Open the Fake SNI page"
+    },
+    "TOOL_BUSY": {
+      "message": "This tool is already running",
+      "action": "Wait for it or press Cancel"
+    },
+    "LOOKUP_NOT_CONNECTED": {
+      "message": "Ghostline is not connected, so it cannot be a lookup source",
+      "action": "Connect, or untick the Ghostline source"
+    },
+    "LOOKUP_BAD_NAME": {
+      "message": "Invalid domain or IP",
+      "action": "Fix the domain box"
+    },
+    "SCAN_TOO_MANY": {
+      "message": "Too many servers (at most 500 at a time)",
+      "action": "Filter the list"
+    },
+    "CFSCAN_NO_NETWORK": {
+      "message": "Could not reach any Cloudflare IP",
+      "action": "Check the network; turn off other VPNs or firewalls and retry"
+    },
+    "CFSCAN_HOST_INVALID": {
+      "message": "The test host is not a valid domain name",
+      "action": "Restore the default"
+    },
+    "STAMP_INVALID": {
+      "message": "Invalid stamp",
+      "action": "Fix the field named"
+    },
+    "IMPORT_INVALID": {
+      "message": "This backup file cannot be used",
+      "action": "Choose another file"
+    },
+    "IMPORT_WHILE_CONNECTED": {
+      "message": "Import works only while disconnected",
+      "action": "Disconnect, then import again"
+    },
+    "IMPORT_EXPIRED": {
+      "message": "The preview has expired",
+      "action": "Choose the file again"
+    },
+    "IMPORT_WRITE_FAILED": {
+      "message": "Could not write the settings; everything was put back as it was",
+      "action": "Retry or open the log"
+    },
+    "EXPORT_WRITE_FAILED": {
+      "message": "Could not write the export file",
+      "action": "Choose another folder"
     }
   },
   "tray": {
@@ -732,5 +781,84 @@
     "banner": "Fake SNI is on — Ghostline is decrypting HTTPS for {{count}} domains",
     "view": "view",
     "off": "turn Fake SNI off"
+  },
+  "tools": {
+    "title": "Tools",
+    "copy": "copy",
+    "tab": {
+      "lookup": "lookup",
+      "scanner": "scanner",
+      "cfscan": "cloudflare ip",
+      "stamp": "stamp"
+    },
+    "lookup": {
+      "name": "domain",
+      "placeholder": "e.g. youtube.com, or an IP for PTR",
+      "type": "record type",
+      "run": "look up",
+      "isp": "ISP DNS {{ip}}",
+      "unencrypted": "unencrypted",
+      "addSource": "add source",
+      "addSourceHint": "server URL/stamp, or a plain DNS IP",
+      "add": "add",
+      "ispNote": "The ISP DNS source sends an unencrypted query: your ISP sees the domain you look up. Use it only to compare when diagnosing.",
+      "details": "details",
+      "col": {
+        "source": "source",
+        "status": "status",
+        "latency": "latency",
+        "answer": "answer"
+      },
+      "per": {
+        "poisoned": "poisoned",
+        "differs": "differs",
+        "match": "match",
+        "failed": "failed"
+      },
+      "fail": {
+        "timeout": "timed out",
+        "bootstrap": "server name not resolved",
+        "error": "error"
+      },
+      "verdict": {
+        "poisoned": {
+          "title": "DNS is poisoned",
+          "body": "At least one source answered a private IP, or said the domain does not exist while another source has addresses. That is how ISPs block with DNS."
+        },
+        "differs": {
+          "title": "Answers differ",
+          "body": "The sources answered different addresses. CDNs answer by location, so this is not necessarily blocking."
+        },
+        "match": {
+          "title": "Answers match",
+          "body": "The sources answered the same addresses (or the same CDN)."
+        },
+        "failed": {
+          "title": "No source answered",
+          "body": "Every source failed or timed out. Check the network."
+        }
+      }
+    },
+    "stamp": {
+      "decodeTitle": "Decode",
+      "buildTitle": "Build a stamp",
+      "input": "stamps to decode",
+      "decode": "decode",
+      "add": "add to servers",
+      "added": "Added {{count}} server(s)",
+      "notUsable": "Ghostline does not use this type",
+      "ipOptional": "IP (optional)",
+      "fromUrl": "fill from URL",
+      "build": "build stamp",
+      "f": {
+        "proto": "protocol",
+        "addr": "IP address",
+        "host": "host",
+        "path": "path",
+        "providerName": "provider name",
+        "publicKey": "public key",
+        "hashes": "certificate hashes"
+      }
+    }
   }
 }
