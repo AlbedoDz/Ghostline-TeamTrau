@@ -344,3 +344,16 @@ func TestCatalog_Valid(t *testing.T) {
 		require.Positive(t, perCat[c], "category %s is empty", c)
 	}
 }
+
+func TestFetch_RejectsUnsafeID(t *testing.T) {
+	f := newFetcher(t, http.DefaultClient)
+	for _, id := range []string{`..\..\evil`, "../x", "a/b", "", "a b"} {
+		l := lists.List{ID: id, Source: "file", Path: filepath.Join(t.TempDir(), "x.txt"), Format: "hosts", Action: "block"}
+		_, err := f.Fetch(context.Background(), &l)
+		require.Error(t, err, id)
+		_, err = f.LoadCached(l)
+		require.Error(t, err, id)
+	}
+	require.True(t, lists.ValidID("hagezi-pro-plus"))
+	require.True(t, lists.ValidID("my_list-01ab9f"))
+}

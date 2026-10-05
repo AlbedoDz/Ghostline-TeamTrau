@@ -240,3 +240,23 @@ func TestResult_MergeNoDuplicates(t *testing.T) {
 	require.Len(t, got.Custom, 2, "replace takes the file's list")
 	require.Equal(t, current().Rules, got.Rules, "unchosen sections are untouched")
 }
+
+func TestParse_RejectsUnsafeListIDs(t *testing.T) {
+	d := sampleData()
+	d.Rules.Lists = []lists.List{
+		{ID: `..\..\evil`, Name: "Evil", Source: "url", URL: "https://x/e.txt", Format: "auto", Action: "block", Enabled: true},
+		{ID: "dup", Name: "A", Source: "url", URL: "https://x/a.txt", Format: "auto", Action: "block", Enabled: true},
+		{ID: "dup", Name: "B", Source: "url", URL: "https://x/b.txt", Format: "auto", Action: "block", Enabled: true},
+	}
+	p, err := backup.Parse(fileWith(t, d, nil), current(), okValidators)
+	require.NoError(t, err)
+	var errs []string
+	for _, s := range p.Preview.Sections {
+		if s.Name == "rules" {
+			errs = s.Errors
+		}
+	}
+	require.Len(t, errs, 2, "the unsafe ID and the duplicate")
+	_, _, err = p.Result(current(), backup.Choices{Sections: []string{"rules"}})
+	require.ErrorIs(t, err, backup.ErrInvalid)
+}

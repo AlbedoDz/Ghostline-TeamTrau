@@ -210,6 +210,10 @@ func (p *Plan) parseRules(rf *store.RulesFile, cur Data, target store.Settings, 
 	for _, l := range rf.Lists {
 		l = lists.List{ID: l.ID, Name: l.Name, Source: l.Source, URL: l.URL, Format: l.Format, Action: l.Action,
 			Enabled: l.Enabled, UpdateHours: l.UpdateHours, TrustedForSNI: l.TrustedForSNI, Signed: l.Signed}
+		if !lists.ValidID(l.ID) || slices.ContainsFunc(p.lists, func(o lists.List) bool { return o.ID == l.ID }) {
+			sp.Errors = append(sp.Errors, fmt.Sprintf("%s: invalid or duplicate list id %q", l.Name, l.ID))
+			continue
+		}
 		if l.Source != "url" {
 			sp.Errors = append(sp.Errors, fmt.Sprintf("%s: only URL lists can be imported", l.Name))
 			continue
