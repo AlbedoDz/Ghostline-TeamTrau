@@ -169,6 +169,7 @@ export function DnsServer() {
           )}
           <Chip onClick={() => void run(Service.SaveDeviceFiles())}>{t("dnsserver.devices.saveFiles")}</Chip>
         </div>
+        {!setup && !shared && <div className={css.dim}>{t("dnsserver.devices.setupNeedsShare")}</div>}
         {setup && qr && (
           <div className={css.row} style={{ alignItems: "flex-start", gap: 16, marginTop: 8 }}>
             <QRCode matrix={qr} label={t("dnsserver.devices.setupQr", { url: setup.url })} />

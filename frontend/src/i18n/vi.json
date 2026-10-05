@@ -681,6 +681,7 @@
       "fingerprint": "vân tay CA LAN",
       "ssid": "tên Wi-Fi nhà",
       "openSetup": "mở trang cài đặt cho điện thoại",
+      "setupNeedsShare": "Cần kết nối và bật chia sẻ LAN để mở trang cài đặt.",
       "closeSetup": "đóng trang cài đặt",
       "setupQr": "mã QR cho {{url}}",
       "remaining": "tự đóng sau {{time}}",

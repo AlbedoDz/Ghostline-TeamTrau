@@ -144,3 +144,16 @@ test("no warning once a home Wi-Fi name is saved", async () => {
   await screen.findByText("https://192.168.1.5/dns-query");
   expect(screen.queryByText(/chưa có tên Wi-Fi nhà/i)).not.toBeInTheDocument();
 });
+
+test("while disconnected the setup button says why it is off", async () => {
+  useGhost.getState().setSnapshot({ ...structuredClone(running), status: "disconnected", dnsServer: { running: false, addrs: [] } } as any);
+  render(<DnsServer />);
+  expect(await screen.findByRole("button", { name: "mở trang cài đặt cho điện thoại" })).toBeDisabled();
+  expect(screen.getByText("Cần kết nối và bật chia sẻ LAN để mở trang cài đặt.")).toBeInTheDocument();
+});
+
+test("no hint while the setup page can be opened", async () => {
+  render(<DnsServer />);
+  expect(await screen.findByRole("button", { name: "mở trang cài đặt cho điện thoại" })).toBeEnabled();
+  expect(screen.queryByText(/Cần kết nối và bật chia sẻ LAN/)).not.toBeInTheDocument();
+});

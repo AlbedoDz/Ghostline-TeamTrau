@@ -681,6 +681,7 @@
       "fingerprint": "LAN CA fingerprint",
       "ssid": "home Wi-Fi name",
       "openSetup": "open the phone setup page",
+      "setupNeedsShare": "Connect and turn on LAN sharing to open the setup page.",
       "closeSetup": "close the setup page",
       "setupQr": "QR code for {{url}}",
       "remaining": "closes in {{time}}",
