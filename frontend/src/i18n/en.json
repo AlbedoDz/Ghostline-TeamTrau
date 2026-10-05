@@ -58,7 +58,8 @@
     "enableFragment": "ENABLE DNS FRAGMENT",
     "proxy": "proxy",
     "openServers": "open servers",
-    "disablePinnedOnly": "turn off pinned-only"
+    "disablePinnedOnly": "turn off pinned-only",
+    "dnsLan": "DNS for LAN"
   },
   "nav": {
     "overview": "overview",
@@ -67,14 +68,18 @@
     "logs": "logs",
     "settings": "settings",
     "proxy": "proxy",
-    "rules": "rules"
+    "rules": "rules",
+    "dnsserver": "dns server",
+    "fakesni": "fake sni"
   },
   "overview": {
     "latency60": "latency · 60 seconds",
     "queries": "queries",
     "inUse": "servers in use",
     "route": "127.0.0.1 → {{servers}}",
-    "proxy": "proxy"
+    "proxy": "proxy",
+    "dnsserver": "DNS server",
+    "dnsDevices": "{{count}} LAN devices"
   },
   "servers": {
     "title": "SERVERS",
@@ -225,7 +230,11 @@
     "PROXY_RESTART": "proxy stopped listening, restarting",
     "DPI_FALLBACK": "{{from}} could not start ({{cause}}); using {{to}}",
     "AUTOTUNE_ENGINE_SWITCHED": "auto-tune switched to {{to}} (preset {{preset}})",
-    "DPI_STRATEGY_RESET": "strategy {{from}} is gone; using {{to}}"
+    "DPI_STRATEGY_RESET": "strategy {{from}} is gone; using {{to}}",
+    "DNSSERVER_STARTED": "DNS server running on {{addrs}} addresses",
+    "DNSSERVER_RESTART": "LAN address changed, restarting the DNS server",
+    "FAKESNI_STARTED": "Fake SNI on for {{domains}} domains",
+    "FAKESNI_ROTATED": "Fake SNI CA replaced ({{domains}} domains)"
   },
   "settings": {
     "title": "SETTINGS",
@@ -394,6 +403,54 @@
     "DPI_CUSTOM_REJECTED": {
       "message": "That custom argument is not allowed",
       "action": "Remove {{arg}}"
+    },
+    "DNSSERVER_PORT_IN_USE": {
+      "message": "Port {{port}} is in use ({{addrs}})",
+      "action": "Change the DoH port or close the program holding it"
+    },
+    "DNSSERVER_FIREWALL": {
+      "message": "could not create the DNS server firewall rule: {{detail}}",
+      "action": "Retry or turn off LAN sharing"
+    },
+    "DNSSERVER_SELFTEST_FAILED": {
+      "message": "the DNS server failed its self test",
+      "action": "Retry or open the logs"
+    },
+    "CERT_INSTALL_FAILED": {
+      "message": "could not install the root certificate in Windows",
+      "action": "Retry or open the logs"
+    },
+    "CERT_REMOVE_FAILED": {
+      "message": "a Ghostline certificate could not be removed from Windows yet",
+      "action": "Click \"retry removal\", or remove it by hand in certlm.msc (Trusted Root Certification Authorities)"
+    },
+    "CERT_KEY_UNREADABLE": {
+      "message": "the LAN CA key cannot be read (other PC or damaged file)",
+      "action": "Recreate the LAN CA"
+    },
+    "LIST_SIGNATURE_INVALID": {
+      "message": "the list signature is invalid; the previous copy is kept",
+      "action": "Try updating again later"
+    },
+    "SETUP_PAGE_FAILED": {
+      "message": "could not open the phone setup page",
+      "action": "Use \"save files…\""
+    },
+    "FAKESNI_NEEDS_PROXY": {
+      "message": "Fake SNI needs the proxy",
+      "action": "Turn the proxy on"
+    },
+    "FAKESNI_TOO_MANY": {
+      "message": "{{count}} sni= domains, at most 1000",
+      "action": "Turn off some preset groups or lists"
+    },
+    "FAKESNI_SELFTEST_FAILED": {
+      "message": "Windows does not trust the Fake SNI certificate",
+      "action": "Retry or open the logs"
+    },
+    "FAKESNI_NOT_ACKED": {
+      "message": "read and confirm the Fake SNI warning first",
+      "action": "Open the Fake SNI page"
     }
   },
   "tray": {
@@ -586,6 +643,40 @@
       "v2fly-facebook": "Facebook domains: fragment through the proxy.",
       "v2fly-youtube": "YouTube domains: fragment through the proxy.",
       "v2fly-reddit": "Reddit domains: fragment through the proxy."
+    }
+  },
+  "dnsserver": {
+    "title": "DNS server",
+    "enabled": "local DoH",
+    "shareLan": "share on the LAN",
+    "dohPort": "DoH port",
+    "portInvalid": "the DoH port must be 1–65535 and differ from 53, 8053 and the proxy port",
+    "listening": "listening",
+    "skipped": "skipped {{addr}}: {{why}}",
+    "note": "Local DoH for browsers on this PC. Sharing on the LAN adds DoH and port-53 DNS on the LAN addresses (Private networks only).",
+    "stats": "{{queries}} queries · {{clients}} devices in 10 minutes",
+    "devices": {
+      "title": "use on other devices",
+      "dnsIp": "DNS IP",
+      "dnsIpHint": "Router, TV, Android, Steam Deck: set this IP as the DNS for your home Wi-Fi only. No certificate needed.",
+      "doh": "DoH URL",
+      "fingerprint": "LAN CA fingerprint",
+      "ssid": "home Wi-Fi name",
+      "ssidNeeded": "enter your home Wi-Fi name to build the iOS profile",
+      "openSetup": "open the phone setup page",
+      "closeSetup": "close the setup page",
+      "setupQr": "QR code for {{url}}",
+      "remaining": "closes in {{time}}",
+      "saveFiles": "save files…",
+      "notShared": "turn on \"share on the LAN\" and connect so other devices can use it"
+    },
+    "ca": {
+      "title": "LAN CA",
+      "none": "no LAN CA yet (created the first time the DNS server runs)",
+      "reset": "recreate the LAN CA",
+      "remove": "remove the LAN CA",
+      "confirmReset": "Create a new LAN CA? Devices with the old one must install it again.",
+      "confirmRemove": "Remove the LAN CA from this PC? The DNS server will be turned off."
     }
   }
 }

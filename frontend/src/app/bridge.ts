@@ -17,6 +17,9 @@ export function startBridge(): () => void {
     Events.On("proxy:stats", (ev: any) => useGhost.getState().setProxyStats(ev.data)),
     Events.On("proxy:conn", (ev: any) => useGhost.getState().pushProxyConn(ev.data)),
     Events.On("rules:compiled", () => useGhost.getState().bumpRules()),
+    Events.On("dnsserver:stats", (ev: any) => useGhost.getState().setDnsStats(ev.data)),
+    Events.On("setup:countdown", (ev: any) => useGhost.getState().setSetup(ev.data)),
+    Events.On("certs:changed", () => useGhost.getState().bumpCerts()),
     Events.On("lists:progress", () => useGhost.getState().bumpRules()),
   ];
   void Service.GetSnapshot().then(s.setSnapshot);

@@ -15,7 +15,14 @@ export type {
   RulesCompiled,
   ListsProgress,
   ProxyStatus,
+  DeviceInfo,
+  FakeSNIView,
+  DNSServerStatus,
+  FakeSNIStatus,
+  SetupCountdown,
 } from "../../bindings/github.com/hashcott/ghostline/internal/app/models";
+export type { ServeStats } from "../../bindings/github.com/hashcott/ghostline/internal/engine/models";
+export type { Cert } from "../../bindings/github.com/hashcott/ghostline/internal/certstore/models";
 export type { Rule, Decision, LineError, Source as RuleSource } from "../../bindings/github.com/hashcott/ghostline/internal/rules/models";
 export type { List, CatalogItem } from "../../bindings/github.com/hashcott/ghostline/internal/rules/lists/models";
 export type { Stats as ProxyStats, ConnEvent } from "../../bindings/github.com/hashcott/ghostline/internal/proxy/models";
