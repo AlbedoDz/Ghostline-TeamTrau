@@ -2,7 +2,7 @@
 
 - **Ngày:** 2026-10-05
 - **Trạng thái:** Chờ duyệt spec
-- **Phạm vi:** Giai đoạn 2B — chứng chỉ gốc giới hạn phạm vi, DoH server cục bộ kèm DNS cho LAN, Fake SNI (giải mã TLS, domain fronting), và gói giả mang SNI khi engine vượt DPI là GoodbyeDPI.
+- **Phạm vi:** Giai đoạn 2B — chứng chỉ gốc giới hạn phạm vi, DoH server cục bộ kèm DNS cho LAN và Fake SNI (giải mã TLS, domain fronting).
 - **Dựa trên:** [Giai đoạn 1](2026-10-04-ghostline-phase1-design.md), [Giai đoạn 2A](2026-10-04-ghostline-phase2a-design.md) và [engine zapret2](2026-10-05-ghostline-zapret2-design.md) (đã phát hành ở v0.3.0). Mọi thứ không nhắc lại ở đây giữ nguyên.
 
 ---
@@ -12,7 +12,6 @@
 - **DNS cho thiết bị khác:** điện thoại, máy tính khác, router và TV trong mạng Private dùng DNS mã hoá của Ghostline. iOS dùng DoH qua một file `.mobileconfig`; các thiết bị còn lại dùng DNS thường cổng 53 trỏ vào máy. Từ máy ra Internet luôn được mã hoá.
 - **DoH cục bộ cho máy này:** trình duyệt bật "DNS an toàn" tuỳ chỉnh trỏ vào `https://127.0.0.1/dns-query` mà vẫn đi qua engine của Ghostline.
 - **Fake SNI:** với domain có rule `sni=`, proxy giải mã TLS của trình duyệt rồi mở kết nối TLS mới tới server với SNI giả (domain fronting), để vào được những trang mà fragment không qua được.
-- **Gói giả mang SNI:** tuỳ chọn GoodbyeDPI `--fake-with-sni`, không giải mã, không cần chứng chỉ, áp dụng cho mọi lưu lượng rời khỏi máy. Với engine zapret2, gói giả đã là một phần của chiến lược nên tuỳ chọn này không hiện.
 
 ### Tiêu chí thành công
 
@@ -32,11 +31,11 @@
 | Chứng chỉ | Hai CA ECDSA P-256 có Name Constraints và EKU chỉ `serverAuth`: **CA LAN** (lâu dài) và **CA Fake SNI phiên** (chỉ trong RAM). Cài/gỡ trong `LocalMachine\Root`, quét dọn phòng thủ, gỡ khi gỡ app |
 | DNS server | DoH (RFC 8484) trên loopback và IP LAN, DNS UDP/TCP 53 trên IP LAN. Lọc nguồn IP riêng, rate limit, firewall chỉ Private. Trang cài đặt tạm cho điện thoại (`.crt`, `.mobileconfig` có `OnDemandRules` theo SSID), mã QR |
 | Fake SNI | Rule `sni=<tên>` / `sni=none` và `connect=<domain>`. Giải mã ở proxy, kiểm tra chứng chỉ server theo SNI giả hoặc host thật, khớp ALPN, quay về đường 2A khi server từ chối. Preset là danh sách cộng đồng **có chữ ký**. Trang cảnh báo bắt buộc, banner cố định |
-| Gói giả mang SNI | Tuỳ chọn ở trang Vượt DPI, chỉ khi engine là GoodbyeDPI, dùng `--fake-with-sni` (GoodbyeDPI 0.2.3rc3 đã có từ v0.3.0) |
 
 ### Không có trong giai đoạn 2B
 
-- **Fake SNI cho thiết bị khác** (điện thoại trỏ proxy vào máy). CA phiên sinh mới mỗi lần Connect nên thiết bị khác không thể tin cậy nó một cách thực tế. Fragment (2A) và gói giả mang SNI vẫn áp dụng cho lưu lượng của thiết bị đi qua proxy.
+- **Fake SNI cho thiết bị khác** (điện thoại trỏ proxy vào máy). CA phiên sinh mới mỗi lần Connect nên thiết bị khác không thể tin cậy nó một cách thực tế. Fragment (2A) và engine vượt DPI vẫn áp dụng cho lưu lượng của thiết bị đi qua proxy.
+- **Công tắc "gói giả mang SNI" riêng.** Engine zapret2 (mặc định khi cài mới) đã có gói giả trong chiến lược (`z-fake`, `z-fake-ttl`), và GoodbyeDPI cho phép tự thêm `--fake-with-sni` trong tham số tuỳ chỉnh từ v0.3.0. Không thêm gì ở `internal/dpi`.
 - **CA "không giới hạn"** (CA dài hạn ký được mọi domain). Đã cân nhắc và bỏ; xem lại khi có nhu cầu thật.
 - `sni=` với mẫu keyword, regexp hoặc CIDR (không biểu diễn được bằng Name Constraints).
 - DoT (cổng 853) cho Android Private DNS: Android không tin CA người dùng cài cho Private DNS.
@@ -47,7 +46,7 @@
 
 | Chủ đề | Quyết định |
 |---|---|
-| Phạm vi | Cả ba phần (CA, DNS server, Fake SNI) trong một spec, cộng gói giả mang SNI |
+| Phạm vi | Cả ba phần (CA, DNS server, Fake SNI) trong một spec. Không đụng tới engine vượt DPI |
 | Cách làm | Mở rộng `engine` (listener của `dnsproxy`) và `internal/proxy` tự viết, chỉ dùng thư viện chuẩn của Go. Không dùng `goproxy`/`martian`, không chạy process riêng |
 | Chứng chỉ gốc | **Hai CA giới hạn phạm vi.** CA LAN: Name Constraints chỉ IP riêng và `ghostline.lan`, lưu lâu dài. CA Fake SNI: sinh mỗi lần Connect, **khoá chỉ trong RAM**, Name Constraints đúng các domain có rule `sni=`. Không có tuỳ chọn CA không giới hạn |
 | Kho chứng chỉ | `LocalMachine\Root` (app đã chạy quyền admin, không hiện hộp thoại) |
@@ -80,10 +79,9 @@
 | `tlsfrag` | Đọc danh sách ALPN trong ClientHello (`ALPN(hello) []string`) |
 | `proxy`, `proxy/dialer` | Trong `tunnel`: nếu quyết định có `SNI` và có `MITM` đang hoạt động thì gọi `mitm`, lỗi phía server thì quay về đường cũ. `Dialer` thêm `connect=` (phân giải domain khác lấy IP) |
 | `app` | Pha D và pha S (mục 6), lý do SUY_GIẢM `dnsserver`/`fakesni`, xoay CA phiên khi rule `sni=` đổi, binding cho trang DNS server và Fake SNI, mục Chứng chỉ trong Cài đặt |
-| `store` | `settings.json` v4 (`dnsServer`, `fakeSni`, `dpi.fakeSni`), `state.json` v3 (`certs`, `firewall.rules`), file `lan-ca.crt` / `lan-ca.key` |
+| `store` | `settings.json` v4 (`dnsServer`, `fakeSni`), `state.json` v3 (`certs`, `firewall.rules`), file `lan-ca.crt` / `lan-ca.key` |
 | `watchdog` | Gỡ CA phiên trước mọi bước khôi phục khác, xoá mọi luật firewall trong `state.json` |
 | `winutil` | Liệt kê IP LAN kèm tên card, đọc SSID Wi-Fi hiện tại (`WlanQueryInterface`), luật firewall nhiều cổng và giao thức |
-| `dpi/goodbyedpi` | Thêm `--fake-with-sni <domain>` vào argv của preset khi `dpi.fakeSni.enabled` (mục 8.4). Không đổi gì ở `zapret2` |
 | `cli` | `--remove-certs` (gỡ mọi chứng chỉ Ghostline, dùng cho trình gỡ cài đặt) |
 
 ### 4.3 Ranh giới
@@ -318,15 +316,6 @@ Nhánh mới trong `tunnel`, sau khi đã đọc ClientHello (2A đã đọc cho
 - **Không lưu nội dung đã giải mã**, không ghi log URL, header hay body. Sự kiện chỉ có domain (khi bật "hiện truy vấn"), kết quả và số byte, như thống kê 2A.
 - Kết quả mới trong `dialer.Outcome`: `fakesni`, `fakesni_fallback`, `fakesni_client_rejected`.
 
-### 8.4 Gói giả mang SNI (chỉ engine GoodbyeDPI)
-
-- GoodbyeDPI 0.2.3rc3 và việc cho phép `--fake-with-sni` trong tham số tuỳ chỉnh đã có từ v0.3.0 ([spec zapret2](2026-10-05-ghostline-zapret2-design.md), mục GoodbyeDPI). Phần này chỉ thêm một công tắc cho người không muốn tự viết tham số.
-- Cài đặt `dpi.fakeSni`: `enabled` (mặc định tắt), `domain` (mặc định `www.google.com`, kiểm tra là tên miền hợp lệ bằng cùng hàm với tham số tuỳ chỉnh).
-- Khi bật và `dpi.engine = goodbyedpi` với một preset (không phải `custom`): thêm `--fake-with-sni <domain>` vào argv. Preset `light` không có cách làm gói giả không tới server, nên thêm `--wrong-chksum`; các preset khác đã có `--auto-ttl`/`--wrong-seq`/`--wrong-chksum`.
-- Preset `custom`: công tắc bị khoá kèm ghi chú "tự thêm `--fake-with-sni` vào tham số tuỳ chỉnh".
-- Engine `zapret2`: công tắc không hiện; gói giả là một phần của chiến lược (`fake:blob=…`). Giá trị `dpi.fakeSni` được giữ nguyên để dùng lại khi đổi về GoodbyeDPI.
-- Áp dụng cho mọi lưu lượng TLS rời khỏi máy, kể cả lưu lượng của thiết bị LAN đi qua proxy.
-
 ## 9. Giao diện
 
 ### 9.1 Chế độ Nâng cao
@@ -342,7 +331,6 @@ Thanh bên: Tổng quan · Máy chủ · Vượt DPI · Proxy · Rules · **DNS 
 - **Fake SNI**
   - **Lần đầu mở là trang cảnh báo bắt buộc:** Fake SNI làm gì; Ghostline thấy nội dung HTTPS đã giải mã của các domain trong rule (chỉ trong RAM, không lưu); app có pinning sẽ lỗi; **không dùng cho ngân hàng hay tài khoản quan trọng**; CA chỉ ký được cho đúng các domain đó và bị gỡ khi ngắt; chỉ áp dụng cho trình duyệt trên máy này. Người dùng phải cuộn hết trang và tích "Tôi đã hiểu" thì nút "Tiếp tục" mới bật. Lần xác nhận lưu ở `fakeSni.ackVersion`; khi nội dung cảnh báo đổi, số phiên bản tăng và phải đọc lại.
   - Sau khi xác nhận: công tắc chính `fakeSni.enabled` (mặc định tắt); "Cần bật Proxy" kèm nút bật nhanh khi proxy tắt; các nhóm preset bật/tắt từng nhóm; bảng rule `sni=` đang có hiệu lực (bấm để sang Rules đã lọc); thẻ CA phiên (thumbprint, số domain, hạn dùng); bộ đếm `fakesni`, `fallback`, `clientRejected`, `verifyFailed`; ghi chú Firefox.
-- **Vượt DPI:** công tắc "Gói giả mang SNI" kèm ô domain, chỉ hiện khi engine là GoodbyeDPI (mục 8.4).
 - **Rules:** bỏ nhãn "cần giai đoạn 2B"; bảng thêm cột SNI và Connect; ô "Thử tên miền" hiện "sẽ giải mã bằng Fake SNI (sni=…, connect=…)" hoặc lý do không áp dụng (Fake SNI tắt, danh sách chưa được tin…). Bảng danh sách thêm cột/cờ "Tin cho Fake SNI" và trạng thái chữ ký.
 - **Cài đặt:** mục "Chứng chỉ" liệt kê mọi chứng chỉ Ghostline trong `LocalMachine\Root` (subject, thumbprint, hạn dùng, loại), nút "Gỡ tất cả chứng chỉ Ghostline" (tắt pha D và pha S trước nếu đang chạy, có xác nhận).
 - **Tổng quan:** thẻ DNS server (địa chỉ, số thiết bị) và thẻ Fake SNI (bật/tắt, số domain).
@@ -379,16 +367,12 @@ Thêm vào phiên bản 3 (v3 là bản của engine zapret2):
   "fakeSni": {
     "enabled": false,
     "ackVersion": 0
-  },
-  "dpi": {
-    "…": "các trường của v3 giữ nguyên",
-    "fakeSni": { "enabled": false, "domain": "www.google.com" }
   }
 }
 ```
 
 - Nâng cấp từ v3 (và từ v1/v2 qua các bước cũ): thêm các khối mặc định, giữ nguyên mọi trường cũ, ghi lại thành v4.
-- Kiểm tra khi lưu: `dohPort` 1–65535, khác 53, khác `8053` và khác `proxy.port`; `iosSsid` ≤ 32 byte UTF-8; `dpi.fakeSni.domain` là tên miền hợp lệ.
+- Kiểm tra khi lưu: `dohPort` 1–65535, khác 53, khác `8053` và khác `proxy.port`; `iosSsid` ≤ 32 byte UTF-8.
 - `rules.json` v1 thêm trường tuỳ chọn cho danh sách: `trustedForSNI`, `signed`, `signatureOk`. Thiếu thì coi là `false`; không đổi số phiên bản.
 
 ## 11. Xử lý lỗi
@@ -422,18 +406,17 @@ Phát triển theo TDD. Test cần Windows thật gắn build tag `integration`.
 | `rules` | `sni=`/`connect=` parse, lỗi với keyword/regexp/CIDR, `connect=` với `ip=` lỗi; `SNIDomains()` chuyển mẫu đúng; định dạng `ghostline`; `trustedForSNI` tắt thì bỏ qua `sni=`/`connect=` nhưng giữ hành động khác; chữ ký đúng/sai/thiếu |
 | `engine` | DoH GET/POST trả lời đúng; nguồn IP công khai bị bỏ; rate limit; `ANY` bị từ chối; DNS 53 trên IP LAN vẫn đi qua resolver giả có bẫy (**không rò**); chứng chỉ được thay nóng |
 | `dnsserver` | Chọn IP LAN, bỏ qua IP bind lỗi; trang cài đặt tự đóng sau 10 phút (đồng hồ giả), chỉ nhận IP riêng, đúng `Content-Type` |
-| `dpi/goodbyedpi` | argv có `--fake-with-sni` và `--wrong-chksum` cho `light`; không thêm khi preset `custom` hoặc engine `zapret2`; domain sai bị từ chối |
 | `app` | Pha D và pha S lỗi ở từng bước → đúng undo, DNS vẫn được bảo vệ, SUY_GIẢM đúng lý do. S2 trước S3 (thumbprint luôn có trong `state.json` trước khi cài). Xoay CA: thứ tự 5 bước, lỗi cài giữ CA cũ. Thứ tự Disconnect mới. Chạy lại pha P kéo theo pha S |
 | `watchdog` / `store` | Thứ tự khôi phục mới (CA phiên đầu tiên); `CERT_REMOVE_FAILED` giữ thumbprint; nâng `state.json` v2→v3 (`firewall.rule` → `rules`) và `settings.json` v3→v4; kill process giữa S2 và S3 → không còn gì sót |
 | Frontend | Trang cảnh báo bắt buộc (nút chỉ bật khi đã cuộn hết và tích), `ackVersion`; banner ở cả hai chế độ; trang DNS server (QR, đếm ngược, Public); parity `vi.json`/`en.json` |
-| Kiểm tra thủ công trước phát hành | iPhone cài `.mobileconfig`, DoH hoạt động ở mạng nhà, ra 4G vẫn có mạng; hành vi khi Ghostline Disconnect. Android đặt DNS tĩnh. Router/TV đặt DNS. Từng nhóm preset Fake SNI mở được trang khi vượt DPI (cả hai engine) tắt. `certlm.msc` không còn `Ghostline Fake SNI` sau Disconnect, `taskkill /F`, khởi động lại máy và gỡ app; không còn `Ghostline LAN CA` sau gỡ app. Chrome, Edge, Firefox với Fake SNI. Wireshark: không có DNS plain do DoH server, DNS LAN hay Fake SNI gây ra. Gói giả mang SNI (engine GoodbyeDPI) trên một trang bị chặn |
+| Kiểm tra thủ công trước phát hành | iPhone cài `.mobileconfig`, DoH hoạt động ở mạng nhà, ra 4G vẫn có mạng; hành vi khi Ghostline Disconnect. Android đặt DNS tĩnh. Router/TV đặt DNS. Từng nhóm preset Fake SNI mở được trang khi vượt DPI (cả hai engine) tắt. `certlm.msc` không còn `Ghostline Fake SNI` sau Disconnect, `taskkill /F`, khởi động lại máy và gỡ app; không còn `Ghostline LAN CA` sau gỡ app. Chrome, Edge, Firefox với Fake SNI. Wireshark: không có DNS plain do DoH server, DNS LAN hay Fake SNI gây ra. |
 
 ## 13. Đóng gói và tài liệu
 
 - Không thêm dependency Go nào cho lõi, không thêm file nhị phân nào.
 - Thư mục `lists/fakesni/` trong repo chứa preset và file `.minisig`; quy trình ký giống `servers.json`.
 - Trình gỡ cài đặt NSIS: thêm `--remove-certs` và xoá dự phòng các luật firewall mới.
-- README (EN + VI) và hướng dẫn sử dụng: mục DNS server (máy này, LAN, iOS, Android, router), Fake SNI (cảnh báo, giới hạn chỉ máy này, Firefox), gói giả mang SNI, gỡ chứng chỉ bằng tay.
+- README (EN + VI) và hướng dẫn sử dụng: mục DNS server (máy này, LAN, iOS, Android, router), Fake SNI (cảnh báo, giới hạn chỉ máy này, Firefox), gỡ chứng chỉ bằng tay.
 - `release-checklist.md`: thêm các mục kiểm tra thủ công ở mục 12 và bước xác nhận lại nội dung preset.
 - Phát hành dưới dạng **v0.4.0**.
 
