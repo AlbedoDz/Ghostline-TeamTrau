@@ -321,3 +321,11 @@ func TestIsAppControlBlock(t *testing.T) {
 	require.True(t, isAppControlBlock(errors.New("open x: Operation did not complete successfully because the file contains a virus or potentially unwanted software.")))
 	require.False(t, isAppControlBlock(errors.New("disk full")))
 }
+
+func TestManager_AllScopeIgnoresMissingBlacklist(t *testing.T) {
+	rg := newRig(t)
+	missing := filepath.Join(t.TempDir(), "dpi-blacklist.txt")
+	_, err := rg.m.Start(context.Background(), "zapret2", Plan{Scope: ScopeAll, Blacklist: missing})
+	require.NoError(t, err)
+	require.Equal(t, "", rg.z2.got[0].Blacklist)
+}

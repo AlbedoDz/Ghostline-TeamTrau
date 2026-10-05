@@ -23,7 +23,10 @@ func dpiErr(err error, engine string) *AppError {
 // planFor is what engine runs under settings s. A zapret2 strategy that is
 // no longer in the list falls back to the first one.
 func (o *Orchestrator) planFor(s store.Settings, engine string) dpi.Plan {
-	p := dpi.Plan{Scope: dpi.Scope(s.DPI.Scope), Blacklist: o.d.BlacklistPath}
+	p := dpi.Plan{Scope: dpi.Scope(s.DPI.Scope)}
+	if p.Scope == dpi.ScopeBlacklist {
+		p.Blacklist = o.d.BlacklistPath // the file may not exist with scope "all"
+	}
 	if engine != store.EngineZapret2 {
 		p.Strategy, p.Custom = s.DPI.Preset, s.DPI.CustomArgs
 		return p

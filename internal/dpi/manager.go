@@ -193,6 +193,9 @@ func (m *Manager) Start(ctx context.Context, engine string, p Plan) (int, error)
 
 // copyLists copies p's list files into dir and returns p with relative names.
 func copyLists(dir string, p Plan) (Plan, error) {
+	if p.Scope != ScopeBlacklist {
+		p.Blacklist = ""
+	}
 	if p.Blacklist != "" {
 		b, err := os.ReadFile(p.Blacklist)
 		if err != nil {

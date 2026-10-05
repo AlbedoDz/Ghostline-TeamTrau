@@ -298,3 +298,17 @@ func TestDisconnect_ClearsFallbackStatus(t *testing.T) {
 	require.Equal(t, "", sn.Engine)
 	require.False(t, sn.Running)
 }
+
+// Most users never create a blacklist: with scope "all" the engine must not
+// be handed one, or the missing file fails every start.
+func TestPlanFor_AllScopeHasNoBlacklist(t *testing.T) {
+	h := newHarness(t)
+	h.o.d.BlacklistPath = `C:\data\dpi-blacklist.txt`
+	for _, engine := range []string{store.EngineGoodbyeDPI, store.EngineZapret2} {
+		s := h.getSettings()
+		s.DPI.Scope = "all"
+		require.Equal(t, "", h.o.planFor(s, engine).Blacklist, engine)
+		s.DPI.Scope = "blacklist"
+		require.Equal(t, `C:\data\dpi-blacklist.txt`, h.o.planFor(s, engine).Blacklist, engine)
+	}
+}
