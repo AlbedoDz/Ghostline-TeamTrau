@@ -522,22 +522,12 @@ func (s *Service) SaveDPIAutoHostlist(domains []string) error {
 	if text != "" {
 		text += "\n"
 	}
-	if s.o.d.DPI.Engine() == store.EngineZapret2 {
-		_ = s.o.d.DPI.Stop() // copies the engine's list out first
-	}
-	if err := os.MkdirAll(filepath.Dir(s.o.d.AutoHostlistPath), 0o755); err != nil {
-		return err
-	}
-	if err := os.WriteFile(s.o.d.AutoHostlistPath, []byte(text), 0o644); err != nil {
-		return err
-	}
-	if s.o.connected() && s.x.Settings.Get().DPI.Enabled && !s.o.d.DPI.Running() {
-		s.o.opMu.Lock()
-		err := s.o.startDPI(context.Background(), s.x.Settings.Get())
-		s.o.opMu.Unlock()
-		return err
-	}
-	return nil
+	return s.o.RewriteZapret2File(context.Background(), func() error {
+		if err := os.MkdirAll(filepath.Dir(s.o.d.AutoHostlistPath), 0o755); err != nil {
+			return err
+		}
+		return os.WriteFile(s.o.d.AutoHostlistPath, []byte(text), 0o644)
+	})
 }
 
 // DPIEngineDir is the folder an engine runs from, for antivirus exclusions.

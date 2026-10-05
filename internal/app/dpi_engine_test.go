@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"slices"
 	"testing"
+	"time"
 
 	"github.com/hashcott/ghostline/internal/dpi"
 	"github.com/hashcott/ghostline/internal/probe"
@@ -244,4 +245,56 @@ func TestService_AutoHostlistRoundTrip(t *testing.T) {
 func TestService_DPIEngineDir(t *testing.T) {
 	s := newSvc(t)
 	require.Equal(t, filepath.Join(s.paths.BinDir, "zapret2"), s.svc.DPIEngineDir("zapret2"))
+}
+
+func zapretSvc(t *testing.T) *svcHarness {
+	s := newSvc(t)
+	s.o.d.AutoHostlistPath = s.paths.DPIAutoHostlist
+	st := s.box.Get()
+	st.DPI.Engine = store.EngineZapret2
+	require.NoError(t, s.box.Save(st))
+	require.NoError(t, s.o.Connect(context.Background()))
+	require.NoError(t, s.o.SetDPIEnabled(context.Background(), true))
+	return s
+}
+
+func TestSaveDPIAutoHostlist_FailedRestartClearsRunning(t *testing.T) {
+	s := zapretSvc(t)
+	s.dpi.failOn = map[string]error{"zapret2": dpi.ErrStartFailed}
+	requireCode(t, s.svc.SaveDPIAutoHostlist([]string{"a.com"}), CodeDPIStartFailed)
+	sn := s.o.Snapshot().DPI
+	require.False(t, sn.Running)
+	require.Equal(t, "", sn.Engine)
+}
+
+func TestSaveDPIAutoHostlist_WaitsForOtherDPIWork(t *testing.T) {
+	s := zapretSvc(t)
+	stops := countOf(s.r.list(), "dpi.stop")
+	s.o.opMu.Lock() // e.g. autotune probing
+	done := make(chan error, 1)
+	go func() { done <- s.svc.SaveDPIAutoHostlist([]string{"a.com"}) }()
+	require.Never(t, func() bool { return countOf(s.r.list(), "dpi.stop") > stops }, 100*time.Millisecond, 10*time.Millisecond)
+	s.o.opMu.Unlock()
+	require.NoError(t, <-done)
+	require.Greater(t, countOf(s.r.list(), "dpi.stop"), stops)
+	require.True(t, s.o.Snapshot().DPI.Running)
+}
+
+func TestSaveDPIAutoHostlist_DisconnectedDoesNotStart(t *testing.T) {
+	s := newSvc(t)
+	s.o.d.AutoHostlistPath = s.paths.DPIAutoHostlist
+	require.NoError(t, s.svc.SaveDPIAutoHostlist([]string{"a.com"}))
+	require.NotContains(t, s.r.list(), "dpi.start")
+}
+
+func TestDisconnect_ClearsFallbackStatus(t *testing.T) {
+	h := zapretHarness(t)
+	h.dpi.failOn = map[string]error{"zapret2": dpi.ErrBlockedByAV}
+	require.NoError(t, h.o.SetDPIEnabled(context.Background(), true))
+	require.True(t, h.o.Snapshot().DPI.Fallback)
+	require.NoError(t, h.o.Disconnect(context.Background()))
+	sn := h.o.Snapshot().DPI
+	require.False(t, sn.Fallback)
+	require.Equal(t, "", sn.Engine)
+	require.False(t, sn.Running)
 }

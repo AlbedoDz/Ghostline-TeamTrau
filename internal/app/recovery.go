@@ -42,7 +42,7 @@ func (o *Orchestrator) RestoreNow(ctx context.Context, fallback func() error) er
 		}
 		o.update(func(s *Snapshot) {
 			s.Status, s.Error, s.Servers, s.BlockedSites, s.LatencyMs, s.Queries = StatusDisconnected, nil, nil, nil, 0, 0
-			s.DPI.Running = false
+			s.DPI.Running, s.DPI.Engine, s.DPI.Fallback = false, "", false
 		})
 		o.log("system", "DISCONNECTED")
 		return nil

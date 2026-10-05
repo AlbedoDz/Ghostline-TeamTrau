@@ -118,6 +118,30 @@ func (o *Orchestrator) RestartDPI(ctx context.Context) error {
 	return nil
 }
 
+// RewriteZapret2File runs write while a running zapret2 is stopped (it keeps
+// its own copy of the auto-detected list and would write it back), then
+// starts DPI again if it was running and Ghostline is still connected.
+func (o *Orchestrator) RewriteZapret2File(ctx context.Context, write func() error) error {
+	o.opMu.Lock()
+	defer o.opMu.Unlock()
+	stopped := o.d.DPI.Engine() == store.EngineZapret2
+	if stopped {
+		o.stopDPI() // copies the engine's list out first
+	}
+	err := write()
+	if !stopped || !o.connected() {
+		if stopped {
+			o.update(func(sn *Snapshot) { sn.DPI.Running, sn.DPI.Engine, sn.DPI.Fallback = false, "", false })
+		}
+		return err
+	}
+	if serr := o.startDPI(ctx, o.d.Settings()); serr != nil {
+		o.update(func(sn *Snapshot) { sn.DPI.Running, sn.DPI.Engine, sn.DPI.Fallback = false, "", false })
+		return serr
+	}
+	return err
+}
+
 // RefreshDPILists hands a new blacklist to a running engine that re-reads
 // it by itself, and restarts any other engine.
 func (o *Orchestrator) RefreshDPILists(ctx context.Context) error {

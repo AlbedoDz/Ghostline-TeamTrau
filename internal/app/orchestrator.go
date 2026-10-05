@@ -522,7 +522,7 @@ func (o *Orchestrator) Disconnect(ctx context.Context) error {
 	}
 	o.update(func(s *Snapshot) {
 		s.Status, s.Error, s.Since, s.Servers, s.BlockedSites, s.LatencyMs, s.Queries = StatusDisconnected, nil, time.Time{}, nil, nil, 0, 0
-		s.DPI.Running = false
+		s.DPI.Running, s.DPI.Engine, s.DPI.Fallback = false, "", false
 		s.Reasons = nil
 	})
 	o.log("system", "DISCONNECTED")
