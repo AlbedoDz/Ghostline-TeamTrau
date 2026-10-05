@@ -58,5 +58,5 @@ func TestSNIDomains(t *testing.T) {
 	}
 	c, err := rules.Compile(user, nil)
 	require.NoError(t, err)
-	require.Equal(t, []string{".googlevideo.com", "example.com", "youtube.com"}, c.SNIDomains())
+	require.Equal(t, []string{"example.com", "googlevideo.com", "youtube.com"}, c.SNIDomains())
 }
