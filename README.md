@@ -42,6 +42,7 @@ Ghostline runs a local DNS server on `127.0.0.1` / `::1`, points every network a
 - [Security](#security)
 - [Disclaimer](#disclaimer)
 - [License and credits](#license-and-credits)
+- [Donate](#donate)
 
 ## Features
 
@@ -211,3 +212,28 @@ The software is provided "as is", without warranty of any kind. The authors are 
 Ghostline is free software, released under the [GNU General Public License v3.0 only](LICENSE). You may use, study, share and modify it; if you distribute a modified version, you must release its source code under the same license. Releases v0.1.0 and v0.1.1 were published under the MIT License.
 
 It stands on the shoulders of [dnsproxy](https://github.com/AdguardTeam/dnsproxy), [GoodbyeDPI](https://github.com/ValdikSS/GoodbyeDPI), [WinDivert](https://github.com/basil00/WinDivert) and [Wails](https://wails.io), and was inspired by [DNSveil / SecureDNSClient](https://github.com/msasanmh/SecureDNSClient). Third-party licenses are listed in [NOTICE](NOTICE).
+
+## Donate
+
+Ghostline is free and always will be. If it helps you and you would like to support its development, you can send a tip through [PayPal](https://paypal.me/hashcott), Binance Pay, stablecoins, or by scanning the MoMo QR code with any Vietnamese banking app (VietQR / Napas 247). Thank you!
+
+<p align="center">
+  <a href="https://paypal.me/hashcott"><img src="https://img.shields.io/badge/PayPal-hashcott-00457C?logo=paypal&logoColor=white" alt="Donate with PayPal"></a>
+</p>
+
+**Binance Pay:** scan the Binance Pay QR code below with the Binance app (account `duchanhstyle`). Transfers between Binance users are free and instant.
+
+**Stablecoins (USDT or USDC) from any other wallet:**
+
+```
+0x3C0E297cC77416DA2Ac108F09360d7Bf7C4E2c8e
+```
+
+> [!WARNING]
+> Send only through **BNB Smart Chain (BEP20)** or **Arc**. Coins sent through any other network, such as Ethereum (ERC20) or Tron (TRC20), will be lost.
+
+| Binance Pay | MoMo / VietQR |
+| :---: | :---: |
+| <img src="docs/donate-binance-pay.png" width="240" alt="Binance Pay donation QR code"> | <img src="docs/donate-momo.png" width="240" alt="MoMo / VietQR donation QR code"> |
+| **USDT (BNB Smart Chain)** | **USDC (BNB Smart Chain)** |
+| <img src="docs/donate-usdt-bsc.png" width="240" alt="USDT donation QR code on BNB Smart Chain"> | <img src="docs/donate-usdc-bsc.png" width="240" alt="USDC donation QR code on BNB Smart Chain"> |

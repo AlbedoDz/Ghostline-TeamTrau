@@ -41,6 +41,7 @@ Ghostline chạy một DNS server cục bộ trên `127.0.0.1` / `::1`, trỏ m�
 - [Bảo mật](#bảo-mật)
 - [Tuyên bố miễn trừ trách nhiệm](#tuyên-bố-miễn-trừ-trách-nhiệm)
 - [Giấy phép và ghi công](#giấy-phép-và-ghi-công)
+- [Ủng hộ](#ủng-hộ)
 
 ## Tính năng
 
@@ -201,3 +202,28 @@ Phần mềm được cung cấp "nguyên trạng", không kèm bất kỳ bảo
 Ghostline là phần mềm tự do, phát hành theo [giấy phép GNU GPL v3.0 (chỉ phiên bản 3)](LICENSE). Bạn được dùng, nghiên cứu, chia sẻ và sửa đổi; nếu phân phối bản đã sửa, bạn phải công khai mã nguồn của bản đó theo cùng giấy phép. Hai bản v0.1.0 và v0.1.1 đã phát hành theo giấy phép MIT.
 
 Dự án được xây dựng trên [dnsproxy](https://github.com/AdguardTeam/dnsproxy), [GoodbyeDPI](https://github.com/ValdikSS/GoodbyeDPI), [WinDivert](https://github.com/basil00/WinDivert) và [Wails](https://wails.io), và lấy cảm hứng từ [DNSveil / SecureDNSClient](https://github.com/msasanmh/SecureDNSClient). Giấy phép của các thành phần bên thứ ba được liệt kê trong [NOTICE](NOTICE).
+
+## Ủng hộ
+
+Ghostline miễn phí và sẽ luôn miễn phí. Nếu app có ích và bạn muốn ủng hộ để dự án tiếp tục phát triển, bạn có thể gửi qua [PayPal](https://paypal.me/hashcott), Binance Pay, stablecoin, hoặc quét mã QR MoMo bằng bất kỳ app ngân hàng nào (VietQR / Napas 247). Cảm ơn bạn!
+
+<p align="center">
+  <a href="https://paypal.me/hashcott"><img src="https://img.shields.io/badge/PayPal-hashcott-00457C?logo=paypal&logoColor=white" alt="Ủng hộ qua PayPal"></a>
+</p>
+
+**Binance Pay:** quét mã QR Binance Pay bên dưới bằng app Binance (tài khoản `duchanhstyle`). Chuyển giữa người dùng Binance với nhau miễn phí và tức thì.
+
+**Stablecoin (USDT hoặc USDC) từ ví khác:**
+
+```
+0x3C0E297cC77416DA2Ac108F09360d7Bf7C4E2c8e
+```
+
+> [!WARNING]
+> Chỉ gửi qua mạng **BNB Smart Chain (BEP20)** hoặc **Arc**. Gửi qua mạng khác, ví dụ Ethereum (ERC20) hay Tron (TRC20), sẽ mất tiền vĩnh viễn.
+
+| Binance Pay | MoMo / VietQR |
+| :---: | :---: |
+| <img src="docs/donate-binance-pay.png" width="240" alt="Mã QR ủng hộ qua Binance Pay"> | <img src="docs/donate-momo.png" width="240" alt="Mã QR ủng hộ qua MoMo / VietQR"> |
+| **USDT (BNB Smart Chain)** | **USDC (BNB Smart Chain)** |
+| <img src="docs/donate-usdt-bsc.png" width="240" alt="Mã QR ủng hộ USDT trên BNB Smart Chain"> | <img src="docs/donate-usdc-bsc.png" width="240" alt="Mã QR ủng hộ USDC trên BNB Smart Chain"> |
