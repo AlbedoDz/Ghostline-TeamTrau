@@ -17,8 +17,10 @@ import (
 	"log"
 	"net"
 	"os"
+	"strings"
 	"time"
 
+	"github.com/hashcott/ghostline/internal/brand"
 	"github.com/hashcott/ghostline/internal/model"
 	"github.com/hashcott/ghostline/internal/servers"
 	"github.com/hashcott/ghostline/internal/store"
@@ -75,15 +77,37 @@ func main() {
 
 // signFile writes <path>.sig, signed with a base64 ed25519 private key.
 func signFile(path, key string) error {
-	raw, err := base64.StdEncoding.DecodeString(key)
-	if err != nil || len(raw) != ed25519.PrivateKeySize {
-		return fmt.Errorf("the signing key is not a base64 ed25519 private key")
+	priv, err := parseKey(key)
+	if err != nil {
+		return err
 	}
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(path+".sig", servers.Sign(data, ed25519.PrivateKey(raw)), 0o644)
+	return os.WriteFile(path+".sig", servers.Sign(data, priv), 0o644)
+}
+
+// parseKey decodes the private key as -genkey prints it. Surrounding
+// whitespace and the "private=" prefix are accepted, since both slip in when
+// the line is pasted into a secret.
+func parseKey(key string) (ed25519.PrivateKey, error) {
+	key = strings.TrimPrefix(strings.TrimSpace(key), "private=")
+	if key == "" {
+		return nil, fmt.Errorf("the signing key is empty")
+	}
+	raw, err := base64.StdEncoding.DecodeString(key)
+	if err != nil {
+		return nil, fmt.Errorf("the signing key is not base64: %v", err)
+	}
+	if len(raw) != ed25519.PrivateKeySize {
+		return nil, fmt.Errorf("the signing key decodes to %d bytes, want %d", len(raw), ed25519.PrivateKeySize)
+	}
+	priv := ed25519.PrivateKey(raw)
+	if got := hex.EncodeToString(priv.Public().(ed25519.PublicKey)); got != brand.ServerListPublicKeyHex {
+		return nil, fmt.Errorf("the signing key's public half %s is not brand.ServerListPublicKeyHex", got)
+	}
+	return priv, nil
 }
 
 // resolveVia resolves A and AAAA records through a fixed plain-DNS server.
