@@ -2,6 +2,7 @@ package proxy
 
 import (
 	"bufio"
+	"crypto/tls"
 	"errors"
 	"net"
 	"net/netip"
@@ -18,7 +19,9 @@ import (
 // connection; false means the caller continues on the 2A path with the
 // untouched hello (nothing has been sent to the client yet).
 func (s *Server) fakeSNI(c net.Conn, br *bufio.Reader, ip netip.Addr, t wire.Target, hello []byte) bool {
-	if s.cfg.MITM == nil {
+	// Only browsers on this PC trust the session CA; LAN devices sharing
+	// the proxy always take the 2A path (spec 2B §2).
+	if s.cfg.MITM == nil || !ip.Unmap().IsLoopback() {
 		return false
 	}
 	leaf := s.cfg.MITM()
@@ -27,7 +30,9 @@ func (s *Server) fakeSNI(c net.Conn, br *bufio.Reader, ip netip.Addr, t wire.Tar
 		return false
 	}
 	dec, host, ok := op.Plan(t, hello)
-	if !ok {
+	if !ok || !covers(leaf, host) {
+		// No rule, or a rule newer than the running session CA (it rotates
+		// a moment later): take the 2A path rather than fail the client.
 		return false
 	}
 	fake := dec.SNI
@@ -52,7 +57,7 @@ func (s *Server) fakeSNI(c net.Conn, br *bufio.Reader, ip netip.Addr, t wire.Tar
 	defer server.Close()
 	s.trackConn(server)
 	defer s.untrackConn(server)
-	client, err := mitm.AcceptClient(s.ctx, c, br, p, leaf, server.ConnectionState().NegotiatedProtocol)
+	client, err := mitm.AcceptClient(s.ctx, c, br, p, currentLeaf{s}, server.ConnectionState().NegotiatedProtocol)
 	if err != nil {
 		s.event(ip, t, dialer.OutcomeFakeSNIClientRejected, dec.Source)
 		return true
@@ -60,4 +65,26 @@ func (s *Server) fakeSNI(c net.Conn, br *bufio.Reader, ip netip.Addr, t wire.Tar
 	s.event(ip, t, dialer.OutcomeFakeSNI, dec.Source)
 	s.relay(client, bufio.NewReader(client), server)
 	return true
+}
+
+// covers asks the certificate source whether it may sign host; sources
+// that cannot say are trusted to.
+func covers(l mitm.LeafSource, host string) bool {
+	if c, ok := l.(interface{ Covers(string) bool }); ok {
+		return c.Covers(host)
+	}
+	return true
+}
+
+// currentLeaf signs with the certificate source in use when the client
+// handshake needs it, so a CA rotated (and removed) during the server
+// handshake is never used.
+type currentLeaf struct{ s *Server }
+
+func (c currentLeaf) Leaf(host string) (*tls.Certificate, error) {
+	l := c.s.cfg.MITM()
+	if l == nil || !covers(l, host) {
+		return nil, errors.New("fake SNI: no certificate source for " + host)
+	}
+	return l.Leaf(host)
 }

@@ -3,6 +3,7 @@ package certs
 import (
 	"container/list"
 	"crypto/tls"
+	"strings"
 	"sync"
 	"time"
 )
@@ -64,4 +65,16 @@ func (i *Issuer) Leaf(host string) (*tls.Certificate, error) {
 		delete(i.certs, h)
 	}
 	return c, nil
+}
+
+// Covers reports whether the CA's Name Constraints allow a certificate for
+// host: host equals a permitted domain or is one of its subdomains.
+func (i *Issuer) Covers(host string) bool {
+	host = strings.ToLower(strings.TrimSuffix(host, "."))
+	for _, d := range i.ca.Cert.PermittedDNSDomains {
+		if host == d || strings.HasSuffix(host, "."+d) {
+			return true
+		}
+	}
+	return false
 }

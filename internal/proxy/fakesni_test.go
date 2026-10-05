@@ -148,3 +148,41 @@ func TestTunnel_ClientRejects(t *testing.T) {
 	require.Error(t, err)
 	require.Eventually(t, func() bool { return s.Stats().ByOutcome["fakesni_client_rejected"] == 1 }, 3*time.Second, 20*time.Millisecond)
 }
+
+// A rule added before the session CA rotated: the running CA cannot sign
+// the host, so the connection takes the 2A path instead of failing.
+func TestTunnel_HostNotCoveredByCurrentCA(t *testing.T) {
+	f := newFakeSNIEnv(t)
+	other, err := certs.NewSessionCA([]string{"example.com"}, time.Now())
+	require.NoError(t, err)
+	f.issuer = certs.NewIssuer(other, time.Now)
+	e := newEdge(t, f.pub, false)
+	s, addr := f.proxy(t, true)
+	pool := x509.NewCertPool()
+	pool.AddCert(f.pub.Cert)
+	require.Equal(t, "Test Public Root", issuerOf(t, addr, e, pool))
+	require.Zero(t, s.Stats().ByOutcome["fakesni"])
+}
+
+// The certificate source is read when the leaf is signed, not when the
+// connection starts: a rotation in between uses the new CA.
+func TestTunnel_LeafFromCurrentIssuer(t *testing.T) {
+	f := newFakeSNIEnv(t)
+	newer, err := certs.NewSessionCA([]string{"youtube.com"}, time.Now())
+	require.NoError(t, err)
+	newIssuer := certs.NewIssuer(newer, time.Now)
+	e := newEdge(t, f.pub, false)
+	d, _ := realDialer(t, mapResolver{"youtube.com": {netip.MustParseAddr("127.0.0.1")}}, "youtube.com sni=www.google.com")
+	calls := 0
+	_, addr := startServer(t, proxy.Config{Dialer: d, MITMRoots: f.pub.Pool, MITM: func() mitm.LeafSource {
+		calls++
+		if calls == 1 {
+			return f.issuer
+		}
+		return newIssuer
+	}})
+	pool := x509.NewCertPool()
+	pool.AddCert(f.pub.Cert)
+	pool.AddCert(newer.Cert) // trusts only the newer session CA
+	require.Equal(t, newer.Cert.Subject.CommonName, issuerOf(t, addr, e, pool))
+}
