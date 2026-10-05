@@ -295,13 +295,23 @@ func (o *Orchestrator) connectSteps() []step {
 					}
 				}
 			}
-			owners, err := o.d.System.PortOwners(53)
-			if err != nil {
-				return appErr(CodeInternal, err, "step", 1)
+			// Try the bind rather than refuse whenever port 53 has an owner:
+			// Mobile Hotspot holds 0.0.0.0:53, yet 127.0.0.1:53 still binds
+			// and receives every loopback query.
+			addrs := []netip.AddrPort{o.d.ListenV4}
+			if v6 {
+				addrs = append(addrs, o.d.ListenV6)
 			}
-			if len(owners) > 0 {
+			if lerr := o.d.System.ListenFree(addrs); lerr != nil {
+				owners, err := o.d.System.PortOwners(53)
+				if err != nil {
+					return appErr(CodeInternal, err, "step", 1)
+				}
+				if len(owners) == 0 {
+					return appErr(CodePort53Busy, lerr, "pid", 0, "name", "?", "service", "")
+				}
 				w := owners[0]
-				return appErr(CodePort53Busy, nil, "pid", w.PID, "name", w.Name, "service", w.Service)
+				return appErr(CodePort53Busy, lerr, "pid", w.PID, "name", w.Name, "service", w.Service)
 			}
 			return nil
 		}},

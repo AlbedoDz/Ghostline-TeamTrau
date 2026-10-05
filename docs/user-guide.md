@@ -325,4 +325,4 @@ No. No telemetry, no accounts, and visited sites are never written to disk. The 
 That's fine. Ghostline restores DNS before Windows shuts down. If the power is cut, the *Ghostline Recovery* task restores DNS at your next sign-in, even if you don't open Ghostline.
 
 **Can I use it with Mobile Hotspot?**
-Windows Mobile Hotspot holds port 53, so the two can't run at the same time. Ghostline reports *Port 53 is held by …* and offers to stop the service (only if you agree).
+Yes. Mobile Hotspot listens on port 53 of every address, but Windows still lets Ghostline take 127.0.0.1:53, so you can connect with the hotspot on.

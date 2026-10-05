@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"net/netip"
 	"os"
 	"strconv"
 	"time"
@@ -27,6 +28,24 @@ func (system) SelfPID() (uint32, time.Time) {
 	pid := uint32(os.Getpid())
 	start, _ := winutil.ProcessStartTime(pid)
 	return pid, start
+}
+
+// ListenFree binds UDP and TCP on each address the way the DNS engine will,
+// then releases them.
+func (system) ListenFree(addrs []netip.AddrPort) error {
+	for _, a := range addrs {
+		u, err := net.ListenUDP("udp", net.UDPAddrFromAddrPort(a))
+		if err != nil {
+			return err
+		}
+		t, err := net.ListenTCP("tcp", net.TCPAddrFromAddrPort(a))
+		u.Close()
+		if err != nil {
+			return err
+		}
+		t.Close()
+	}
+	return nil
 }
 
 // IPv6Available reports whether [::1] can be bound (IPv6 may be disabled).
