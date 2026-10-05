@@ -154,6 +154,10 @@ func (m *Manager) Start(ctx context.Context, engine string, p Plan) (int, error)
 	dir, pins := m.dir(engine), in.Engine.Files()
 	if err := verifyWith(dir, pins); err != nil {
 		if err := extractWith(in.Assets, dir, pins); err != nil {
+			// Real-time antivirus refuses the write itself.
+			if errors.Is(err, os.ErrPermission) || isAppControlBlock(err) {
+				return 0, fmt.Errorf("%w: %v", ErrBlockedByAV, err)
+			}
 			return 0, err
 		}
 	}

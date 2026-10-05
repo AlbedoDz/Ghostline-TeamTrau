@@ -303,3 +303,21 @@ func TestManager_Get(t *testing.T) {
 	_, ok = rg.m.Get("x")
 	require.False(t, ok)
 }
+
+// Defender refuses the write itself (ERROR_VIRUS_INFECTED or access
+// denied) when it scans the file being extracted.
+func TestManager_ExtractRefusedIsBlockedByAV(t *testing.T) {
+	rg := newRig(t)
+	dst := filepath.Join(rg.bin, "zapret2", "zapret2.exe")
+	require.NoError(t, os.MkdirAll(filepath.Dir(dst), 0o755))
+	require.NoError(t, os.WriteFile(dst, []byte("stale"), 0o444))
+	t.Cleanup(func() { _ = os.Chmod(dst, 0o644) })
+	_, err := rg.m.Start(context.Background(), "zapret2", Plan{})
+	require.ErrorIs(t, err, ErrBlockedByAV)
+	require.False(t, errors.Is(err, ErrHashMismatch))
+}
+
+func TestIsAppControlBlock(t *testing.T) {
+	require.True(t, isAppControlBlock(errors.New("open x: Operation did not complete successfully because the file contains a virus or potentially unwanted software.")))
+	require.False(t, isAppControlBlock(errors.New("disk full")))
+}
