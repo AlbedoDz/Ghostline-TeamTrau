@@ -13,6 +13,7 @@ type Entry struct {
 	Except  bool
 	IPs     []netip.Addr
 	Line    int
+	Action  *Action // per-line action (ghostline lists); nil = the set's action
 }
 
 // ListSet is a list ready to compile: its entries share one action, except
@@ -22,6 +23,8 @@ type ListSet struct {
 	Action   Action
 	FromFile bool
 	Entries  []Entry
+	// TrustedForSNI lets the list's sni= and connect= take effect.
+	TrustedForSNI bool
 }
 
 // Source says what produced a decision.
@@ -36,6 +39,9 @@ type Source struct {
 type Decision struct {
 	Action
 	Source Source `json:"source"`
+	// SNIIgnored is set when a list not trusted for Fake SNI asked for
+	// sni= or connect=; both were dropped.
+	SNIIgnored bool `json:"sniIgnored,omitempty"`
 }
 
 // Domain-kind bits stored per host in a matcher.
@@ -93,8 +99,10 @@ type listSet struct {
 	id       string
 	action   Action
 	fromFile bool
+	trusted  bool
 	inc, exc lmatch
 	ips      map[string][]netip.Addr
+	perLine  map[int]Action
 }
 
 // Compiled is an immutable, ready-to-match rule set.
@@ -102,6 +110,8 @@ type Compiled struct {
 	user  userSet
 	lists []listSet
 	count int
+	// sniLists holds the Name Constraints of trusted lists' sni= entries.
+	sniLists []string
 }
 
 // Compile builds a matcher from enabled user rules and lists, in order.
@@ -129,7 +139,7 @@ func Compile(user []Rule, lists []ListSet) (*Compiled, error) {
 		}
 	}
 	for _, l := range lists {
-		ls := listSet{id: l.ID, action: l.Action, fromFile: l.FromFile,
+		ls := listSet{id: l.ID, action: l.Action, fromFile: l.FromFile, trusted: l.TrustedForSNI,
 			inc: lmatch{dom: make(map[string]uint8, len(l.Entries)), line: make(map[string]int, len(l.Entries))},
 			exc: lmatch{dom: map[string]uint8{}, line: map[string]int{}}}
 		for _, e := range l.Entries {
@@ -138,6 +148,17 @@ func Compile(user []Rule, lists []ListSet) (*Compiled, error) {
 				m = &ls.exc
 			} else {
 				c.count++
+				if e.Action != nil {
+					if ls.perLine == nil {
+						ls.perLine = map[int]Action{}
+					}
+					ls.perLine[e.Line] = *e.Action
+					if l.TrustedForSNI && e.Action.SNI != "" {
+						if d, ok := constraintFor(e.Pattern); ok {
+							c.sniLists = append(c.sniLists, d)
+						}
+					}
+				}
 			}
 			switch e.Pattern.Kind {
 			case KindKeyword:

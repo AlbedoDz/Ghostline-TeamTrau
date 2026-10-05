@@ -1,0 +1,5 @@
+# ghostline-rules v1
+# Fake SNI preset (test data)
+youtube.com          sni=www.google.com connect=www.google.com
+ads.com              block
+~kw                  sni=a.com

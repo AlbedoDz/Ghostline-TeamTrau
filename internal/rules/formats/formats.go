@@ -26,10 +26,12 @@ const (
 	V2fly   Format = "v2fly"
 	Singbox Format = "singbox"
 	CIDR    Format = "cidr"
+	// Ghostline is Ghostline's own rule text with an action per line.
+	Ghostline Format = "ghostline"
 )
 
 // All lists every format, most specific first (used to break ties).
-var All = []Format{Adblock, Dnsmasq, Unbound, RPZ, Clash, V2fly, Singbox, Hosts, CIDR, Domains}
+var All = []Format{Ghostline, Adblock, Dnsmasq, Unbound, RPZ, Clash, V2fly, Singbox, Hosts, CIDR, Domains}
 
 // Result is a parsed list.
 type Result struct {
@@ -70,15 +72,16 @@ func Parse(f Format, data []byte) (Result, error) {
 }
 
 var lineParsers = map[Format]func(b *builder, line string, n int){
-	Hosts:   parseHosts,
-	Domains: parseDomains,
-	Adblock: parseAdblock,
-	Dnsmasq: parseDnsmasq,
-	Unbound: parseUnbound,
-	RPZ:     parseRPZ,
-	Clash:   parseClash,
-	V2fly:   parseV2fly,
-	CIDR:    parseCIDR,
+	Hosts:     parseHosts,
+	Domains:   parseDomains,
+	Adblock:   parseAdblock,
+	Dnsmasq:   parseDnsmasq,
+	Unbound:   parseUnbound,
+	RPZ:       parseRPZ,
+	Clash:     parseClash,
+	V2fly:     parseV2fly,
+	CIDR:      parseCIDR,
+	Ghostline: parseGhostline,
 }
 
 func isBinary(data []byte) bool {

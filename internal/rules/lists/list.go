@@ -26,7 +26,7 @@ type List struct {
 	URL            string         `json:"url,omitempty"`
 	Path           string         `json:"path,omitempty"`
 	Format         string         `json:"format"` // "auto" or a formats.Format
-	Action         string         `json:"action"` // block | allow | fragment=on | upstream=<id> | fromFile
+	Action         string         `json:"action"` // block | allow | fragment=on | upstream=<id> | fromFile | perLine
 	Enabled        bool           `json:"enabled"`
 	UpdateHours    int            `json:"updateHours"`
 	LastUpdated    time.Time      `json:"lastUpdated"`
@@ -37,11 +37,19 @@ type List struct {
 	Skipped        int            `json:"skipped"`
 	SkippedSamples []string       `json:"skippedSamples,omitempty"`
 	LastError      string         `json:"lastError,omitempty"`
+	// TrustedForSNI lets the list's sni= and connect= take effect.
+	TrustedForSNI bool `json:"trustedForSNI,omitempty"`
+	// Signed lists are only accepted with a valid .sig next to them.
+	Signed      bool `json:"signed,omitempty"`
+	SignatureOK bool `json:"signatureOk,omitempty"`
 }
 
 // ToListSet maps a list and its parsed entries to a compilable set.
 func ToListSet(l List, r Result) (rules.ListSet, error) {
-	s := rules.ListSet{ID: l.ID, Entries: r.Entries}
+	s := rules.ListSet{ID: l.ID, Entries: r.Entries, TrustedForSNI: l.TrustedForSNI}
+	if r.Format == formats.Ghostline {
+		return s, nil // every entry carries its own action
+	}
 	switch {
 	case l.Action == "block":
 		s.Action.Block = true
@@ -53,6 +61,8 @@ func ToListSet(l List, r Result) (rules.ListSet, error) {
 		s.FromFile = true
 	case strings.HasPrefix(l.Action, "upstream=") && len(l.Action) > len("upstream="):
 		s.Action.Upstream = strings.TrimPrefix(l.Action, "upstream=")
+	case l.Action == "perLine":
+		return rules.ListSet{}, fmt.Errorf("lists: per-line actions need a ghostline list, got %q", r.Format)
 	default:
 		return rules.ListSet{}, fmt.Errorf("lists: unknown action %q", l.Action)
 	}

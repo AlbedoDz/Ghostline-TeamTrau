@@ -105,7 +105,10 @@ func (m *lmatch) matchHost(host string) (int, bool) {
 }
 
 // actionFor is the list's action for a matched host.
-func (l *listSet) actionFor(host string) Action {
+func (l *listSet) actionFor(host string, line int) Action {
+	if a, ok := l.perLine[line]; ok {
+		return a
+	}
 	if !l.fromFile {
 		return l.action
 	}
@@ -118,6 +121,16 @@ func (l *listSet) actionFor(host string) Action {
 		return Action{IPs: ips}
 	}
 	return Action{Block: true}
+}
+
+// decision wraps a list's action, dropping sni= and connect= unless the
+// list is trusted for Fake SNI.
+func (l *listSet) decision(a Action, line int) Decision {
+	d := Decision{Action: a, Source: Source{Kind: "list", ListID: l.id, Line: line}}
+	if !l.trusted && (d.SNI != "" || d.Connect != "") {
+		d.SNI, d.Connect, d.SNIIgnored = "", "", true
+	}
+	return d
 }
 
 // Match decides what to do with host (may be "") and ip (may be invalid):
@@ -141,7 +154,7 @@ func (c *Compiled) Match(host string, ip netip.Addr) Decision {
 				if _, ex := l.exc.matchHost(host); ex {
 					continue
 				}
-				d = Decision{Action: l.actionFor(host), Source: Source{Kind: "list", ListID: l.id, Line: line}}
+				d = l.decision(l.actionFor(host, line), line)
 				matched = true
 				break
 			}
@@ -165,9 +178,13 @@ func (c *Compiled) Match(host string, ip netip.Addr) Decision {
 			if _, ex := l.exc.cidr.lookup(ip); ex {
 				continue
 			}
-			cd = Decision{Action: l.action, Source: Source{Kind: "list", ListID: l.id, Line: line}}
-			if l.fromFile {
-				cd.Action = Action{Block: true}
+			if a, ok := l.perLine[line]; ok {
+				cd = l.decision(a, line)
+			} else {
+				cd = l.decision(l.action, line)
+				if l.fromFile {
+					cd.Action = Action{Block: true}
+				}
 			}
 			cfound = true
 			break

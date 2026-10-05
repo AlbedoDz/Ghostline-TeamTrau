@@ -5,7 +5,8 @@ import (
 )
 
 // SNIDomains lists the Name Constraints a Fake SNI session CA needs: one
-// entry per enabled rule with sni=, "domain" for domain and =domain
+// entry per enabled rule with sni= (and per sni= entry of a list trusted
+// for Fake SNI), "domain" for domain and =domain
 // patterns, ".domain" for *.domain (subdomains only). Sorted, no
 // duplicates.
 func (c *Compiled) SNIDomains() []string {
@@ -22,6 +23,7 @@ func (c *Compiled) SNIDomains() []string {
 			out = append(out, d)
 		}
 	}
+	out = append(out, c.sniLists...)
 	slices.Sort(out)
 	return slices.Compact(out)
 }
