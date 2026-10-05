@@ -29,6 +29,10 @@ const (
 	EventDNSServerStats = "dnsserver:stats"
 	EventCertsChanged   = "certs:changed"
 	EventSetupCountdown = "setup:countdown"
+
+	// Phase 3 tools.
+	EventToolsScan   = "tools:scan"
+	EventToolsCFScan = "tools:cfscan"
 )
 
 // SetupCountdown is the phone setup page's remaining time (0: closed).
@@ -90,6 +94,7 @@ func init() {
 	application.RegisterEvent[engine.ServeStats](EventDNSServerStats)
 	application.RegisterEvent[[]certstore.Cert](EventCertsChanged)
 	application.RegisterEvent[SetupCountdown](EventSetupCountdown)
+	application.RegisterEvent[AdvScanProgress](EventToolsScan)
 }
 
 // Emitter sends events to the UI.

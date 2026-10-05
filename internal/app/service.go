@@ -130,6 +130,10 @@ type Service struct {
 
 	mu         sync.Mutex
 	scanCancel context.CancelFunc
+
+	// Phase 3 tools: one job per tool (guarded by mu).
+	advCancel  context.CancelFunc
+	adv        advJob
 	tuneCancel context.CancelFunc
 	overrideCh chan bool
 
