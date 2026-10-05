@@ -267,8 +267,12 @@ func (o *Orchestrator) ReapplyProxy(ctx context.Context) error {
 	if st := o.Snapshot().Status; st != StatusProtected && st != StatusDegraded {
 		return nil
 	}
+	// Fake SNI is bound to the running proxy: stop it first, rerun after.
+	o.stopSNIPhase(ctx)
 	o.stopProxyPhase(ctx)
-	return o.startProxyPhase(ctx)
+	err := o.startProxyPhase(ctx)
+	_ = o.startSNIPhase(ctx)
+	return err
 }
 
 // checkProxyHealth restarts a proxy whose listener died, once per check; a
@@ -280,8 +284,10 @@ func (o *Orchestrator) checkProxyHealth(ctx context.Context) {
 		return
 	}
 	o.log("proxy", "PROXY_RESTART")
+	o.stopSNIPhase(ctx)
 	o.stopProxyPhase(ctx)
 	_ = o.startProxyPhase(ctx)
+	_ = o.startSNIPhase(ctx)
 }
 
 // OnSysProxyChanged reacts to a change of the Windows proxy settings: if

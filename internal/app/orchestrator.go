@@ -44,6 +44,8 @@ type Orchestrator struct {
 	px proxyState
 	// dns is the DNS server phase state; guarded by opMu.
 	dns dnsState
+	// sni is the Fake SNI phase state; guarded by opMu.
+	sni sniState
 	// pending is a system proxy restore that failed; guarded by mu.
 	pending *pendingRestore
 }
@@ -213,6 +215,7 @@ func (o *Orchestrator) Connect(ctx context.Context) error {
 	o.log("ok", "CONNECTED", "servers", len(o.servers))
 	_ = o.startProxyPhase(context.WithoutCancel(ctx))
 	_ = o.startDNSPhase(context.WithoutCancel(ctx))
+	_ = o.startSNIPhase(context.WithoutCancel(ctx))
 	o.afterConnect()
 	return nil
 }
@@ -463,6 +466,7 @@ func (o *Orchestrator) disconnectLocked(ctx context.Context) []sysdns.RestoreErr
 	o.mu.Unlock()
 
 	// System proxy first, then firewall and proxy, then DNS (spec 2A 6.2).
+	o.stopSNIPhase(ctx)
 	o.stopDNSPhase(ctx)
 	o.stopProxyPhase(ctx)
 	errs := o.d.DNS.Restore(snaps)

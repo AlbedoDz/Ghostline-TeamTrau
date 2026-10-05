@@ -54,6 +54,10 @@ const (
 	CodeCertKeyUnreadable    = "CERT_KEY_UNREADABLE"
 	CodeListSignatureInvalid = "LIST_SIGNATURE_INVALID"
 	CodeSetupPageFailed      = "SETUP_PAGE_FAILED"
+	CodeFakeSNINeedsProxy    = "FAKESNI_NEEDS_PROXY"
+	CodeFakeSNITooMany       = "FAKESNI_TOO_MANY"
+	CodeFakeSNISelfTest      = "FAKESNI_SELFTEST_FAILED"
+	CodeFakeSNINotAcked      = "FAKESNI_NOT_ACKED"
 )
 
 // AppError is a coded error the UI can translate.

@@ -12,6 +12,7 @@ import (
 	"github.com/hashcott/ghostline/internal/engine"
 	"github.com/hashcott/ghostline/internal/model"
 	"github.com/hashcott/ghostline/internal/probe"
+	"github.com/hashcott/ghostline/internal/proxy/mitm"
 	"github.com/hashcott/ghostline/internal/rules"
 	"github.com/hashcott/ghostline/internal/store"
 	"github.com/hashcott/ghostline/internal/sysdns"
@@ -187,4 +188,8 @@ type Deps struct {
 	DNSServer DNSServer
 	Certs     Certs
 	LANAddrs  func() []netip.Addr
+	// SetMITM hands the Fake SNI certificate source to the proxy; nil
+	// turns Fake SNI off. MITMSelfTest intercepts a loopback test server.
+	SetMITM      func(mitm.LeafSource)
+	MITMSelfTest func(ctx context.Context) error
 }

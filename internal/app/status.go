@@ -41,6 +41,16 @@ type DNSServerStatus struct {
 	Error   *AppError         `json:"error,omitempty"`
 }
 
+// FakeSNIStatus is the Fake SNI phase (spec 2B 6.2).
+type FakeSNIStatus struct {
+	Active     bool      `json:"active"`
+	Domains    int       `json:"domains"`
+	Thumbprint string    `json:"thumbprint,omitempty"`
+	NotAfter   time.Time `json:"notAfter"`
+	NeedsProxy bool      `json:"needsProxy"`
+	Error      *AppError `json:"error,omitempty"`
+}
+
 type ProxyStatus struct {
 	Running     bool      `json:"running"`
 	Addr        string    `json:"addr"`
@@ -65,6 +75,7 @@ type Snapshot struct {
 	Reasons   []string        `json:"reasons"`
 	Proxy     ProxyStatus     `json:"proxy"`
 	DNSServer DNSServerStatus `json:"dnsServer"`
+	FakeSNI   FakeSNIStatus   `json:"fakeSni"`
 }
 
 func (s Snapshot) clone() Snapshot {
@@ -80,6 +91,10 @@ func (s Snapshot) clone() Snapshot {
 	if s.Error != nil {
 		e := *s.Error
 		c.Error = &e
+	}
+	if s.FakeSNI.Error != nil {
+		e := *s.FakeSNI.Error
+		c.FakeSNI.Error = &e
 	}
 	c.DNSServer.Addrs = append([]string(nil), s.DNSServer.Addrs...)
 	c.DNSServer.Skipped = maps.Clone(s.DNSServer.Skipped)
