@@ -270,6 +270,46 @@
       "removeAll": "gỡ tất cả chứng chỉ Ghostline",
       "confirmRemoveAll": "Gỡ mọi chứng chỉ Ghostline? DNS server và Fake SNI sẽ bị tắt.",
       "retry": "thử gỡ lại"
+    },
+    "backup": {
+      "title": "Sao lưu và chuyển máy",
+      "note": "Xuất cài đặt, rule, danh sách và server tự thêm ra một file để dùng trên máy khác.",
+      "export": "xuất cài đặt…",
+      "import": "nhập cài đặt…",
+      "exportTitle": "Chọn phần cần xuất",
+      "doExport": "xuất",
+      "neverExported": "Không bao giờ xuất: tên Wi-Fi nhà, card mạng, mật khẩu proxy, nhật ký, chứng chỉ.",
+      "sec": {
+        "settings": "cài đặt",
+        "rules": "rule và danh sách",
+        "customServers": "server tự thêm",
+        "dpiBlacklist": "danh sách đen vượt DPI",
+        "dpiAutoHostlist": "danh sách tự học zapret2"
+      },
+      "importTitle": "Nhập cài đặt",
+      "fileInfo": "File từ Ghostline {{version}}, tạo ngày {{date}}",
+      "counts": "(mới {{new}} · bị thay {{replaced}})",
+      "merge": "gộp với dữ liệu hiện có",
+      "doImport": "nhập",
+      "imported": "Đã nhập. Bấm Kết nối để dùng cấu hình mới.",
+      "warn": {
+        "flag_off": {
+          "fakeSni_enabled": "Fake SNI sẽ bị tắt; bật lại trong trang Fake SNI nếu cần.",
+          "dnsServer_enabled": "DNS server sẽ bị tắt; bật lại trong trang DNS server nếu cần.",
+          "dnsServer_shareLan": "Chia sẻ DNS cho LAN sẽ bị tắt.",
+          "proxy_shareLan": "Chia sẻ proxy cho LAN sẽ bị tắt.",
+          "startWithWindows": "Khởi động cùng Windows sẽ bị tắt."
+        },
+        "trusted_reset": {
+          "x": "Danh sách \"{{name}}\" không còn được tin cho Fake SNI."
+        },
+        "http_list": {
+          "x": "Danh sách \"{{name}}\" tải qua http:// (không mã hoá)."
+        }
+      },
+      "sniTitle": "File có rule chuyển hướng lưu lượng đã giải mã (sni= / connect=):",
+      "sniAck": "Tôi hiểu các rule này chuyển hướng lưu lượng đã giải mã",
+      "sniDrop": "nhập nhưng bỏ các rule này"
     }
   },
   "errors": {
@@ -859,6 +899,68 @@
         "publicKey": "khoá công khai",
         "hashes": "hash chứng chỉ"
       }
+    },
+    "scan": "quét",
+    "cancel": "huỷ",
+    "options": "tuỳ chọn",
+    "select": "chọn {{what}}",
+    "tri": {
+      "yes": "có",
+      "no": "không",
+      "partial": "một phần",
+      "unknown": "?"
+    },
+    "scanner": {
+      "fromList": "danh sách có sẵn",
+      "fromPaste": "dán danh sách",
+      "pinnedOnly": "chỉ server đã ghim",
+      "pasteLabel": "server cần quét",
+      "badLines": "Bỏ qua các dòng không hợp lệ: {{lines}}",
+      "onlyDNSSEC": "chỉ server có DNSSEC",
+      "onlyAds": "chỉ server lọc quảng cáo",
+      "pinSelected": "ghim mục đã chọn",
+      "exportCsv": "xuất CSV",
+      "col": {
+        "server": "server",
+        "median": "trung vị",
+        "loss": "mất gói",
+        "ads": "lọc QC",
+        "poison": "đầu độc"
+      },
+      "unreachable": "không dùng được ({{reason}})",
+      "add": "thêm",
+      "added": "Đã thêm vào danh sách server",
+      "useOnly": "chỉ dùng",
+      "rounds": "số lượt đo",
+      "workers": "số luồng",
+      "timeoutMs": "thời hạn mỗi truy vấn (ms)"
+    },
+    "cfscan": {
+      "probePhase": "đã thử {{tried}} · dùng được {{ok}}",
+      "speedPhase": "đang đo tốc độ tải các IP tốt nhất…",
+      "direct": "Quét đi thẳng ra mạng, không qua proxy của Ghostline; chỉ cổng 443, tối đa 200 kết nối mới mỗi giây.",
+      "scannedAt": "đã quét lúc {{time}}",
+      "createRule": "tạo rule",
+      "recheck": "kiểm tra lại",
+      "col": {
+        "latency": "độ trễ"
+      },
+      "note": {
+        "no_speed_endpoint": "Host kiểm tra không có /__down nên bỏ qua đo tốc độ."
+      },
+      "ruleNote": "Rule ip= chỉ có tác dụng với ứng dụng dùng DNS hoặc proxy của Ghostline, và chỉ có tác dụng với domain thật sự nằm sau Cloudflare.",
+      "tooManyIps": "Chọn tối đa {{max}} IP cho một rule.",
+      "domains": "domain",
+      "suggest": "gợi ý:",
+      "create": "tạo",
+      "ruleCreated": "Đã tạo rule ip= trong trang Rules.",
+      "host": "host kiểm tra",
+      "restoreDefault": "khôi phục mặc định",
+      "maxIps": "số IP tối đa",
+      "want": "dừng khi đủ (0 = quét hết)",
+      "concurrency": "số kết nối cùng lúc",
+      "timeoutMs": "thời hạn mỗi IP (ms)",
+      "speedTest": "đo tốc độ tải"
     }
   }
 }

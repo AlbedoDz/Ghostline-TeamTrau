@@ -2,6 +2,8 @@ import { create } from "zustand";
 import type {
   AppInfo,
   AutotuneProgress,
+  AdvScanProgress,
+  CFProgress,
   ConnEvent,
   LogEvent,
   ProxyStats,
@@ -55,6 +57,10 @@ type State = {
   certsVersion: number;
   toolsTab: ToolsTab;
   setToolsTab: (t: ToolsTab) => void;
+  advScan: AdvScanProgress | null;
+  setAdvScan: (p: AdvScanProgress) => void;
+  cfScan: CFProgress | null;
+  setCfScan: (p: CFProgress) => void;
   setDnsStats: (s: ServeStats) => void;
   setSetup: (s: SetupCountdown) => void;
   bumpCerts: () => void;
@@ -99,6 +105,8 @@ const initial = {
   setup: null as SetupCountdown | null,
   certsVersion: 0,
   toolsTab: "lookup" as ToolsTab,
+  advScan: null as AdvScanProgress | null,
+  cfScan: null as CFProgress | null,
 };
 
 const tail = <T,>(arr: T[], v: T, n: number) => {
@@ -133,6 +141,8 @@ export const useGhost = create<State>((set) => ({
   setUpdate: (update) => set({ update }),
   setPage: (page) => set({ page }),
   setToolsTab: (toolsTab) => set({ toolsTab }),
+  setAdvScan: (advScan) => set({ advScan }),
+  setCfScan: (cfScan) => set({ cfScan }),
   dismissBanner: (bannerDismissed) => set({ bannerDismissed }),
   setQueryLog: (queryLog) => set(queryLog ? { queryLog } : { queryLog, proxyConns: [] }),
   setProxyStats: (proxyStats) => set({ proxyStats }),

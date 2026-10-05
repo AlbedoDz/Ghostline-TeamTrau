@@ -9,6 +9,7 @@ import { describeError, initI18n } from "../../../i18n";
 import { Toggle } from "../../../components/neon/Toggle";
 import { Chip } from "../../../components/neon/Chip";
 import css from "../advanced.module.css";
+import { Backup } from "./settings/Backup";
 
 export function Settings() {
   const { t } = useTranslation();
@@ -183,6 +184,8 @@ export function Settings() {
           {removeFailed && <Chip onClick={() => void Service.RetryCertRemoval().then(loadCerts).catch((e) => setError(describeError(e)))}>{t("settings.certs.retry")}</Chip>}
         </div>
       </div>
+
+      <Backup />
 
       {info?.repoUrl && (
         <div className={css.panel}>
