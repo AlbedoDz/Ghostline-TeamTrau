@@ -66,7 +66,8 @@ func ParseText(text string, upstreamIDs []string) ([]Rule, []LineError) {
 func parseLine(line string, upstreamIDs []string) (Rule, error) {
 	toks := tokenize(line)
 	r := Rule{Pattern: toks[0].s}
-	if _, err := ParsePattern(r.Pattern); err != nil {
+	p, err := ParsePattern(r.Pattern)
+	if err != nil {
 		return Rule{}, err
 	}
 	for _, t := range toks[1:] {
@@ -99,16 +100,26 @@ func parseLine(line string, upstreamIDs []string) (Rule, error) {
 			}
 			r.Upstream = val
 		case hasVal && key == "sni":
+			if val == SNINone {
+				r.SNI = SNINone
+				break
+			}
 			h, err := NormalizeHost(val)
 			if err != nil {
 				return Rule{}, err
 			}
 			r.SNI = h
+		case hasVal && key == "connect":
+			h, err := NormalizeHost(val)
+			if err != nil {
+				return Rule{}, err
+			}
+			r.Connect = h
 		default:
 			return Rule{}, fmt.Errorf("unknown action %q", t.s)
 		}
 	}
-	if err := validateAction(r.Action); err != nil {
+	if err := validateAction(r.Action, p.Kind); err != nil {
 		return Rule{}, err
 	}
 	return r, nil
@@ -116,21 +127,35 @@ func parseLine(line string, upstreamIDs []string) (Rule, error) {
 
 // ValidateRule checks a rule coming from the table editor.
 func ValidateRule(r Rule, upstreamIDs []string) error {
-	if _, err := ParsePattern(r.Pattern); err != nil {
+	p, err := ParsePattern(r.Pattern)
+	if err != nil {
 		return err
 	}
 	if r.Upstream != "" && !slices.Contains(upstreamIDs, r.Upstream) {
 		return fmt.Errorf("unknown upstream %q", r.Upstream)
 	}
-	return validateAction(r.Action)
+	return validateAction(r.Action, p.Kind)
 }
 
-func validateAction(a Action) error {
+// ValidateAction checks an action against the kind of pattern it is used
+// with (list formats use it for per-line actions).
+func ValidateAction(a Action, kind PatternKind) error { return validateAction(a, kind) }
+
+func validateAction(a Action, kind PatternKind) error {
 	if a.Empty() {
 		return errors.New("rule has no action")
 	}
-	if a.Block && (a.Allow || len(a.IPs) > 0 || a.Fragment != FragUnset || a.Upstream != "" || a.SNI != "") {
+	if a.Block && (a.Allow || len(a.IPs) > 0 || a.Fragment != FragUnset || a.Upstream != "" || a.SNI != "" || a.Connect != "") {
 		return errors.New("block cannot be combined with other actions")
+	}
+	if a.SNI != "" || a.Connect != "" {
+		switch kind {
+		case KindKeyword, KindRegexp, KindCIDR:
+			return errors.New("sni= and connect= work only with domain patterns")
+		}
+	}
+	if a.Connect != "" && len(a.IPs) > 0 {
+		return errors.New("connect= cannot be combined with ip=")
 	}
 	return nil
 }
@@ -161,6 +186,9 @@ func FormatText(rs []Rule) string {
 		}
 		if r.SNI != "" {
 			b.WriteString(" sni=" + r.SNI)
+		}
+		if r.Connect != "" {
+			b.WriteString(" connect=" + r.Connect)
 		}
 		if r.Comment != "" {
 			b.WriteString("  # " + r.Comment)

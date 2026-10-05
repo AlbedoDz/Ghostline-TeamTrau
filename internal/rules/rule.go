@@ -49,12 +49,16 @@ type Action struct {
 	IPs      []netip.Addr `json:"ips,omitempty"`
 	Fragment Frag         `json:"fragment,omitempty"`
 	Upstream string       `json:"upstream,omitempty"`
-	SNI      string       `json:"sni,omitempty"` // reserved for phase 2B; ignored in 2A
+	SNI      string       `json:"sni,omitempty"`     // Fake SNI name, or SNINone
+	Connect  string       `json:"connect,omitempty"` // dial this host's address instead (proxy only)
 }
+
+// SNINone in Action.SNI means "send no SNI".
+const SNINone = "none"
 
 // Empty reports whether the action does nothing.
 func (a Action) Empty() bool {
-	return !a.Block && !a.Allow && len(a.IPs) == 0 && a.Fragment == FragUnset && a.Upstream == "" && a.SNI == ""
+	return !a.Block && !a.Allow && len(a.IPs) == 0 && a.Fragment == FragUnset && a.Upstream == "" && a.SNI == "" && a.Connect == ""
 }
 
 // Rule is one user-written rule.
