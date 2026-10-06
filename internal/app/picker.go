@@ -36,10 +36,19 @@ type ScanPicker struct {
 }
 
 const (
-	cacheTTL     = 24 * time.Hour
-	quickBudget  = 20 * time.Second
-	scanWorkers  = 16
+	cacheTTL    = 24 * time.Hour
+	quickBudget = 20 * time.Second
+	scanWorkers = 16
+	// fullBudget and fullWorkers bound the first scan on a network (no
+	// fresh cache): every server is checked so the fastest are chosen;
+	// later connects use the cache.
+	fullBudget   = 90 * time.Second
+	fullWorkers  = 32
 	defaultWants = 5
+	// candidates: a quick re-pick while connected collects this many times
+	// the servers it needs, then keeps the fastest; stopping at the first
+	// ones that answer would pick by luck, not by speed.
+	candidates = 4
 )
 
 func (p *ScanPicker) pool(s store.Settings) []model.Server {
@@ -160,8 +169,12 @@ func (p *ScanPicker) pickFrom(ctx context.Context, pool []model.Server, want int
 	p.mu.Unlock()
 
 	start := time.Now()
+	opt := scanner.Options{Workers: scanWorkers, Want: want * candidates, Budget: quickBudget}
+	if useCache { // connecting without a fresh cache: check them all
+		opt = scanner.Options{Workers: fullWorkers, Budget: fullBudget}
+	}
 	rs := scanner.Scan(ctx, ordered, p.Checker, scanner.Options{
-		Workers: scanWorkers, Want: want, Budget: quickBudget,
+		Workers: opt.Workers, Want: opt.Want, Budget: opt.Budget,
 		OnProgress: func(done, total int, _ scanner.Result) {
 			if onProgress != nil {
 				onProgress(done, total)

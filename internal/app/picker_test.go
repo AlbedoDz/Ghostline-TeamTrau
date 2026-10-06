@@ -214,3 +214,58 @@ func TestPicker_PinnedOnlyKeepsOtherResults(t *testing.T) {
 	require.True(t, ids["s02"], "other servers' results must survive a pinned-only connect")
 	require.True(t, ids["s03"])
 }
+
+func TestPicker_FirstScanCoversEveryServerAndPicksFastest(t *testing.T) {
+	chk := &fChecker{ok: map[string]time.Duration{}}
+	for i := 0; i < 60; i++ {
+		chk.ok[fmt.Sprintf("s%02d", i)] = time.Duration(160-i) * time.Millisecond // s59 is fastest
+	}
+	s := store.DefaultSettings()
+	s.MaxUpstreams = 5
+	p, _ := newPicker(slowChecker{chk}, s) // answers take time, as on a real network
+	p.Catalog = func() []model.Server { return catalog(60) }
+	var last [2]int
+	got, err := p.Pick(context.Background(), func(done, total int) { last = [2]int{done, total} })
+	require.NoError(t, err)
+	require.Equal(t, int32(60), chk.calls.Load(), "no fresh cache: every server is checked")
+	require.Equal(t, [2]int{60, 60}, last)
+	ids := []string{got[0].ID, got[1].ID, got[2].ID, got[3].ID, got[4].ID}
+	require.Equal(t, []string{"s59", "s58", "s57", "s56", "s55"}, ids)
+
+	// Next connect on the same network: straight from the cache.
+	got2, err := p.Pick(context.Background(), nil)
+	require.NoError(t, err)
+	require.Equal(t, int32(60), chk.calls.Load())
+	require.Equal(t, "s59", got2[0].ID)
+}
+
+func TestPicker_PickFreshStaysQuickButCollectsCandidates(t *testing.T) {
+	chk := &fChecker{ok: map[string]time.Duration{}}
+	for i := 0; i < 200; i++ {
+		chk.ok[fmt.Sprintf("s%03d", i)] = time.Duration(100+i) * time.Millisecond
+	}
+	s := store.DefaultSettings()
+	s.MaxUpstreams = 5
+	p, _ := newPicker(slowChecker{chk}, s)
+	p.Catalog = func() []model.Server {
+		var out []model.Server
+		for i := 0; i < 200; i++ {
+			out = append(out, model.Server{ID: fmt.Sprintf("s%03d", i), Tags: []string{"no-filter"}})
+		}
+		return out
+	}
+	got, err := p.PickFresh(context.Background(), nil)
+	require.NoError(t, err)
+	require.Len(t, got, 5)
+	calls := int(chk.calls.Load())
+	require.GreaterOrEqual(t, calls, 20, "collects 4x what it needs")
+	require.Less(t, calls, 200, "a swap while connected does not wait for a full scan")
+}
+
+// slowChecker delays each answer so a scan cannot finish everything at once.
+type slowChecker struct{ c *fChecker }
+
+func (s slowChecker) Check(ctx context.Context, srv model.Server) scanner.Result {
+	time.Sleep(5 * time.Millisecond)
+	return s.c.Check(ctx, srv)
+}

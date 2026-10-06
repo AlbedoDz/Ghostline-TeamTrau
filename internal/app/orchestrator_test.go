@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/hashcott/ghostline/internal/model"
 	"github.com/hashcott/ghostline/internal/store"
 	"github.com/hashcott/ghostline/internal/winutil"
 	"github.com/stretchr/testify/require"
@@ -249,4 +250,27 @@ func TestWarnings_AddAndClear(t *testing.T) {
 	require.Len(t, h.o.Snapshot().Warnings, 1)
 	h.o.ClearWarning(CodeSettingsReset)
 	require.Empty(t, h.o.Snapshot().Warnings)
+}
+
+func TestConnect_PickProgressInSnapshot(t *testing.T) {
+	h := newHarness(t)
+	var seen [][2]int
+	h.o.d.Picker = progressPicker{h.o.d.Picker, func() { seen = append(seen, [2]int{h.o.Snapshot().PickDone, h.o.Snapshot().PickTotal}) }}
+	require.NoError(t, h.o.Connect(context.Background()))
+	require.Contains(t, seen, [2]int{900, 900})
+	require.Zero(t, h.o.Snapshot().PickTotal, "cleared once connected")
+}
+
+// progressPicker reports a 900-server scan, then picks with the real fake.
+type progressPicker struct {
+	inner Picker
+	after func()
+}
+
+func (p progressPicker) Pick(ctx context.Context, onProgress func(done, total int)) ([]model.Server, error) {
+	for _, d := range []int{1, 450, 900} {
+		onProgress(d, 900)
+	}
+	p.after()
+	return p.inner.Pick(ctx, nil)
 }
