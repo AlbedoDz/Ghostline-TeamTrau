@@ -56,8 +56,8 @@ func TestPicker_FreshCacheSkipsScan(t *testing.T) {
 	s := store.DefaultSettings()
 	s.MaxUpstreams = 2
 	p, _ := newPicker(chk, s)
-	p.Cache.Put("net1", p.Now().Add(-time.Hour), []scanner.Result{
-		{ServerID: "s03", OK: true, Latency: 10}, {ServerID: "s01", OK: true, Latency: 20}, {ServerID: "s02"}})
+	p.Cache.Put("net1", p.Now().Add(-time.Hour), coveringCache([]scanner.Result{
+		{ServerID: "s03", OK: true, Latency: 10}, {ServerID: "s01", OK: true, Latency: 20}, {ServerID: "s02"}}))
 	got, err := p.Pick(context.Background(), nil)
 	require.NoError(t, err)
 	require.Equal(t, []string{"s03", "s01"}, []string{got[0].ID, got[1].ID})
@@ -130,8 +130,8 @@ func TestPicker_PinnedPreferredWhenNotPinnedOnly(t *testing.T) {
 	s.MaxUpstreams = 3
 	s.Pinned = []string{"s08", "s09", "s04"} // s04 is pinned but fails
 	p, _ := newPicker(chk, s)
-	p.Cache.Put("net1", p.Now().Add(-time.Hour), []scanner.Result{
-		{ServerID: "s01", OK: true, Latency: 5}, {ServerID: "s02", OK: true, Latency: 6}, {ServerID: "s03", OK: true, Latency: 7}})
+	p.Cache.Put("net1", p.Now().Add(-time.Hour), coveringCache([]scanner.Result{
+		{ServerID: "s01", OK: true, Latency: 5}, {ServerID: "s02", OK: true, Latency: 6}, {ServerID: "s03", OK: true, Latency: 7}}))
 	got, err := p.Pick(context.Background(), nil)
 	require.NoError(t, err)
 	var ids []string
@@ -286,4 +286,41 @@ func TestPicker_CancelledRescanKeepsWhatItChecked(t *testing.T) {
 	require.Error(t, err)
 	require.Equal(t, 1, *saves, "the servers checked before cancel are saved")
 	require.GreaterOrEqual(t, len(p.Results()), 10)
+}
+
+func TestPicker_CacheMissingMostOfTheListScansAgain(t *testing.T) {
+	// The cache was written when only 13 built-in servers were known; the
+	// full list has arrived since.
+	chk := &fChecker{ok: map[string]time.Duration{}}
+	for i := 0; i < 60; i++ {
+		chk.ok[fmt.Sprintf("s%02d", i)] = time.Duration(100-i) * time.Millisecond
+	}
+	s := store.DefaultSettings()
+	s.MaxUpstreams = 5
+	p, _ := newPicker(chk, s)
+	p.Catalog = func() []model.Server { return catalog(60) }
+	var old []scanner.Result
+	for i := 0; i < 13; i++ {
+		old = append(old, scanner.Result{ServerID: fmt.Sprintf("s%02d", i), OK: true, Latency: 50 * time.Millisecond, CheckedAt: p.Now()})
+	}
+	p.Cache.Put("net1", p.Now(), old)
+	got, err := p.Pick(context.Background(), nil)
+	require.NoError(t, err)
+	require.Equal(t, int32(60), chk.calls.Load(), "a cache covering 13 of 60 servers is not enough")
+	require.Equal(t, "s59", got[0].ID)
+}
+
+// coveringCache adds failed results for the rest of catalog(10), so the
+// cache covers the whole list and stands in for a scan.
+func coveringCache(rs []scanner.Result) []scanner.Result {
+	have := map[string]bool{}
+	for _, r := range rs {
+		have[r.ServerID] = true
+	}
+	for _, sv := range catalog(10) {
+		if !have[sv.ID] {
+			rs = append(rs, scanner.Result{ServerID: sv.ID, Reason: "timeout"})
+		}
+	}
+	return rs
 }

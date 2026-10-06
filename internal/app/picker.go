@@ -82,6 +82,24 @@ func topOK(rs []scanner.Result, pool []model.Server, want int) []model.Server {
 }
 
 // Pick implements Picker (spec §6.3).
+// cacheCoverage is the share of the list a fresh cache must have results
+// for to be used instead of scanning.
+const cacheCoverage = 0.9
+
+func covers(rs []scanner.Result, pool []model.Server) bool {
+	have := make(map[string]bool, len(rs))
+	for _, r := range rs {
+		have[r.ServerID] = true
+	}
+	n := 0
+	for _, s := range pool {
+		if have[s.ID] {
+			n++
+		}
+	}
+	return len(pool) > 0 && float64(n) >= cacheCoverage*float64(len(pool))
+}
+
 func (p *ScanPicker) Pick(ctx context.Context, onProgress func(done, total int)) ([]model.Server, error) {
 	return p.pick(ctx, onProgress, true, nil)
 }
@@ -158,7 +176,10 @@ func (p *ScanPicker) pickFrom(ctx context.Context, pool []model.Server, want int
 
 	p.mu.Lock()
 	if useCache {
-		if rs, ok := p.Cache.Fresh(key, now, cacheTTL); ok {
+		// The cache stands in for a full scan only if it covers nearly the
+		// whole list: one written before the list grew (the DNSCrypt list
+		// arriving after a first connect) would hide every new server.
+		if rs, ok := p.Cache.Fresh(key, now, cacheTTL); ok && covers(rs, pool) {
 			if top := topOK(rs, pool, want); len(top) >= want {
 				p.mu.Unlock()
 				return top, nil

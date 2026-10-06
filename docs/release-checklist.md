@@ -67,6 +67,7 @@ Chạy trên Windows 11 x64, terminal **admin**. Đánh dấu từng mục; mụ
 
 ## Kiểm tra thủ công giai đoạn 3 (spec 3 §13)
 
+- [ ] **Danh sách DNSCrypt nhúng sẵn:** chạy `go run ./tools/fetchdnscrypt` (tải và kiểm tra chữ ký minisign), `go test ./lists/` phải qua, rồi commit `lists/dnscrypt/`.
 - [ ] **Dải IP Cloudflare:** chạy `go run ./tools/gencfranges`, xem lại diff của `internal/cfscan/ranges_v4.txt` rồi commit.
 - [ ] **Lookup đầu độc:** trên mạng Viettel, VNPT, FPT, tra một tên miền bị chặn qua DNS nhà mạng và qua Ghostline → thẻ **Bị đầu độc DNS**.
 - [ ] **IP Cloudflare:** có ≥ 10 IP dùng được trong ≤ 60 giây; một rule `ip=` tạo từ kết quả mở được một trang thật nằm sau Cloudflare.

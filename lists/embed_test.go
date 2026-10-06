@@ -60,3 +60,13 @@ func TestFakeSNIFallbackByURL(t *testing.T) {
 	_, _, ok = lists.FakeSNIFallback("https://example.com/google.txt")
 	require.False(t, ok)
 }
+
+func TestDNSCryptBuiltInCopyIsSigned(t *testing.T) {
+	if err := servers.VerifyMinisign(lists.DNSCryptMD, lists.DNSCryptSig, brand.DNSCryptMinisignKey); err != nil {
+		t.Fatalf("lists/dnscrypt does not verify (run go run ./tools/fetchdnscrypt): %v", err)
+	}
+	all, err := servers.ParseDNSCryptMarkdown(lists.DNSCryptMD)
+	if err != nil || len(all) < 500 {
+		t.Fatalf("parsed %d servers: %v", len(all), err)
+	}
+}

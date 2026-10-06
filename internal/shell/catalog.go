@@ -46,6 +46,10 @@ func (c *catalog) reload() {
 			dnscrypt, _ = servers.ParseDNSCryptMarkdown(md)
 		}
 	}
+	if len(dnscrypt) == 0 && servers.VerifyMinisign(lists.DNSCryptMD, lists.DNSCryptSig, brand.DNSCryptMinisignKey) == nil {
+		// Not downloaded yet (or the download is bad): the built-in copy.
+		dnscrypt, _ = servers.ParseDNSCryptMarkdown(lists.DNSCryptMD)
+	}
 	custom, _ := c.loadCustom()
 	all := servers.Merge(builtin, remote, dnscrypt, custom)
 	c.mu.Lock()
