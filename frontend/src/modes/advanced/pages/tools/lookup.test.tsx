@@ -96,3 +96,18 @@ test("the open tab survives leaving the page", async () => {
   render(<Tools />);
   expect(screen.getByRole("tab", { name: "stamp" })).toHaveAttribute("aria-selected", "true");
 });
+
+test("while a lookup runs, the button and a status line say so", async () => {
+  let finish: (v: any) => void = () => {};
+  svc.Lookup.mockImplementationOnce(() => new Promise((r) => (finish = r)));
+  render(<Tools />);
+  fireEvent.change(await screen.findByRole("textbox", { name: "tên miền" }), { target: { value: "x.com" } });
+  fireEvent.click(screen.getByRole("button", { name: "tra" }));
+  const busy = await screen.findByRole("button", { name: "đang tra…" });
+  expect(busy).toBeDisabled();
+  expect(screen.getByRole("status")).toHaveTextContent("Đang tra x.com qua 2 nguồn");
+  finish({ overall: "match", verdicts: ["match"], answers: [answer("Cloudflare", ["1.1.1.1"])] });
+  expect(await screen.findByText("Kết quả khớp nhau")).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "tra" })).toBeEnabled();
+  expect(screen.queryByRole("status")).toBeNull();
+});

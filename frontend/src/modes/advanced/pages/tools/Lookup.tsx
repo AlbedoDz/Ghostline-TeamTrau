@@ -46,6 +46,7 @@ export function Lookup() {
 
   const run = async () => {
     setBusy(true);
+    setResult(null); // an old answer must not look like the new one
     setError(null);
     setErrorCode(null);
     try {
@@ -72,7 +73,9 @@ export function Lookup() {
           <select aria-label={t("tools.lookup.type")} value={qtype} onChange={(e) => setQtype(e.target.value)}>
             {types.map((ty) => <option key={ty} value={ty}>{ty}</option>)}
           </select>
-          <button onClick={() => void run()} disabled={busy || !name.trim() || !options.some((o) => o.checked)}>{t("tools.lookup.run")}</button>
+          <button onClick={() => void run()} disabled={busy || !name.trim() || !options.some((o) => o.checked)}>
+            {busy ? t("tools.lookup.running") : t("tools.lookup.run")}
+          </button>
         </div>
         <div className={tc.sources}>
           {options.map((o) => (
@@ -90,6 +93,13 @@ export function Lookup() {
         </div>
         <div className={css.dim}>{t("tools.lookup.ispNote")}</div>
       </div>
+
+      {busy && (
+        <div className={`${css.panel} ${tc.busy}`} role="status">
+          <span className={tc.spinner} aria-hidden="true" />
+          {t("tools.lookup.busy", { name: name.trim(), count: options.filter((o) => o.checked).length })}
+        </div>
+      )}
 
       {error && (
         <div className={css.panel}>

@@ -107,3 +107,14 @@ test("options save tools.cfscan; restore default host", async () => {
   await waitFor(() => expect(svc.SaveSettings).toHaveBeenCalledTimes(3));
   expect((svc.SaveSettings.mock.calls[2] as any[])[0].tools.cfscan.speedTest).toBe(false);
 });
+
+test("check again shows that it is running", async () => {
+  let finish: (v: any) => void = () => {};
+  svc.RecheckCF.mockImplementationOnce(() => new Promise((r) => (finish = r)));
+  render(<CfScan />);
+  fireEvent.click(await screen.findByRole("checkbox", { name: "chọn 104.16.0.1" }));
+  fireEvent.click(screen.getByRole("button", { name: "kiểm tra lại" }));
+  expect(await screen.findByRole("button", { name: "đang kiểm tra…" })).toBeDisabled();
+  finish([]);
+  expect(await screen.findByRole("button", { name: "kiểm tra lại" })).toBeEnabled();
+});

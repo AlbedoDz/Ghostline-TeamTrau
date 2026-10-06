@@ -34,6 +34,7 @@ test("the sidebar has 8 pages in three groups; fake sni and logs are tabs", () =
   const pages = within(nav).getAllByRole("button").map((b) => b.textContent).filter((t) => t && !/kết nối/i.test(t));
   expect(pages).toEqual(["tổng quan", "máy chủ", "vượt dpi", "proxy", "rules", "dns server", "công cụ", "cài đặt"]);
   for (const h of ["cơ bản", "nâng cao", "chẩn đoán"]) expect(within(nav).getByText(h)).toBeInTheDocument();
+  expect(within(nav).getByRole("separator"), "settings is set apart").toBeInTheDocument();
 });
 
 test("proxy has a fake sni tab", () => {

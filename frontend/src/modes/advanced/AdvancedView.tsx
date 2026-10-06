@@ -81,7 +81,7 @@ export function AdvancedView() {
     <section className={css.view}>
       <Sidebar
         items={groups.flatMap((g) => [
-          ...(g.header ? [{ id: `h-${g.header}`, label: t(`nav.group.${g.header}`), header: true }] : []),
+          { id: `h-${g.header || "end"}`, label: g.header ? t(`nav.group.${g.header}`) : "", header: true },
           ...g.pages.map((p) => ({ id: p, label: t(`nav.${p}`) })),
         ])} active={page} onSelect={(id) => setPage(id as Page)} footer={footer} />
       <div className={css.content}>

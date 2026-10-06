@@ -19,6 +19,7 @@ export function CfScan() {
   const [error, setError] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
   const [ruleOpen, setRuleOpen] = useState(false);
+  const [rechecking, setRechecking] = useState(false);
 
   const load = () => void Service.GetCFView().then(setView);
   useEffect(load, []);
@@ -40,8 +41,13 @@ export function CfScan() {
       .catch((e) => setError(describeError(e)));
   };
 
-  const recheck = () =>
-    void Service.RecheckCF(selected).then(load).catch((e) => setError(describeError(e)));
+  const recheck = () => {
+    setRechecking(true);
+    void Service.RecheckCF(selected)
+      .then(load)
+      .catch((e) => setError(describeError(e)))
+      .finally(() => setRechecking(false));
+  };
 
   const copy = () => void navigator.clipboard?.writeText(selected.join("\n"));
 
@@ -77,7 +83,9 @@ export function CfScan() {
             )}
             <button disabled={selected.length === 0} onClick={copy}>{t("tools.copy")}</button>
             <button disabled={selected.length === 0} onClick={() => setRuleOpen(true)}>{t("tools.cfscan.createRule")}</button>
-            <button disabled={selected.length === 0 || running} onClick={recheck}>{t("tools.cfscan.recheck")}</button>
+            <button disabled={selected.length === 0 || running || rechecking} onClick={recheck}>
+              {rechecking ? t("tools.cfscan.rechecking") : t("tools.cfscan.recheck")}
+            </button>
           </div>
           <table className={tc.table}>
             <thead>

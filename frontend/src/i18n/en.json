@@ -883,7 +883,9 @@
           "title": "No source answered",
           "body": "Every source failed or timed out. Check the network."
         }
-      }
+      },
+      "running": "looking up…",
+      "busy": "Looking up {{name}} through {{count}} sources… (at most 5 seconds each)"
     },
     "stamp": {
       "decodeTitle": "Decode",
@@ -971,7 +973,8 @@
       "want": "stop after (0 = all)",
       "concurrency": "parallel connections",
       "timeoutMs": "per-IP timeout (ms)",
-      "speedTest": "download speed test"
+      "speedTest": "download speed test",
+      "rechecking": "checking…"
     }
   }
 }

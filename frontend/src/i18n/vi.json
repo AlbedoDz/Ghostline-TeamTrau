@@ -883,7 +883,9 @@
           "title": "Không nguồn nào trả lời",
           "body": "Mọi nguồn đều lỗi hoặc hết thời gian. Kiểm tra kết nối mạng."
         }
-      }
+      },
+      "running": "đang tra…",
+      "busy": "Đang tra {{name}} qua {{count}} nguồn… (tối đa 5 giây mỗi nguồn)"
     },
     "stamp": {
       "decodeTitle": "Giải mã",
@@ -971,7 +973,8 @@
       "want": "dừng khi đủ (0 = quét hết)",
       "concurrency": "số kết nối cùng lúc",
       "timeoutMs": "thời hạn mỗi IP (ms)",
-      "speedTest": "đo tốc độ tải"
+      "speedTest": "đo tốc độ tải",
+      "rechecking": "đang kiểm tra…"
     }
   }
 }

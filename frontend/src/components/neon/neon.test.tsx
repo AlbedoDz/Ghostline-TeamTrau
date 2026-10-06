@@ -102,3 +102,9 @@ test("Sidebar shows group headers that are not buttons", () => {
   expect(screen.queryByRole("button", { name: "cơ bản" })).toBeNull();
   expect(screen.getAllByRole("button")).toHaveLength(1);
 });
+
+test("Sidebar draws an empty header as a separator", () => {
+  render(<Sidebar items={[{ id: "a", label: "công cụ" }, { id: "sep", label: "", header: true }, { id: "b", label: "cài đặt" }]} active="a" onSelect={() => {}} />);
+  expect(screen.getByRole("separator")).toBeInTheDocument();
+  expect(screen.getAllByRole("button")).toHaveLength(2);
+});

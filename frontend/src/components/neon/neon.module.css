@@ -239,16 +239,25 @@
   padding: 6px 14px;
   color: var(--dim);
 }
+/* Group label: readable, but clearly not a page. */
 .sideHeader {
-  padding: 10px 14px 2px;
-  color: var(--dim);
-  opacity: 0.6;
-  font-size: 10px;
-  letter-spacing: 0.12em;
+  margin: 10px 14px 2px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+  color: var(--cyan);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
 }
 .sideHeader:first-child {
+  margin-top: 0;
   padding-top: 2px;
+  border-top: 0;
+}
+.sideDivider {
+  margin: 10px 14px 6px;
+  border-top: 1px solid var(--line);
 }
 .side button[aria-current="page"] {
   color: var(--green);
