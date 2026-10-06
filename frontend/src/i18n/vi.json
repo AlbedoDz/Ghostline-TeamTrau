@@ -20,10 +20,8 @@
     "language": "ngôn ngữ"
   },
   "mode": {
-    "simple": "Đơn giản",
-    "full": "Đầy đủ",
-    "label": "giao diện",
-    "hint": "Đơn giản: chỉ có nút kết nối. Đầy đủ: mọi trang và cài đặt."
+    "simple": "ĐƠN GIẢN",
+    "full": "ĐẦY ĐỦ"
   },
   "status": {
     "disconnected": "CHƯA BẢO VỆ",

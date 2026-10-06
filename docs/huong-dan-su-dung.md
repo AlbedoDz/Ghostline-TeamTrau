@@ -100,7 +100,7 @@ Muốn huỷ khi đang kết nối: bấm nút nguồn lần nữa. Muốn tắt
 
 ## 4. Giao diện Đầy đủ
 
-Bấm **Đầy đủ** trên công tắc **Đơn giản | Đầy đủ** ở thanh trên cùng để xem mọi trang và cài đặt. Bấm **Đơn giản** để quay lại. Thanh bên trái luôn có trạng thái hiện tại và nút **⏻ KẾT NỐI / NGẮT KẾT NỐI**.
+Bấm **ĐẦY ĐỦ** ở góc trên bên trái để xem mọi trang và cài đặt. Bấm **ĐƠN GIẢN** để quay lại. Thanh bên trái luôn có trạng thái hiện tại và nút **⏻ KẾT NỐI / NGẮT KẾT NỐI**.
 
 Thanh bên chia trang thành nhóm: **cơ bản** (tổng quan, máy chủ, vượt DPI), **nâng cao** (proxy, rules, DNS server) và **chẩn đoán** (công cụ), cuối cùng là cài đặt. **Fake SNI** là một tab của trang **proxy**, còn **nhật ký** là tab đầu tiên của trang **công cụ**.
 

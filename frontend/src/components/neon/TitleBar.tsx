@@ -21,13 +21,6 @@ export function TitleBar({ mode, onMode, lang, onLang }: Props) {
     <header className={css.bar}>
       <div className={css.top} data-drag style={{ "--wails-draggable": "drag" } as React.CSSProperties}>
         <span className={css.label}>{APP_LABEL}</span>
-        <div className={css.modes} role="radiogroup" aria-label={t("mode.label")} title={t("mode.hint")} style={noDrag}>
-          {(["simple", "full"] as Mode[]).map((m) => (
-            <button key={m} role="radio" aria-checked={mode === m} className={mode === m ? css.on : undefined} style={noDrag} onClick={() => onMode(m)}>
-              {t(`mode.${m}`)}
-            </button>
-          ))}
-        </div>
         <div className={css.controls}>
           <button style={noDrag} className={css.lang} aria-label={`${t("title.language")}: ${other.toUpperCase()}`} onClick={() => onLang(other)}>
             {lang.toUpperCase()}/{other.toUpperCase()}
@@ -39,6 +32,19 @@ export function TitleBar({ mode, onMode, lang, onLang }: Props) {
             ✕
           </button>
         </div>
+      </div>
+      <div className={css.tabs} role="tablist">
+        {(["simple", "full"] as Mode[]).map((m) => (
+          <button
+            key={m}
+            role="tab"
+            aria-selected={mode === m}
+            className={mode === m ? css.on : undefined}
+            onClick={() => onMode(m)}
+          >
+            {mode === m ? `[${t(`mode.${m}`)}]` : t(`mode.${m}`)}
+          </button>
+        ))}
       </div>
     </header>
   );

@@ -100,7 +100,7 @@ To cancel while connecting, click the power button again. To turn protection off
 
 ## 4. Full interface
 
-Click **Full** in the **Simple | Full** switch at the top of the window for every page and setting, and **Simple** to go back. The left sidebar always shows the current status and a **⏻ CONNECT / DISCONNECT** button.
+Click **FULL** at the top left for every page and setting, and **SIMPLE** to go back. The left sidebar always shows the current status and a **⏻ CONNECT / DISCONNECT** button.
 
 The sidebar groups the pages: **basic** (overview, servers, DPI bypass), **advanced** (proxy, rules, DNS server) and **diagnostics** (tools), then settings. **Fake SNI** is a tab of the **proxy** page, and **logs** is the first tab of the **tools** page.
 

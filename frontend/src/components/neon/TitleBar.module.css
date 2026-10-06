@@ -38,24 +38,29 @@
   color: var(--green) !important;
 }
 
-/* Simple / Full: a two-way switch, clearly clickable. */
-.modes {
+/* Simple / Full: the original row, made easier to spot. */
+.tabs {
   display: flex;
-  border: 1px solid var(--line-strong);
+  gap: 4px;
+  padding: 4px 14px 0;
+  font-size: 12px;
+  border-bottom: 1px solid var(--line);
 }
 
-.modes button {
-  padding: 1px 12px;
-  color: var(--dim);
-  letter-spacing: 0.06em;
+.tabs button {
+  padding: 6px 10px;
+  margin-bottom: -1px;
+  color: var(--text);
+  letter-spacing: 0.08em;
+  border-bottom: 2px solid transparent;
 }
 
-.modes button:hover:not(.on) {
-  color: var(--text-strong);
+.tabs button:hover {
+  color: var(--green);
 }
 
-.modes .on {
-  background: rgba(0, 255, 163, 0.16);
+.tabs .on {
   color: var(--green);
   font-weight: 700;
+  border-bottom-color: var(--green);
 }

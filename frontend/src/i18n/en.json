@@ -20,10 +20,8 @@
     "language": "language"
   },
   "mode": {
-    "simple": "Simple",
-    "full": "Full",
-    "label": "interface",
-    "hint": "Simple: just the connect button. Full: every page and setting."
+    "simple": "SIMPLE",
+    "full": "FULL"
   },
   "status": {
     "disconnected": "UNPROTECTED",
