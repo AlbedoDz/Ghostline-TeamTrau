@@ -14,6 +14,8 @@
 
 English · [Tiếng Việt](README.vi.md)
 
+<a href="https://github.com/hashcott/ghostline/releases/latest/download/ghostline-amd64-installer.exe"><img src="https://img.shields.io/badge/%E2%AC%87%20Download-Windows%2010%2F11%20x64-2ea44f?style=for-the-badge" alt="Download Ghostline for Windows"></a>
+
 </div>
 
 ---
@@ -85,13 +87,13 @@ A narrated walkthrough of about 2½ minutes: one-click connect, servers, DPI byp
 
 ## Install
 
-Download from [Releases](https://github.com/hashcott/ghostline/releases):
+**[⬇ Download the latest release](https://github.com/hashcott/ghostline/releases/latest)** — or pick a file below. Older versions are on the [Releases](https://github.com/hashcott/ghostline/releases) page.
 
-| File | What it is |
-| --- | --- |
-| `ghostline-amd64-installer.exe` | Installer (installs WebView2 if missing) |
-| `Ghostline-<version>-portable.zip` | Portable: unzip and run |
-| `SHA256SUMS` | Checksums for both |
+| File | What it is | Download |
+| --- | --- | --- |
+| `ghostline-amd64-installer.exe` | Installer (installs WebView2 if missing) | **[Direct download ⬇](https://github.com/hashcott/ghostline/releases/latest/download/ghostline-amd64-installer.exe)** |
+| `Ghostline-<version>-portable.zip` | Portable: unzip and run | [From latest release](https://github.com/hashcott/ghostline/releases/latest) |
+| `SHA256SUMS` | Checksums for both | [Direct download](https://github.com/hashcott/ghostline/releases/latest/download/SHA256SUMS) |
 
 Verify the download:
 
