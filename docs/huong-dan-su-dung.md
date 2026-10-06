@@ -102,6 +102,8 @@ Muốn huỷ khi đang kết nối: bấm nút nguồn lần nữa. Muốn tắt
 
 Bấm **NÂNG CAO** ở góc trên bên trái để mở giao diện đầy đủ. Bấm **ĐƠN GIẢN** để quay lại. Thanh bên trái luôn có trạng thái hiện tại và nút **⏻ KẾT NỐI / NGẮT KẾT NỐI**.
 
+Thanh bên chia trang thành nhóm: **cơ bản** (tổng quan, máy chủ, vượt DPI), **nâng cao** (proxy, rules, DNS server) và **chẩn đoán** (công cụ), cuối cùng là cài đặt. **Fake SNI** là một tab của trang **proxy**, còn **nhật ký** là tab đầu tiên của trang **công cụ**.
+
 ### 4.1. Tổng quan
 
 ![Tổng quan](screenshots/overview-vi.png)
@@ -204,6 +206,8 @@ Danh sách trang dùng để kiểm tra kết nối (mặc định: youtube.com,
 Bạn có thể sửa danh sách trang mẫu trong ô bên dưới, mỗi dòng một trang.
 
 ### 4.4. Nhật ký
+
+Mở ở **công cụ › nhật ký** (tab đầu tiên).
 
 ![Nhật ký](screenshots/logs-vi.png)
 
@@ -360,7 +364,7 @@ DNS mã hoá chỉ dùng khi ở Wi-Fi nhà; khi dùng 4G/5G hay mạng khác, i
 **Từng bước: bật Fake SNI**
 
 1. Bấm **Kết nối**. Ở **Proxy**, bật **bật proxy** và **dùng cho máy này**.
-2. Mở **Fake SNI**, đọc và cuộn cảnh báo tới cuối, tích **tôi đã hiểu**, rồi bấm **tiếp tục**.
+2. Mở **proxy › fake sni**, đọc và cuộn cảnh báo tới cuối, tích **tôi đã hiểu**, rồi bấm **tiếp tục**.
 3. Bật **bật Fake SNI**, rồi bật một **nhóm preset** hoặc viết rule `sni=` ở trang **Rules**.
 4. Mở trang đó trong trình duyệt. Bộ đếm cho biết số kết nối đã giải mã hoặc phải quay về fragment.
 5. Xong thì bấm **tắt Fake SNI** trên dải tím.
@@ -380,7 +384,7 @@ Danh sách từ nguồn khác chỉ được dùng rule `sni=` sau khi bạn b�
 
 ### 4.10. Công cụ
 
-Bốn công cụ chẩn đoán trên một trang.
+Trang công cụ gồm nhật ký (tab đầu tiên, [phần 4.4](#44-nhật-ký)) và bốn công cụ chẩn đoán.
 
 **Lookup** tra một tên miền qua nhiều nguồn cùng lúc và cho biết các câu trả lời có khớp nhau không.
 

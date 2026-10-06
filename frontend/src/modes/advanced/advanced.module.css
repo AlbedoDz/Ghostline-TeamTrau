@@ -306,3 +306,18 @@
   padding: 6px 0 8px;
   border-bottom: 1px solid rgba(0, 255, 163, 0.08);
 }
+
+/* A page with sub-pages: a tab row, then the sub-page. */
+.tabbed {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.tabStrip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 10px 16px 0;
+}

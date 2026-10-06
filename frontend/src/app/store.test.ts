@@ -25,3 +25,16 @@ test("setSnapshot replaces the snapshot", () => {
   useGhost.getState().setSnapshot({ status: "protected" } as any);
   expect(useGhost.getState().snapshot.status).toBe("protected");
 });
+
+test("logs and fake sni are tabs: setPage maps them to their host page", () => {
+  expect(useGhost.getState().toolsTab).toBe("logs");
+  useGhost.getState().setToolsTab("stamp");
+  useGhost.getState().setPage("logs");
+  expect(useGhost.getState().page).toBe("tools");
+  expect(useGhost.getState().toolsTab).toBe("logs");
+  useGhost.getState().setPage("fakesni");
+  expect(useGhost.getState().page).toBe("proxy");
+  expect(useGhost.getState().proxyTab).toBe("fakesni");
+  useGhost.getState().setPage("proxy");
+  expect(useGhost.getState().proxyTab, "plain navigation keeps the last tab").toBe("fakesni");
+});

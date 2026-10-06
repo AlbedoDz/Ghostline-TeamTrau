@@ -71,7 +71,12 @@
     "proxy": "proxy",
     "rules": "rules",
     "dnsserver": "dns server",
-    "fakesni": "fake sni"
+    "fakesni": "fake sni",
+    "group": {
+      "basic": "cơ bản",
+      "advanced": "nâng cao",
+      "diagnose": "chẩn đoán"
+    }
   },
   "overview": {
     "latency60": "độ trễ · 60 giây",
@@ -826,6 +831,7 @@
     "title": "Công cụ",
     "copy": "sao chép",
     "tab": {
+      "logs": "nhật ký",
       "lookup": "lookup",
       "scanner": "scanner",
       "cfscan": "ip cloudflare",

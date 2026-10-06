@@ -13,12 +13,31 @@ import { Proxy } from "./pages/Proxy";
 import { Rules } from "./pages/Rules";
 import { DnsServer } from "./pages/DnsServer";
 import { FakeSni } from "./pages/FakeSni";
-import { Logs } from "./pages/Logs";
 import { Tools } from "./pages/tools/Tools";
 import { Settings } from "./pages/Settings";
+import { TabStrip } from "./TabStrip";
 import css from "./advanced.module.css";
 
-const pages: Page[] = ["overview", "servers", "dpi", "proxy", "rules", "dnsserver", "fakesni", "tools", "logs", "settings"];
+// Grouped so everyday pages come first; Fake SNI and Logs are tabs of
+// Proxy and Tools.
+const groups: { header: string; pages: Page[] }[] = [
+  { header: "basic", pages: ["overview", "servers", "dpi"] },
+  { header: "advanced", pages: ["proxy", "rules", "dnsserver"] },
+  { header: "diagnose", pages: ["tools"] },
+  { header: "", pages: ["settings"] },
+];
+
+function ProxyPage() {
+  const { t } = useTranslation();
+  const tab = useGhost((s) => s.proxyTab);
+  const setTab = useGhost((s) => s.setProxyTab);
+  return (
+    <div className={css.tabbed}>
+      <TabStrip tabs={[{ id: "proxy" as const, label: t("nav.proxy") }, { id: "fakesni" as const, label: t("nav.fakesni") }]} active={tab} onSelect={setTab} />
+      {tab === "proxy" ? <Proxy /> : <FakeSni />}
+    </div>
+  );
+}
 
 export function AdvancedView() {
   const { t } = useTranslation();
@@ -60,7 +79,11 @@ export function AdvancedView() {
 
   return (
     <section className={css.view}>
-      <Sidebar items={pages.map((p) => ({ id: p, label: t(`nav.${p}`) }))} active={page} onSelect={(id) => setPage(id as Page)} footer={footer} />
+      <Sidebar
+        items={groups.flatMap((g) => [
+          ...(g.header ? [{ id: `h-${g.header}`, label: t(`nav.group.${g.header}`), header: true }] : []),
+          ...g.pages.map((p) => ({ id: p, label: t(`nav.${p}`) })),
+        ])} active={page} onSelect={(id) => setPage(id as Page)} footer={footer} />
       <div className={css.content}>
         <div style={{ padding: "0 14px" }}>
           <ConnectError onOpenServers={() => setPage("servers")} onOpenLogs={() => setPage("logs")} />
@@ -69,12 +92,10 @@ export function AdvancedView() {
         {page === "overview" && <Overview />}
         {page === "servers" && <Servers />}
         {page === "dpi" && <Dpi />}
-        {page === "proxy" && <Proxy />}
+        {page === "proxy" && <ProxyPage />}
         {page === "rules" && <Rules />}
         {page === "dnsserver" && <DnsServer />}
-        {page === "fakesni" && <FakeSni />}
         {page === "tools" && <Tools />}
-        {page === "logs" && <Logs />}
         {page === "settings" && <Settings />}
       </div>
     </section>

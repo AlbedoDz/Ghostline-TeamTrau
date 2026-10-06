@@ -239,6 +239,17 @@
   padding: 6px 14px;
   color: var(--dim);
 }
+.sideHeader {
+  padding: 10px 14px 2px;
+  color: var(--dim);
+  opacity: 0.6;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.sideHeader:first-child {
+  padding-top: 2px;
+}
 .side button[aria-current="page"] {
   color: var(--green);
   background: rgba(0, 255, 163, 0.08);

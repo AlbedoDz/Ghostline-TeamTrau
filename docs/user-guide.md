@@ -102,6 +102,8 @@ To cancel while connecting, click the power button again. To turn protection off
 
 Click **ADVANCED** at the top left for the full interface, and **SIMPLE** to go back. The left sidebar always shows the current status and a **⏻ CONNECT / DISCONNECT** button.
 
+The sidebar groups the pages: **basic** (overview, servers, DPI bypass), **advanced** (proxy, rules, DNS server) and **diagnostics** (tools), then settings. **Fake SNI** is a tab of the **proxy** page, and **logs** is the first tab of the **tools** page.
+
 ### 4.1. Overview
 
 ![Overview](screenshots/overview-en.png)
@@ -204,6 +206,8 @@ The sites used to check connectivity (default: youtube.com, discord.com, x.com).
 You can edit the list in the box below, one site per line.
 
 ### 4.4. Logs
+
+Open it from **tools › logs** (the first tab).
 
 ![Logs](screenshots/logs-en.png)
 
@@ -360,7 +364,7 @@ The encrypted DNS is used only on your home Wi-Fi; on mobile data and other netw
 **Step by step: turn Fake SNI on**
 
 1. Click **Connect**. On **Proxy**, turn on **enable proxy** and **use for this PC**.
-2. Open **Fake SNI**, read the warning and scroll it to the end, tick **I understand**, then click **continue**.
+2. Open **proxy › fake sni**, read the warning and scroll it to the end, tick **I understand**, then click **continue**.
 3. Turn on **turn Fake SNI on**, and turn on a **preset group** or write `sni=` rules on the **Rules** page.
 4. Open the site in your browser. The counters show how many connections were decrypted or fell back to fragmentation.
 5. Click **turn Fake SNI off** in the violet banner when you are done.
@@ -380,7 +384,7 @@ Lists from other sources can carry `sni=` rules only after you mark them **trust
 
 ### 4.10. Tools
 
-Four diagnostic tools on one page.
+The tools page has the logs (first tab, [section 4.4](#44-logs)) and four diagnostic tools.
 
 **Lookup** asks one domain through several sources at once and says whether the answers agree.
 

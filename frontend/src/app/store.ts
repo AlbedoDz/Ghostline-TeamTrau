@@ -19,7 +19,8 @@ import type {
 
 export type Mode = "simple" | "advanced";
 export type Page = "overview" | "servers" | "dpi" | "proxy" | "rules" | "dnsserver" | "fakesni" | "tools" | "logs" | "settings";
-export type ToolsTab = "lookup" | "scanner" | "cfscan" | "stamp";
+export type ToolsTab = "logs" | "lookup" | "scanner" | "cfscan" | "stamp";
+export type ProxyTab = "proxy" | "fakesni";
 
 const emptySnapshot = {
   status: "disconnected",
@@ -57,6 +58,8 @@ type State = {
   certsVersion: number;
   toolsTab: ToolsTab;
   setToolsTab: (t: ToolsTab) => void;
+  proxyTab: ProxyTab;
+  setProxyTab: (t: ProxyTab) => void;
   advScan: AdvScanProgress | null;
   setAdvScan: (p: AdvScanProgress) => void;
   cfScan: CFProgress | null;
@@ -104,7 +107,8 @@ const initial = {
   dnsStats: null as ServeStats | null,
   setup: null as SetupCountdown | null,
   certsVersion: 0,
-  toolsTab: "lookup" as ToolsTab,
+  toolsTab: "logs" as ToolsTab,
+  proxyTab: "proxy" as ProxyTab,
   advScan: null as AdvScanProgress | null,
   cfScan: null as CFProgress | null,
 };
@@ -139,8 +143,12 @@ export const useGhost = create<State>((set) => ({
   setScan: (scan) => set({ scan }),
   setAutotune: (autotune) => set({ autotune }),
   setUpdate: (update) => set({ update }),
-  setPage: (page) => set({ page }),
+  // Logs and Fake SNI are tabs of Tools and Proxy: links to them open the
+  // host page on that tab.
+  setPage: (page) =>
+    set(page === "logs" ? { page: "tools", toolsTab: "logs" } : page === "fakesni" ? { page: "proxy", proxyTab: "fakesni" } : { page }),
   setToolsTab: (toolsTab) => set({ toolsTab }),
+  setProxyTab: (proxyTab) => set({ proxyTab }),
   setAdvScan: (advScan) => set({ advScan }),
   setCfScan: (cfScan) => set({ cfScan }),
   dismissBanner: (bannerDismissed) => set({ bannerDismissed }),

@@ -71,7 +71,12 @@
     "proxy": "proxy",
     "rules": "rules",
     "dnsserver": "dns server",
-    "fakesni": "fake sni"
+    "fakesni": "fake sni",
+    "group": {
+      "basic": "basic",
+      "advanced": "advanced",
+      "diagnose": "diagnostics"
+    }
   },
   "overview": {
     "latency60": "latency · 60 seconds",
@@ -826,6 +831,7 @@
     "title": "Tools",
     "copy": "copy",
     "tab": {
+      "logs": "logs",
       "lookup": "lookup",
       "scanner": "scanner",
       "cfscan": "cloudflare ip",

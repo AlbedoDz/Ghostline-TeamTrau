@@ -29,6 +29,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   useGhost.getState().reset();
   useGhost.getState().setPage("tools");
+  useGhost.getState().setToolsTab("lookup");
 });
 
 test("the ISP source is offered unchecked and marked unencrypted", async () => {
