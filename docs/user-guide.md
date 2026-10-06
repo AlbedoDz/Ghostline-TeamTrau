@@ -70,7 +70,7 @@ Compare the result with the matching line in `SHA256SUMS` on the Releases page. 
 Ghostline opens in the **Simple** interface.
 
 1. Click the **round power button** in the middle.
-2. Ghostline goes through: checking the system → choosing servers → starting the engine → saving original DNS → arming safety net → setting DNS → verifying no leaks. The first time on a network it checks every server (about 900) to pick the fastest, which takes about 30–60 seconds; the step shows how far it is (for example *choosing servers 120/900*). For the next 24 hours on the same network it reuses that result and connects in a few seconds.
+2. Ghostline goes through: checking the system → choosing servers → starting the engine → saving original DNS → arming safety net → setting DNS → verifying no leaks. The first time on a network it checks every server that does not filter content (about 700; servers you pinned or added are always included) to pick the fastest, which takes about 30–60 seconds; the step shows how far it is (for example *choosing servers 120/730*). For the next 24 hours on the same network it reuses that result and connects in a few seconds.
 3. When the ring glows green and shows **[ PROTECTED ]**, you're done: every DNS query on the machine is encrypted.
 
 To cancel while connecting, click the power button again. To turn protection off, click the power button while protected; your DNS goes back to what it was.
