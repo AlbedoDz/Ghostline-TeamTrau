@@ -226,14 +226,17 @@ func (p *ScanPicker) Rescan(ctx context.Context, onProgress func(done, total int
 	if s.PinnedOnly {
 		pool = p.pool(s)
 	}
-	rs := scanner.Scan(ctx, pool, p.Checker, scanner.Options{Workers: scanWorkers, OnProgress: onProgress})
+	rs := scanner.Scan(ctx, pool, p.Checker, scanner.Options{Workers: fullWorkers, OnProgress: onProgress})
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	// Merge, so a cancelled scan keeps what it checked and the rest of the
+	// last scan.
+	p.Cache.Merge(p.NetKey(), p.Now(), rs)
+	saveErr := p.SaveCache(p.Cache)
 	if err := ctx.Err(); err != nil {
 		return rs, err
 	}
-	p.mu.Lock()
-	defer p.mu.Unlock()
-	p.Cache.Merge(p.NetKey(), p.Now(), rs) // a cancelled full scan keeps the rest
-	return rs, p.SaveCache(p.Cache)
+	return rs, saveErr
 }
 
 // Results returns the last scan for the current network, whatever its age.

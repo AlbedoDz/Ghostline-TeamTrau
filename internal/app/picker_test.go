@@ -269,3 +269,21 @@ func (s slowChecker) Check(ctx context.Context, srv model.Server) scanner.Result
 	time.Sleep(5 * time.Millisecond)
 	return s.c.Check(ctx, srv)
 }
+
+func TestPicker_CancelledRescanKeepsWhatItChecked(t *testing.T) {
+	chk := &fChecker{ok: map[string]time.Duration{}}
+	for i := 0; i < 60; i++ {
+		chk.ok[fmt.Sprintf("s%02d", i)] = time.Duration(10+i) * time.Millisecond
+	}
+	p, saves := newPicker(slowChecker{chk}, store.DefaultSettings())
+	p.Catalog = func() []model.Server { return catalog(60) }
+	ctx, cancel := context.WithCancel(context.Background())
+	_, err := p.Rescan(ctx, func(d, _ int, _ scanner.Result) {
+		if d == 10 {
+			cancel()
+		}
+	})
+	require.Error(t, err)
+	require.Equal(t, 1, *saves, "the servers checked before cancel are saved")
+	require.GreaterOrEqual(t, len(p.Results()), 10)
+}
