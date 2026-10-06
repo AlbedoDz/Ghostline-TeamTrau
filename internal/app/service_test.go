@@ -250,3 +250,11 @@ func TestSetMode_SimpleAndFull(t *testing.T) {
 	require.NoError(t, s.svc.SetMode(store.ModeSimple))
 	require.Error(t, s.svc.SetMode("advanced"), "the old name is only read from old files")
 }
+
+func TestSaveSettings_KeepsSimpleCustom(t *testing.T) {
+	s := newSvc(t)
+	st := store.DefaultSettings()
+	st.Simple.Custom = &store.SimpleCustom{DPI: true, Proxy: true}
+	require.NoError(t, s.svc.SaveSettings(st))
+	require.Equal(t, st.Simple, s.box.Get().Simple)
+}

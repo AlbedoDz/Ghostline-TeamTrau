@@ -40,6 +40,22 @@ type Settings struct {
 	DNSServer        DNSServerSettings `json:"dnsServer"`
 	FakeSNI          FakeSNISettings   `json:"fakeSni"`
 	Tools            ToolsSettings     `json:"tools"`
+	Simple           SimpleSettings    `json:"simple"`
+}
+
+// SimpleSettings belong to the Simple interface's protection levels.
+type SimpleSettings struct {
+	// Custom is the user's own combination, remembered when they switch to
+	// a level so "custom" can bring it back. Nil until there is one.
+	Custom *SimpleCustom `json:"custom,omitempty"`
+}
+
+// SimpleCustom is a combination of the switches the protection levels set.
+type SimpleCustom struct {
+	DPI         bool `json:"dpi"`
+	Proxy       bool `json:"proxy"`
+	SystemProxy bool `json:"systemProxy"`
+	FakeSNI     bool `json:"fakeSni"`
 }
 
 // ToolsSettings configure the Tools page (phase 3).

@@ -133,3 +133,14 @@ func TestSaveSettings_WritesFullWindowOnly(t *testing.T) {
 	require.Contains(t, string(b), `"fullWindow"`)
 	require.NotContains(t, string(b), "advanced")
 }
+
+func TestSettings_SimpleCustomRoundTrip(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "settings.json")
+	s := store.DefaultSettings()
+	require.Nil(t, s.Simple.Custom, "nothing remembered on a fresh install")
+	s.Simple.Custom = &store.SimpleCustom{DPI: true, Proxy: true, SystemProxy: false, FakeSNI: true}
+	require.NoError(t, store.SaveSettings(path, s))
+	got, _, err := store.LoadSettings(path)
+	require.NoError(t, err)
+	require.Equal(t, s.Simple, got.Simple)
+}
