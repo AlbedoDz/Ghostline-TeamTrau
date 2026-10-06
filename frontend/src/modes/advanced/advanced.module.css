@@ -177,6 +177,8 @@
   flex: 1;
   min-height: 160px;
   overflow: auto;
+  /* Long tokens (sdns:// stamps, URLs) wrap instead of widening the page. */
+  overflow-wrap: anywhere;
   font-size: 11.5px;
   line-height: 1.75;
   user-select: text;

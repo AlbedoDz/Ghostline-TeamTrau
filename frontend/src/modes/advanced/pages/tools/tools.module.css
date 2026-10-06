@@ -66,9 +66,15 @@
 }
 
 .table td {
+  overflow-wrap: anywhere; /* long TXT records and names stay inside */
   padding: 3px 6px 3px 0;
   vertical-align: top;
   border-bottom: 1px solid rgba(0, 255, 163, 0.06);
+}
+
+.dig {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 .columns {

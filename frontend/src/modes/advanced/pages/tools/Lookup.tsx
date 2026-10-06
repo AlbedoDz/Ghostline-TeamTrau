@@ -140,7 +140,7 @@ export function Lookup() {
             <button onClick={() => setDetails((d) => !d)} aria-expanded={details}>{t("tools.lookup.details")}</button>
             {details && (result.answers ?? []).map((a, i) => a.dig && (
               <div key={i}>
-                <pre className={css.code}>{a.dig}</pre>
+                <pre className={`${css.code} ${tc.dig}`}>{a.dig}</pre>
                 <button onClick={() => void navigator.clipboard?.writeText(a.dig)}>{t("tools.copy")}</button>
               </div>
             ))}
