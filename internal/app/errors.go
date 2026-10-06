@@ -72,7 +72,6 @@ const (
 	CodeImportExpired        = "IMPORT_EXPIRED"
 	CodeImportWriteFailed    = "IMPORT_WRITE_FAILED"
 	CodeExportWriteFailed    = "EXPORT_WRITE_FAILED"
-	CodeCheckWhileConnected  = "CHECK_WHILE_CONNECTED"
 )
 
 // AppError is a coded error the UI can translate.

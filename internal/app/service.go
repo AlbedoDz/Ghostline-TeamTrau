@@ -149,7 +149,6 @@ type Service struct {
 	cf         cfJob
 	cfCacheMu  sync.Mutex       // load-modify-save of cfscan-cache.json
 	cfRoots    *x509.CertPool   // nil = system roots; tests inject a test CA
-	checkRoots *x509.CertPool   // first-run check; nil = system roots
 	imp        *importTicket    // the last import preview
 	now        func() time.Time // nil = time.Now; tests inject
 	tuneCancel context.CancelFunc

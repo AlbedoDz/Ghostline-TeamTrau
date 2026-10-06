@@ -48,8 +48,8 @@ type SimpleSettings struct {
 	// Custom is the user's own combination, remembered when they switch to
 	// a level so "custom" can bring it back. Nil until there is one.
 	Custom *SimpleCustom `json:"custom,omitempty"`
-	// Checked is set once the first-run network check was answered (used
-	// or skipped); until then the Simple interface runs it on open.
+	// Checked is set once the first-run tune ran: on the first connect the
+	// Simple interface checks the test sites and auto-tunes DPI if needed.
 	Checked bool `json:"checked"`
 }
 
