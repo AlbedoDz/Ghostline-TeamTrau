@@ -79,6 +79,8 @@ Muốn huỷ khi đang kết nối: bấm nút nguồn lần nữa. Muốn tắt
 
 *Ảnh động được tua nhanh, không có tiếng; bấm vào để xem video có lồng tiếng.*
 
+**Lần đầu: kiểm tra mạng.** Lần đầu mở Ghostline sau khi cài, app kiểm tra mạng vài giây trước khi thay đổi bất cứ gì: với mỗi trang mẫu, so câu trả lời DNS của nhà mạng với của một server mã hoá (DNS có bị đầu độc không?) và thử HTTPS tới địa chỉ thật (có bị chặn DPI không?). Sau đó app gợi ý một mức, ví dụ *"Nhà mạng đầu độc DNS 3/3 trang · 2/3 trang bị chặn DPI → nên dùng DNS + vượt DPI"*. Bấm **dùng mức này** hoặc **bỏ qua**; bấm nút nào thì lần sau mở app cũng không hiện lại. Link **kiểm tra lại mạng** dưới hàng chọn mức chạy lại bất cứ lúc nào khi chưa kết nối. Bước kiểm tra hỏi DNS nhà mạng không mã hoá, chỉ cho các trang mẫu.
+
 **Mức bảo vệ.** Dưới dòng trạng thái, chọn Ghostline làm tới đâu. Đổi được bất cứ lúc nào, kể cả khi đang kết nối:
 
 | Mức | Bật gì | Khi nào |

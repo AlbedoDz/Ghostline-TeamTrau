@@ -81,6 +81,16 @@
       "editInFull": "chỉnh ở giao diện Đầy đủ ›",
       "fakeSniOff": "Fake SNI cần proxy và sẽ bị tắt. Tiếp tục?",
       "applying": "Đang áp dụng “{{level}}”…"
+    },
+    "check": {
+      "running": "Đang kiểm tra mạng… (DNS và chặn DPI trên các trang mẫu)",
+      "found": "Nhà mạng đầu độc DNS {{poisoned}}/{{total}} trang · {{blocked}}/{{total}} trang bị chặn DPI",
+      "suggest": "→ nên dùng {{level}}",
+      "ispNote": "Bước kiểm tra đã hỏi DNS nhà mạng ({{ip}}) không mã hoá, chỉ cho các trang mẫu.",
+      "apply": "dùng mức này",
+      "skip": "bỏ qua",
+      "retry": "thử lại",
+      "again": "kiểm tra lại mạng"
     }
   },
   "nav": {
@@ -578,6 +588,10 @@
     "EXPORT_WRITE_FAILED": {
       "message": "Không ghi được file xuất",
       "action": "Chọn thư mục khác"
+    },
+    "CHECK_WHILE_CONNECTED": {
+      "message": "Chỉ kiểm tra mạng được khi chưa kết nối",
+      "action": "Ngắt kết nối rồi thử lại"
     }
   },
   "tray": {

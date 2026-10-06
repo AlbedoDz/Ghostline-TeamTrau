@@ -153,3 +153,53 @@
   color: var(--red);
   text-align: center;
 }
+
+/* First-run network check. */
+.check {
+  max-width: 400px;
+  border: 1px solid var(--line-strong);
+  padding: 8px 12px;
+  font-size: 11px;
+  color: var(--text);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.checkSuggest {
+  color: var(--green);
+  font-weight: 700;
+}
+
+.checkNote {
+  color: var(--dim);
+}
+
+.checkActions {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.checkActions button {
+  border: 1px solid rgba(0, 255, 163, 0.3);
+  padding: 0 10px;
+  line-height: 1.8;
+}
+
+.checkActions button:first-child {
+  border-color: var(--green);
+  color: var(--green);
+}
+
+.recheck {
+  font-size: 11px;
+  color: var(--cyan);
+}
+
+.level[data-suggested="true"]::after {
+  content: " \2022";
+  color: var(--amber);
+}

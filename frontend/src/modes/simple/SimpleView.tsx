@@ -112,7 +112,7 @@ export function SimpleView({
           {isConnected(status) && t("simple.encrypted")}
           {status === "error" && snap.error?.code !== "RESTORE_FAILED" && t("simple.errorUnchanged")}
         </div>
-        <ProtectionLevels onOpenFull={onOpenFull} disabled={status === "connecting" || status === "disconnecting"} />
+        <ProtectionLevels onOpenFull={onOpenFull} status={status} disabled={status === "connecting" || status === "disconnecting"} />
       </div>
       <div className={css.bottom}>
         <ConnectError onOpenServers={onOpenServers} onOpenLogs={onOpenLogs} />

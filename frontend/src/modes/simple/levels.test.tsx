@@ -5,11 +5,22 @@ import { useGhost } from "../../app/store";
 import { initI18n } from "../../i18n";
 import { levelOf } from "../../app/protection";
 
+const checkResult = {
+  sites: [
+    { site: "youtube.com", poisoned: true, ispAnswer: "10.10.34.35", blocked: false, stage: "ok" },
+    { site: "discord.com", poisoned: false, ispAnswer: "1.0.0.2", blocked: true, stage: "tls" },
+    { site: "x.com", poisoned: false, ispAnswer: "1.0.0.3", blocked: false, stage: "ok" },
+  ],
+  poisoned: 1, blocked: 1, recommend: "dpi", isp: "123.23.23.23", server: "Cloudflare",
+};
+
 const svc = vi.hoisted(() => ({
   Connect: vi.fn(() => Promise.resolve()),
   SaveSettings: vi.fn(() => Promise.resolve()),
   SetFakeSNI: vi.fn(() => Promise.resolve()),
   SetDPIEnabled: vi.fn(() => Promise.resolve()),
+  CheckNetwork: vi.fn(() => Promise.resolve(checkResult)),
+  MarkNetworkChecked: vi.fn(() => Promise.resolve()),
   GetSettings: vi.fn(() => Promise.resolve(null)),
   DPIStrategies: vi.fn(() => Promise.resolve([])),
 }));
@@ -163,4 +174,55 @@ test("a line under the levels describes the current one", async () => {
   fireEvent.click(screen.getByRole("radio", { name: "DNS + vượt DPI" }));
   await waitFor(() => expect(desc).toHaveTextContent("Thêm vượt DPI cho mọi ứng dụng (khuyên dùng)"));
   expect(screen.getByRole("radiogroup", { name: "mức bảo vệ" })).toHaveAttribute("aria-describedby", desc.id);
+});
+
+test("first run: the network check runs by itself and its suggestion can be applied", async () => {
+  useGhost.getState().setSettings({ ...settings(), simple: { checked: false } });
+  render(<SimpleView onOpenLogs={() => {}} />);
+  expect(screen.getByText(/đang kiểm tra mạng/i)).toBeInTheDocument();
+  expect(await screen.findByText(/Nhà mạng đầu độc DNS 1\/3 trang · 1\/3 trang bị chặn DPI/)).toBeInTheDocument();
+  expect(screen.getByText(/nên dùng DNS \+ vượt DPI/)).toBeInTheDocument();
+  expect(screen.getByText(/không mã hoá/)).toBeInTheDocument();
+  expect(svc.CheckNetwork).toHaveBeenCalledTimes(1);
+  expect(screen.getByRole("radio", { name: "DNS + vượt DPI" })).toHaveAttribute("data-suggested", "true");
+  fireEvent.click(screen.getByRole("button", { name: "dùng mức này" }));
+  await waitFor(() => expect(svc.MarkNetworkChecked).toHaveBeenCalled());
+  expect(svc.SetDPIEnabled).toHaveBeenCalledWith(true);
+  expect(svc.SaveSettings).toHaveBeenCalled();
+  expect(useGhost.getState().settings?.simple?.checked).toBe(true);
+  await waitFor(() => expect(screen.queryByText(/nên dùng/)).toBeNull());
+});
+
+test("first run: skip keeps the level and does not ask again", async () => {
+  useGhost.getState().setSettings({ ...settings(), simple: { checked: false } });
+  render(<SimpleView onOpenLogs={() => {}} />);
+  fireEvent.click(await screen.findByRole("button", { name: "bỏ qua" }));
+  await waitFor(() => expect(svc.MarkNetworkChecked).toHaveBeenCalled());
+  expect(svc.SaveSettings).not.toHaveBeenCalled();
+  expect(screen.getByRole("radio", { name: "Chỉ DNS" })).toHaveAttribute("aria-checked", "true");
+});
+
+test("no automatic check once answered, or while connected; the link runs it again", async () => {
+  useGhost.getState().setSettings({ ...settings(), simple: { checked: true } });
+  const { unmount } = render(<SimpleView onOpenLogs={() => {}} />);
+  expect(svc.CheckNetwork).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole("button", { name: "kiểm tra lại mạng" }));
+  expect(await screen.findByText(/nên dùng/)).toBeInTheDocument();
+  unmount();
+
+  vi.clearAllMocks();
+  useGhost.getState().setSettings({ ...settings(), simple: { checked: false } });
+  useGhost.getState().setSnapshot({ status: "protected", warnings: [], servers: [], blockedSites: [], reasons: [], dpi: { enabled: false } } as any);
+  render(<SimpleView onOpenLogs={() => {}} />);
+  expect(svc.CheckNetwork).not.toHaveBeenCalled();
+  expect(screen.queryByRole("button", { name: "kiểm tra lại mạng" })).toBeNull();
+});
+
+test("a failed check can be retried", async () => {
+  useGhost.getState().setSettings({ ...settings(), simple: { checked: false } });
+  svc.CheckNetwork.mockRejectedValueOnce(new Error("check: no encrypted DNS server available"));
+  render(<SimpleView onOpenLogs={() => {}} />);
+  expect(await screen.findByText(/no encrypted DNS server/)).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "thử lại" }));
+  expect(await screen.findByText(/nên dùng/)).toBeInTheDocument();
 });
