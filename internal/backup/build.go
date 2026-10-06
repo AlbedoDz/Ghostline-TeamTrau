@@ -72,7 +72,7 @@ func redactSettings(s store.Settings) (json.RawMessage, error) {
 		return nil, err
 	}
 	delete(m, "adapterGuids")
-	delete(m, "advancedWindow")
+	delete(m, "fullWindow")
 	if ds, ok := m["dnsServer"].(map[string]any); ok {
 		delete(ds, "iosSsid")
 	}

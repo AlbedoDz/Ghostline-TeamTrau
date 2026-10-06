@@ -112,3 +112,24 @@ func TestValidateTools_MaxServersBounds(t *testing.T) {
 		require.NoError(t, store.ValidateTools(ts), n)
 	}
 }
+
+func TestMigrateSettings_AdvancedModeBecomesFull(t *testing.T) {
+	s, err := store.MigrateSettings([]byte(`{"version":5,"mode":"advanced","advancedWindow":{"width":1200,"height":800}}`))
+	require.NoError(t, err)
+	require.Equal(t, store.ModeFull, s.Mode)
+	require.Equal(t, store.WindowSize{Width: 1200, Height: 800}, s.FullWindow)
+
+	s, err = store.MigrateSettings([]byte(`{"version":5,"mode":"full","fullWindow":{"width":900,"height":700},"advancedWindow":{"width":1,"height":1}}`))
+	require.NoError(t, err)
+	require.Equal(t, store.WindowSize{Width: 900, Height: 700}, s.FullWindow, "the new field wins")
+	require.Equal(t, store.ModeSimple, store.DefaultSettings().Mode)
+}
+
+func TestSaveSettings_WritesFullWindowOnly(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "settings.json")
+	require.NoError(t, store.SaveSettings(path, store.DefaultSettings()))
+	b, err := os.ReadFile(path)
+	require.NoError(t, err)
+	require.Contains(t, string(b), `"fullWindow"`)
+	require.NotContains(t, string(b), "advanced")
+}

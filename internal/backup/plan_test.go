@@ -45,7 +45,7 @@ func current() backup.Data {
 	s := store.DefaultSettings()
 	s.AdapterGUIDs = []string{"{HERE}"}
 	s.Adapters = "manual"
-	s.AdvancedWindow = store.WindowSize{Width: 900, Height: 600}
+	s.FullWindow = store.WindowSize{Width: 900, Height: 600}
 	s.DNSServer.IOSSSID = "MyWifi"
 	s.FakeSNI.AckVersion = 1
 	s.Proxy.Upstreams = []store.UpstreamProxy{{ID: "corp", Type: "socks5", Addr: "10.0.0.1:1080", PassEnc: "local-secret"}}
@@ -114,7 +114,7 @@ func TestResult_ReplaceKeepsMachineFields(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, []string{"{HERE}"}, got.Settings.AdapterGUIDs)
 	require.Equal(t, "manual", got.Settings.Adapters)
-	require.Equal(t, store.WindowSize{Width: 900, Height: 600}, got.Settings.AdvancedWindow)
+	require.Equal(t, store.WindowSize{Width: 900, Height: 600}, got.Settings.FullWindow)
 	require.Equal(t, "MyWifi", got.Settings.DNSServer.IOSSSID)
 	require.Equal(t, "local-secret", got.Settings.Proxy.Upstreams[0].PassEnc, "same upstream ID keeps this machine's password")
 	require.Equal(t, []string{"cf"}, got.Settings.Pinned, "everything else comes from the file")

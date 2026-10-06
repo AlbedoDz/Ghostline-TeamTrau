@@ -239,3 +239,14 @@ func TestSaveSettings_RejectsBadTools(t *testing.T) {
 	require.Error(t, s.svc.SaveSettings(st))
 	require.NoError(t, s.svc.SaveSettings(store.DefaultSettings()))
 }
+
+func TestSetMode_SimpleAndFull(t *testing.T) {
+	s := newSvc(t)
+	var got string
+	s.svc.x.SetMode = func(m string) { got = m }
+	require.NoError(t, s.svc.SetMode(store.ModeFull))
+	require.Equal(t, store.ModeFull, s.box.Get().Mode)
+	require.Equal(t, store.ModeFull, got)
+	require.NoError(t, s.svc.SetMode(store.ModeSimple))
+	require.Error(t, s.svc.SetMode("advanced"), "the old name is only read from old files")
+}

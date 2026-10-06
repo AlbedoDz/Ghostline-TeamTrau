@@ -184,7 +184,7 @@ func (p *Plan) sanitiseSettings(s, cur store.Settings) store.Settings {
 	}
 	s.FakeSNI.AckVersion = cur.FakeSNI.AckVersion
 	s.Adapters, s.AdapterGUIDs = cur.Adapters, cur.AdapterGUIDs
-	s.AdvancedWindow = cur.AdvancedWindow
+	s.FullWindow = cur.FullWindow
 	s.DNSServer.IOSSSID = cur.DNSServer.IOSSSID
 	for i, u := range s.Proxy.Upstreams {
 		if u.PassEnc != "" {

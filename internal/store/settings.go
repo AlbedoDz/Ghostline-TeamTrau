@@ -34,7 +34,7 @@ type Settings struct {
 	DPI              DPISettings       `json:"dpi"`
 	FragmentDNS      FragmentSettings  `json:"fragmentDns"`
 	Updates          UpdateSettings    `json:"updates"`
-	AdvancedWindow   WindowSize        `json:"advancedWindow"`
+	FullWindow       WindowSize        `json:"fullWindow"`
 	Proxy            ProxySettings     `json:"proxy"`
 	DNSBlockMode     string            `json:"dnsBlockMode"` // "zero" | "nxdomain"
 	DNSServer        DNSServerSettings `json:"dnsServer"`
@@ -236,24 +236,31 @@ type WindowSize struct {
 	Height int `json:"height"`
 }
 
+// Interface modes (Settings.Mode). Files before v0.5 said "advanced" for
+// the full interface; MigrateSettings renames it.
+const (
+	ModeSimple = "simple"
+	ModeFull   = "full"
+)
+
 // DefaultSettings returns the spec §9 defaults.
 func DefaultSettings() Settings {
 	return Settings{
-		Version:        5,
-		Language:       "vi",
-		Mode:           "simple",
-		CloseToTray:    true,
-		Adapters:       "auto",
-		TestDomain:     "www.google.com",
-		Bootstrap:      []string{"1.1.1.1:53", "8.8.8.8:53"},
-		MaxUpstreams:   5,
-		IncludeTags:    []string{"no-filter"},
-		Pinned:         []string{},
-		ProbeSites:     []string{"youtube.com", "discord.com", "x.com"},
-		DPI:            DPISettings{Engine: EngineZapret2, Preset: "light", Scope: "all", Zapret2: Zapret2Settings{Strategy: "z-split"}},
-		FragmentDNS:    FragmentSettings{Chunks: 5, DelayMs: 5},
-		Updates:        UpdateSettings{CheckApp: true, UpdateServerList: true},
-		AdvancedWindow: WindowSize{Width: 1000, Height: 660},
+		Version:      5,
+		Language:     "vi",
+		Mode:         ModeSimple,
+		CloseToTray:  true,
+		Adapters:     "auto",
+		TestDomain:   "www.google.com",
+		Bootstrap:    []string{"1.1.1.1:53", "8.8.8.8:53"},
+		MaxUpstreams: 5,
+		IncludeTags:  []string{"no-filter"},
+		Pinned:       []string{},
+		ProbeSites:   []string{"youtube.com", "discord.com", "x.com"},
+		DPI:          DPISettings{Engine: EngineZapret2, Preset: "light", Scope: "all", Zapret2: Zapret2Settings{Strategy: "z-split"}},
+		FragmentDNS:  FragmentSettings{Chunks: 5, DelayMs: 5},
+		Updates:      UpdateSettings{CheckApp: true, UpdateServerList: true},
+		FullWindow:   WindowSize{Width: 1000, Height: 660},
 		Proxy: ProxySettings{
 			Port:      8080,
 			Fragment:  WebFragment{Mode: "auto", Method: "both", Chunks: 5, DelayMs: 5, AutoTimeoutMs: 3000, CacheDays: 7},
@@ -329,8 +336,18 @@ func MigrateSettings(b []byte) (Settings, error) {
 	}
 	// v1 files gain the v2 defaults through the pre-filled struct. Files
 	// older than v3 predate zapret2: their users keep GoodbyeDPI.
-	var head struct{ Version int }
+	var head struct {
+		Version        int
+		FullWindow     *WindowSize `json:"fullWindow"`
+		AdvancedWindow *WindowSize `json:"advancedWindow"`
+	}
 	_ = json.Unmarshal(b, &head)
+	if s.Mode == "advanced" {
+		s.Mode = ModeFull
+	}
+	if head.FullWindow == nil && head.AdvancedWindow != nil {
+		s.FullWindow = *head.AdvancedWindow
+	}
 	if head.Version < 3 {
 		s.DPI.Engine = EngineGoodbyeDPI
 	}

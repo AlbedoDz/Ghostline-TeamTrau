@@ -19,7 +19,7 @@ var now = time.Date(2026, 10, 6, 10, 0, 0, 0, time.UTC)
 func sampleData() backup.Data {
 	s := store.DefaultSettings()
 	s.AdapterGUIDs = []string{"{GUID-1}"}
-	s.AdvancedWindow = store.WindowSize{Width: 1234, Height: 777}
+	s.FullWindow = store.WindowSize{Width: 1234, Height: 777}
 	s.DNSServer.IOSSSID = "HomeWiFi"
 	s.Pinned = []string{"cf"}
 	s.Proxy.Upstreams = []store.UpstreamProxy{{ID: "corp", Type: "socks5", Addr: "10.0.0.1:1080", User: "me", PassEnc: "secret"}}
@@ -42,7 +42,7 @@ func TestBuild_Redacts(t *testing.T) {
 	b, err := backup.Build(sampleData(), backup.AllSections, "0.5.0", now)
 	require.NoError(t, err)
 	s := string(b)
-	for _, banned := range []string{"adapterGuids", "advancedWindow", "HomeWiFi", "iosSsid", "secret", "GUID-1", "1234", `ducha`} {
+	for _, banned := range []string{"adapterGuids", "fullWindow", "advancedWindow", "HomeWiFi", "iosSsid", "secret", "GUID-1", "1234", `ducha`} {
 		require.NotContains(t, s, banned)
 	}
 	var f backup.File

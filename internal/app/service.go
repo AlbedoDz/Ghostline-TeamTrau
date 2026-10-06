@@ -270,10 +270,11 @@ func (s *Service) saveSettings(n store.Settings, owned bool) error {
 	return nil
 }
 
-// SetMode switches simple/advanced and resizes the window.
+// SetMode switches between the simple and the full interface and resizes
+// the window.
 func (s *Service) SetMode(mode string) error {
-	if mode != "simple" && mode != "advanced" {
-		return fmt.Errorf("mode must be simple or advanced")
+	if mode != store.ModeSimple && mode != store.ModeFull {
+		return fmt.Errorf("mode must be simple or full")
 	}
 	st := s.x.Settings.Get()
 	st.Mode = mode
