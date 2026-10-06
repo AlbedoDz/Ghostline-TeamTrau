@@ -3,6 +3,7 @@ package backup_test
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/netip"
 	"strings"
 	"testing"
@@ -293,4 +294,72 @@ func TestResult_BlacklistScopeNeedsEntries(t *testing.T) {
 	require.NoError(t, err, "importing the file's blacklist too is fine")
 	_, _, err = p.Result(current(), backup.Choices{Sections: []string{"settings"}})
 	require.NoError(t, err, "this PC already has a blacklist")
+}
+
+func TestResult_UpstreamRefsCheckedAgainstFinalSettings(t *testing.T) {
+	d := sampleData() // its settings have upstream "corp"
+	d.Rules.Rules = []rules.Rule{{Pattern: "a.com", Action: rules.Action{Upstream: "corp"}, Enabled: true}}
+	p, err := backup.Parse(fileWith(t, d, nil), current(), okValidators)
+	require.NoError(t, err)
+	here := current()
+	here.Settings.Proxy.Upstreams = nil // this PC has no "corp" proxy
+	_, _, err = p.Result(here, backup.Choices{Sections: []string{"rules"}})
+	require.ErrorIs(t, err, backup.ErrInvalid, "rules alone would point at a proxy that does not exist here")
+	_, _, err = p.Result(here, backup.Choices{Sections: []string{"settings", "rules"}})
+	require.NoError(t, err, "importing the settings brings the proxy along")
+
+	// Replacing settings must not orphan rules already here.
+	here = current()
+	here.Rules.Rules = []rules.Rule{{Pattern: "b.com", Action: rules.Action{Upstream: "local"}, Enabled: true}}
+	here.Settings.Proxy.Upstreams = append(here.Settings.Proxy.Upstreams, store.UpstreamProxy{ID: "local", Type: "http", Addr: "10.0.0.2:8080"})
+	_, _, err = p.Result(here, backup.Choices{Sections: []string{"settings"}})
+	require.ErrorIs(t, err, backup.ErrInvalid)
+}
+
+func TestResult_RuleCountCapped(t *testing.T) {
+	d := sampleData()
+	d.Rules.Rules = nil
+	for i := range 6000 {
+		d.Rules.Rules = append(d.Rules.Rules, rules.Rule{Pattern: fmt.Sprintf("f%d.com", i), Action: rules.Action{Block: true}, Enabled: true})
+	}
+	p, err := backup.Parse(fileWith(t, d, nil), current(), okValidators)
+	require.NoError(t, err)
+	here := current()
+	for i := range 6000 {
+		here.Rules.Rules = append(here.Rules.Rules, rules.Rule{Pattern: fmt.Sprintf("h%d.com", i), Action: rules.Action{Block: true}, Enabled: true})
+	}
+	_, _, err = p.Result(here, backup.Choices{Sections: []string{"rules"}, Merge: true})
+	require.ErrorIs(t, err, backup.ErrInvalid)
+	_, _, err = p.Result(here, backup.Choices{Sections: []string{"rules"}})
+	require.NoError(t, err, "replace keeps only the file's 6000")
+}
+
+func TestBuild_EmptySectionsCanReplace(t *testing.T) {
+	d := sampleData()
+	d.Custom, d.AutoHostlist = nil, nil
+	b, err := backup.Build(d, backup.AllSections, "0.5.0", now)
+	require.NoError(t, err)
+	require.Contains(t, string(b), `"customServers": []`)
+	require.Contains(t, string(b), `"dpiAutoHostlist": []`)
+	p, err := backup.Parse(b, current(), okValidators)
+	require.NoError(t, err)
+	got, changed, err := p.Result(current(), backup.Choices{Sections: []string{"customServers", "dpiAutoHostlist"}})
+	require.NoError(t, err)
+	require.Equal(t, []string{"customServers", "dpiAutoHostlist"}, changed)
+	require.Empty(t, got.Custom)
+}
+
+func TestResult_MergeRenamesCollidingListID(t *testing.T) {
+	d := sampleData()
+	d.Rules.Lists = []lists.List{{ID: "ads", Name: "Other ads", Source: "url", URL: "https://y/other.txt", Format: "auto", Action: "block", Enabled: true}}
+	here := current()
+	here.Rules.Lists = []lists.List{{ID: "ads", Name: "Ads", Source: "url", URL: "https://x/ads.txt", Format: "auto", Action: "block", Enabled: true}}
+	p, err := backup.Parse(fileWith(t, d, nil), here, okValidators)
+	require.NoError(t, err)
+	got, _, err := p.Result(here, backup.Choices{Sections: []string{"rules"}, Merge: true})
+	require.NoError(t, err)
+	require.Len(t, got.Rules.Lists, 2, "a different list with the same ID is kept, not dropped")
+	require.Equal(t, "https://y/other.txt", got.Rules.Lists[1].URL)
+	require.NotEqual(t, "ads", got.Rules.Lists[1].ID)
+	require.True(t, lists.ValidID(got.Rules.Lists[1].ID))
 }

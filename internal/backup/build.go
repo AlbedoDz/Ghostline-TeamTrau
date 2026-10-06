@@ -7,6 +7,7 @@ import (
 	"slices"
 	"time"
 
+	"github.com/hashcott/ghostline/internal/model"
 	"github.com/hashcott/ghostline/internal/rules/lists"
 	"github.com/hashcott/ghostline/internal/store"
 )
@@ -30,7 +31,11 @@ func Build(d Data, sections []string, appVersion string, now time.Time) ([]byte,
 			rf := store.RulesFile{Version: d.Rules.Version, Rules: d.Rules.Rules, Lists: exportLists(d.Rules.Lists)}
 			f.Sections.Rules = &rf
 		case SecCustom:
-			f.Sections.CustomServers = slices.Clone(d.Custom)
+			cs := slices.Clone(d.Custom)
+			if cs == nil {
+				cs = []model.Server{}
+			}
+			f.Sections.CustomServers = &cs
 		case SecBlacklist:
 			// An empty list is left out: importing it would wipe the
 			// other PC's blacklist.
@@ -39,7 +44,11 @@ func Build(d Data, sections []string, appVersion string, now time.Time) ([]byte,
 				f.Sections.DPIBlacklist = &b
 			}
 		case SecAutoHostlist:
-			f.Sections.DPIAutoHostlist = slices.Clone(d.AutoHostlist)
+			ah := slices.Clone(d.AutoHostlist)
+			if ah == nil {
+				ah = []string{}
+			}
+			f.Sections.DPIAutoHostlist = &ah
 		default:
 			return nil, fmt.Errorf("backup: unknown section %q", sec)
 		}

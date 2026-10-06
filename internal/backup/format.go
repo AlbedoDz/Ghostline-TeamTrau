@@ -38,11 +38,13 @@ type File struct {
 
 // Sections holds the exported data; absent sections were not exported.
 type Sections struct {
-	Settings        json.RawMessage  `json:"settings,omitempty"`
-	Rules           *store.RulesFile `json:"rules,omitempty"`
-	CustomServers   []model.Server   `json:"customServers,omitempty"`
-	DPIBlacklist    *string          `json:"dpiBlacklist,omitempty"`
-	DPIAutoHostlist []string         `json:"dpiAutoHostlist,omitempty"`
+	Settings json.RawMessage  `json:"settings,omitempty"`
+	Rules    *store.RulesFile `json:"rules,omitempty"`
+	// Pointers so that an exported empty list ("replace with nothing") is
+	// told apart from a section that was not exported.
+	CustomServers   *[]model.Server `json:"customServers,omitempty"`
+	DPIBlacklist    *string         `json:"dpiBlacklist,omitempty"`
+	DPIAutoHostlist *[]string       `json:"dpiAutoHostlist,omitempty"`
 }
 
 // Data is everything a backup can hold, as live values.

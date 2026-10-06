@@ -119,7 +119,7 @@ func Parse(b []byte, cur Data, v Validators) (*Plan, error) {
 	}
 	if sec.CustomServers != nil {
 		sp := SectionPreview{Name: SecCustom}
-		for _, s := range sec.CustomServers {
+		for _, s := range *sec.CustomServers {
 			srv, err := servers.FromAddress(s.Address, model.SourceCustom)
 			if err != nil {
 				sp.Errors = append(sp.Errors, fmt.Sprintf("%s: %v", s.Address, err))
@@ -143,7 +143,7 @@ func Parse(b []byte, cur Data, v Validators) (*Plan, error) {
 		p.add(sp)
 	}
 	if sec.DPIAutoHostlist != nil {
-		p.autoHost = sec.DPIAutoHostlist
+		p.autoHost = *sec.DPIAutoHostlist
 		sp := SectionPreview{Name: SecAutoHostlist}
 		sp.New, sp.Replaced = diff(p.autoHost, cur.AutoHostlist, func(s string) string { return s })
 		p.add(sp)
@@ -310,11 +310,58 @@ func (p *Plan) Result(cur Data, c Choices) (Data, []string, error) {
 		}
 		changed = append(changed, name)
 	}
+	if slices.Contains(changed, SecSettings) || slices.Contains(changed, SecRules) {
+		if err := checkUpstreamRefs(out); err != nil {
+			return cur, nil, err
+		}
+	}
+	if len(out.Rules.Rules) > rules.MaxUserRules {
+		return cur, nil, fmt.Errorf("%w: more than %d rules", ErrInvalid, rules.MaxUserRules)
+	}
 	if out.Settings.DPI.Scope == scopeBlacklist && len(lines(out.Blacklist)) == 0 &&
 		(slices.Contains(changed, SecSettings) || slices.Contains(changed, SecBlacklist)) {
 		return cur, nil, fmt.Errorf("%w: DPI scope is the blacklist but the blacklist is empty", ErrInvalid)
 	}
 	return out, changed, nil
+}
+
+// checkUpstreamRefs makes sure every upstream= in the final rules and lists
+// names a proxy in the final settings.
+func checkUpstreamRefs(d Data) error {
+	ids := map[string]bool{}
+	for _, u := range d.Settings.Proxy.Upstreams {
+		ids[u.ID] = true
+	}
+	for _, r := range d.Rules.Rules {
+		if r.Upstream != "" && !ids[r.Upstream] {
+			return fmt.Errorf("%w: rule %s uses upstream proxy %q, which this PC does not have", ErrInvalid, r.Pattern, r.Upstream)
+		}
+	}
+	for _, l := range d.Rules.Lists {
+		if up, ok := strings.CutPrefix(l.Action, "upstream="); ok && !ids[up] {
+			return fmt.Errorf("%w: list %s uses upstream proxy %q, which this PC does not have", ErrInvalid, l.Name, up)
+		}
+	}
+	return nil
+}
+
+// freeListID returns id, or id with a numeric suffix when another list
+// already uses it.
+func freeListID(id string, have []lists.List) string {
+	taken := func(x string) bool { return slices.ContainsFunc(have, func(o lists.List) bool { return o.ID == x }) }
+	if !taken(id) {
+		return id
+	}
+	for n := 2; ; n++ {
+		suf := fmt.Sprintf("-%d", n)
+		base := id
+		if len(base)+len(suf) > 64 {
+			base = base[:64-len(suf)]
+		}
+		if !taken(base + suf) {
+			return base + suf
+		}
+	}
 }
 
 func mergeRules(cur store.RulesFile, rs []rules.Rule, ls []lists.List, merge bool) store.RulesFile {
@@ -331,9 +378,11 @@ func mergeRules(cur store.RulesFile, rs []rules.Rule, ls []lists.List, merge boo
 		}
 		out.Lists = slices.Clone(cur.Lists)
 		for _, l := range ls {
-			if !slices.ContainsFunc(out.Lists, func(o lists.List) bool { return o.URL == l.URL || o.ID == l.ID }) {
-				out.Lists = append(out.Lists, l)
+			if slices.ContainsFunc(out.Lists, func(o lists.List) bool { return o.URL == l.URL }) {
+				continue // already subscribed
 			}
+			l.ID = freeListID(l.ID, out.Lists)
+			out.Lists = append(out.Lists, l)
 		}
 	}
 	if out.Rules == nil {
