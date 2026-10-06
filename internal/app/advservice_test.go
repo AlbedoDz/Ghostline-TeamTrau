@@ -149,3 +149,31 @@ func TestExportAdvancedCSV_BOM(t *testing.T) {
 	require.Equal(t, []string{"server", "protocol", "ok", "median_ms", "p90_ms", "jitter_ms", "loss", "dnssec", "ad_filter", "poisoned"}, recs[0])
 	require.Len(t, recs, 1+len(h.svc.AdvancedResults()))
 }
+
+func TestExportAdvancedCSV_NeutralisesFormulas(t *testing.T) {
+	h := newTools(t)
+	h.custom = []model.Server{
+		{ID: "evil", Name: "=HYPERLINK(\"http://x\")", Protocol: model.ProtoDoH, Address: "https://e.example/dns-query", Source: model.SourceCustom},
+		{ID: "ok", Name: "Plain name", Protocol: model.ProtoDoH, Address: "https://o.example/dns-query", Source: model.SourceCustom},
+	}
+	var data []byte
+	h.svc.x.SaveFile = func(_ string, d []byte) error { data = d; return nil }
+	_, err := h.svc.StartAdvancedScan(AdvScanRequest{Filter: &ServerFilter{Sources: []string{"custom"}}})
+	require.NoError(t, err)
+	waitAdvDone(t, h)
+	require.NoError(t, h.svc.ExportAdvancedCSV())
+	recs, err := csv.NewReader(bytes.NewReader(data[3:])).ReadAll()
+	require.NoError(t, err)
+	names := map[string]bool{}
+	for _, r := range recs[1:] {
+		names[r[0]] = true
+	}
+	require.True(t, names[`'=HYPERLINK("http://x")`], "%v", names)
+	require.True(t, names["Plain name"])
+}
+
+func TestCSVSafe(t *testing.T) {
+	for in, want := range map[string]string{"=1+1": "'=1+1", "+x": "'+x", "-x": "'-x", "@x": "'@x", "\tx": "'\tx", "\rx": "'\rx", "x=1": "x=1", "": ""} {
+		require.Equal(t, want, csvSafe(in), in)
+	}
+}

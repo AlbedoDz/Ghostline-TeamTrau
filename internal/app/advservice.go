@@ -196,13 +196,22 @@ func (s *Service) ExportAdvancedCSV() error {
 	for _, row := range s.AdvancedResults() {
 		r := row.Result
 		_ = w.Write([]string{
-			row.Server.Name, string(row.Server.Protocol), strconv.FormatBool(r.Reach.OK),
+			csvSafe(row.Server.Name), string(row.Server.Protocol), strconv.FormatBool(r.Reach.OK),
 			strconv.FormatInt(r.MedianMs, 10), strconv.FormatInt(r.P90Ms, 10),
 			strconv.FormatFloat(r.JitterMs, 'f', 1, 64), strconv.FormatFloat(r.Loss, 'f', 2, 64),
-			string(r.DNSSEC), string(r.AdFilter), strings.Join(r.Poisoned, " "),
+			string(r.DNSSEC), string(r.AdFilter), csvSafe(strings.Join(r.Poisoned, " ")),
 		})
 	}
 	w.Flush()
 	name := "ghostline-scan-" + time.Now().Format("2006-01-02") + ".csv"
 	return s.x.SaveFile(name, b.Bytes())
+}
+
+// csvSafe stops spreadsheet apps from running a cell as a formula: server
+// names come from downloaded lists.
+func csvSafe(v string) string {
+	if v != "" && strings.ContainsRune("=+-@	", rune(v[0])) {
+		return "'" + v
+	}
+	return v
 }
