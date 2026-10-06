@@ -12,6 +12,7 @@ import { Banner } from "../../components/neon/Banner";
 import { ConnectError } from "../../components/ConnectError";
 import { Warnings } from "../../components/Warnings";
 import { ProtectionLevels } from "./ProtectionLevels";
+import { useFirstRunTune } from "./useFirstRunTune";
 import css from "./SimpleView.module.css";
 
 export function SimpleView({
@@ -40,6 +41,9 @@ export function SimpleView({
     .map((x) => x.replace(/:\d+$/, "").replace(/^\[|\]$/g, ""))
     .find((h) => h !== "127.0.0.1" && h !== "::1");
   const label = `[ ${t(`status.${status}`)} ]`;
+  const firstRun = useFirstRunTune(status);
+  // The first-run tune shows as one more connect step, not as banners.
+  const tuneBanners = !firstRun;
 
   const onPower = () => {
     if (status === "connecting") void Service.CancelConnect();
@@ -51,19 +55,42 @@ export function SimpleView({
   const lastLatency = latency.length ? latency[latency.length - 1] : snap.latencyMs;
   const blocked = snap.blockedSites ?? [];
 
+  const stepLines = (current: number, extra?: string) => [
+    ...[1, 2, 3, 4, 5, 6, 7].map((n) => {
+      const state = n < current ? "done" : n === current ? "current" : "todo";
+      return (
+        <span key={n} data-step={state} className={css[state]}>
+          <span className={css.mark}>{state === "done" ? "✓ " : state === "current" ? "› " : "  "}</span>
+          <span>{t(`step.${n}`)}</span>
+        </span>
+      );
+    }),
+    ...(extra
+      ? [
+          <span key="extra" data-step="current" className={css.current}>
+            <span className={css.mark}>{"› "}</span>
+            <span>{extra}</span>
+          </span>,
+        ]
+      : []),
+  ];
+
   let below;
-  if (status === "connecting") {
+  if (firstRun) {
     below = (
       <TerminalPanel
-        lines={[1, 2, 3, 4, 5, 6, 7].map((n) => {
-          const state = n < snap.step ? "done" : n === snap.step ? "current" : "todo";
-          return (
-            <span key={n} data-step={state} className={css[state]}>
-              <span className={css.mark}>{state === "done" ? "✓ " : state === "current" ? "› " : "  "}</span>
-              <span>{t(`step.${n}`)}</span>
-            </span>
-          );
-        })}
+        lines={stepLines(
+          8,
+          firstRun === "tune" && autotune?.running
+            ? t("simple.firstRun.tune", { index: autotune.index, total: autotune.total })
+            : t("simple.firstRun.probe"),
+        )}
+      />
+    );
+  } else if (status === "connecting") {
+    below = (
+      <TerminalPanel
+        lines={stepLines(snap.step)}
       />
     );
   } else if (isConnected(status)) {
@@ -116,16 +143,16 @@ export function SimpleView({
       </div>
       <div className={css.bottom}>
         <ConnectError onOpenServers={onOpenServers} onOpenLogs={onOpenLogs} />
-        {isConnected(status) && autotune?.running && (
+        {tuneBanners && isConnected(status) && autotune?.running && (
           <Banner tone="warn">{t("simple.autotuning", { preset: tuneName, index: autotune.index, total: autotune.total })}</Banner>
         )}
-        {isConnected(status) && autotune && !autotune.running && !autotune.error && autotune.preset && (
+        {tuneBanners && isConnected(status) && autotune && !autotune.running && !autotune.error && autotune.preset && (
           <Banner tone="ok">{t("dpi.autotuneDone", { preset: tuneName, engine: autotune.engine === "goodbyedpi" ? "GoodbyeDPI" : autotune.engine })}</Banner>
         )}
         {isConnected(status) && autotune && !autotune.running && autotune.error && (
           <Banner tone="err">{tCode(`errors.${autotune.error.code}.message`)}</Banner>
         )}
-        {isConnected(status) && blocked.length > 0 && !bannerDismissed && !autotune?.running && (
+        {tuneBanners && isConnected(status) && blocked.length > 0 && !bannerDismissed && !autotune?.running && (
           <Banner
             tone="warn"
             actions={[

@@ -81,6 +81,10 @@
       "editInFull": "change in the Full interface ›",
       "fakeSniOff": "Fake SNI needs the proxy and will be turned off. Continue?",
       "applying": "Applying “{{level}}”…"
+    },
+    "firstRun": {
+      "probe": "checking the test sites…",
+      "tune": "auto-tuning DPI bypass on the test sites {{index}}/{{total}}"
     }
   },
   "nav": {

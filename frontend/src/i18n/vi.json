@@ -81,6 +81,10 @@
       "editInFull": "chỉnh ở giao diện Đầy đủ ›",
       "fakeSniOff": "Fake SNI cần proxy và sẽ bị tắt. Tiếp tục?",
       "applying": "Đang áp dụng “{{level}}”…"
+    },
+    "firstRun": {
+      "probe": "kiểm tra trang mẫu…",
+      "tune": "tự dò vượt DPI với trang mẫu {{index}}/{{total}}"
     }
   },
   "nav": {

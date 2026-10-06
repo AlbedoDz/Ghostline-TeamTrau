@@ -79,7 +79,7 @@ To cancel while connecting, click the power button again. To turn protection off
 
 *The preview plays sped up and silent; click it for the narrated video.*
 
-**First run: network check.** The first time you open Ghostline after installing it, it checks your network for a few seconds before anything changes: for each test site it compares your ISP's DNS answer with an encrypted server's (is DNS poisoned?) and tries HTTPS to the real address (is it blocked by DPI?). It then suggests a level, for example *"ISP DNS poisoned 3/3 sites · 2/3 sites blocked by DPI → suggested: DNS + DPI bypass"*. Click **use this level** or **skip**; either way it does not run on open again. **check my network again** under the levels runs it any time while you are disconnected. The check asks your ISP's DNS unencrypted, for the test sites only.
+**First connect: auto-tune.** The first time you connect after installing, Ghostline adds one more step to the list: it checks the test sites through its encrypted DNS and, if some are still blocked, auto-tunes DPI bypass on them, showing its progress (for example *auto-tuning DPI bypass on the test sites 12/900*). When it finds a working strategy, DPI bypass turns on and the level becomes **DNS + DPI bypass**; if nothing is blocked, the level stays **DNS only**. It runs once; if you disconnect before it finishes, it runs again on the next connect.
 
 **Protection level.** Under the status, pick how much Ghostline does. You can change it any time, also while connected:
 
