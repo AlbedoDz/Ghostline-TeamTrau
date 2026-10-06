@@ -187,3 +187,22 @@ func TestEncodeStamp_InvalidCode(t *testing.T) {
 	_, err = h.svc.StampFromURL("ftp://x", "")
 	require.Equal(t, CodeStampInvalid, code(t, err))
 }
+
+func TestLookup_BuildFailureMarksOnlyThatSource(t *testing.T) {
+	h := newTools(t)
+	build := h.svc.x.BuildUpstream
+	h.svc.x.BuildUpstream = func(s model.Server) (upstream.Upstream, error) {
+		if s.ID == "slow" {
+			return nil, errors.New("bootstrap failed")
+		}
+		return build(s)
+	}
+	res, err := h.svc.Lookup("example.com", "A", []lookup.Source{{Kind: "server", Ref: "fast"}, {Kind: "server", Ref: "slow"}})
+	require.NoError(t, err)
+	require.True(t, res.Answers[0].OK)
+	require.False(t, res.Answers[1].OK)
+	require.Equal(t, "error", res.Answers[1].Error)
+	require.Equal(t, "Slow", res.Answers[1].Source.Label)
+	require.Equal(t, []lookup.Verdict{lookup.VerdictMatch, lookup.VerdictFailed}, res.Verdicts)
+	require.Equal(t, lookup.VerdictMatch, res.Overall)
+}

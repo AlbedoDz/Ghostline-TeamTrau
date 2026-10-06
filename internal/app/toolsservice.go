@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/netip"
 	"slices"
 	"strings"
@@ -87,16 +88,25 @@ func (s *Service) Lookup(name, qtype string, sources []lookup.Source) (LookupRes
 			}
 		}
 	}()
+	res := LookupResult{Answers: make([]lookup.Answer, len(sources))}
 	for i := range sources {
 		u, src, err := s.lookupUpstream(sources[i])
-		if err != nil {
+		var bf buildFailure
+		switch {
+		case errors.As(err, &bf):
+			// This source cannot be reached; the others still answer.
+			slog.Info("lookup: source unavailable", "source", src.Label, "err", bf.err)
+			res.Answers[i] = lookup.Answer{Source: src, Error: "error", Records: []lookup.Record{}}
+		case err != nil:
 			return LookupResult{}, err
 		}
 		ups[i], sources[i] = u, src
 	}
-	res := LookupResult{Answers: make([]lookup.Answer, len(sources))}
 	var wg sync.WaitGroup
 	for i := range sources {
+		if ups[i] == nil {
+			continue
+		}
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -108,6 +118,19 @@ func (s *Service) Lookup(name, qtype string, sources []lookup.Source) (LookupRes
 	return res, nil
 }
 
+// buildFailure is a source that is valid but whose upstream could not be
+// built (e.g. its hostname did not resolve): only that source fails.
+type buildFailure struct{ err error }
+
+func (b buildFailure) Error() string { return b.err.Error() }
+
+func built(u upstream.Upstream, err error) (upstream.Upstream, error) {
+	if err != nil {
+		return nil, buildFailure{err}
+	}
+	return u, nil
+}
+
 // lookupUpstream resolves a source to an upstream and fills its label.
 // Only kind "isp" (and Ghostline's own loopback engine) may be plain DNS.
 func (s *Service) lookupUpstream(src lookup.Source) (upstream.Upstream, lookup.Source, error) {
@@ -117,7 +140,7 @@ func (s *Service) lookupUpstream(src lookup.Source) (upstream.Upstream, lookup.S
 			return nil, src, appErr(CodeLookupNotConnected, nil)
 		}
 		src.Label = "Ghostline"
-		u, err := s.x.PlainUpstream("127.0.0.1")
+		u, err := built(s.x.PlainUpstream("127.0.0.1"))
 		return u, src, err
 	case "server":
 		i := slices.IndexFunc(s.x.Catalog(), func(sv model.Server) bool { return sv.ID == src.Ref })
@@ -126,7 +149,7 @@ func (s *Service) lookupUpstream(src lookup.Source) (upstream.Upstream, lookup.S
 		}
 		sv := s.x.Catalog()[i]
 		src.Label = sv.Name
-		u, err := s.x.BuildUpstream(sv)
+		u, err := built(s.x.BuildUpstream(sv))
 		return u, src, err
 	case "address":
 		sv, err := servers.FromAddress(src.Ref, model.SourceCustom)
@@ -134,7 +157,7 @@ func (s *Service) lookupUpstream(src lookup.Source) (upstream.Upstream, lookup.S
 			return nil, src, fmt.Errorf("lookup: %w", err)
 		}
 		src.Label = src.Ref
-		u, err := s.x.BuildUpstream(sv)
+		u, err := built(s.x.BuildUpstream(sv))
 		return u, src, err
 	case "isp":
 		a, err := netip.ParseAddr(src.Ref)
@@ -142,7 +165,7 @@ func (s *Service) lookupUpstream(src lookup.Source) (upstream.Upstream, lookup.S
 			return nil, src, fmt.Errorf("lookup: %q is not an IP", src.Ref)
 		}
 		src.Ref, src.Label = a.String(), a.String()
-		u, err := s.x.PlainUpstream(src.Ref)
+		u, err := built(s.x.PlainUpstream(src.Ref))
 		return u, src, err
 	}
 	return nil, src, fmt.Errorf("lookup: unknown source kind %q", src.Kind)
