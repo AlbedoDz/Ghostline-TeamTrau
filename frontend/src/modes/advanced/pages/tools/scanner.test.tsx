@@ -27,7 +27,7 @@ vi.mock("../../../../app/api", () => ({ Service: svc }));
 
 const settings = {
   language: "vi", pinned: [], probeSites: ["youtube.com"],
-  tools: { scanner: { rounds: 5, workers: 8, timeoutMs: 3000 }, cfscan: { host: "speed.cloudflare.com", maxIps: 2000, want: 50, concurrency: 64, timeoutMs: 2000, speedTest: true, speedBytes: 1048576 } },
+  tools: { scanner: { rounds: 5, workers: 8, timeoutMs: 3000, maxServers: 500 }, cfscan: { host: "speed.cloudflare.com", maxIps: 2000, want: 50, concurrency: 64, timeoutMs: 2000, speedTest: true, speedBytes: 1048576 } },
 };
 
 beforeAll(() => initI18n("vi"));
@@ -79,12 +79,12 @@ test("results load when the scan ends; filters, bulk pin, use only, add pasted, 
 });
 
 test("SCAN_TOO_MANY is shown", async () => {
-  svc.StartAdvancedScan.mockRejectedValueOnce(new Error("SCAN_TOO_MANY"));
+  svc.StartAdvancedScan.mockRejectedValueOnce(new Error("SCAN_TOO_MANY: 501 servers, at most 500 per scan"));
   render(<Scanner />);
   fireEvent.click(screen.getByRole("radio", { name: "dán danh sách" }));
   fireEvent.change(screen.getByRole("textbox", { name: "server cần quét" }), { target: { value: "https://a.example/dns-query" } });
   fireEvent.click(screen.getByRole("button", { name: "quét" }));
-  expect(await screen.findByText(/tối đa 500/)).toBeInTheDocument();
+  expect(await screen.findByText(/at most 500 per scan/)).toBeInTheDocument();
   expect((svc.StartAdvancedScan.mock.calls[0] as any[])[0]).toEqual({ pasted: "https://a.example/dns-query", poisonDomains: ["youtube.com"] });
 });
 
@@ -110,4 +110,23 @@ test("the filter shows how many servers match, and a large one is capped at 500"
   await waitFor(() => expect(svc.CountScanServers).toHaveBeenLastCalledWith({ protocols: ["dot"], tags: [], sources: [], pinnedOnly: false }));
   fireEvent.click(screen.getByRole("button", { name: "quét" }));
   expect(await screen.findByText(/bỏ qua 825 server/)).toBeInTheDocument();
+});
+
+test("the per-scan limit is a setting and drives the notes", async () => {
+  useGhost.getState().setSettings({ ...structuredClone(settings), tools: { ...settings.tools, scanner: { ...settings.tools.scanner, maxServers: 800 } } } as any);
+  svc.CountScanServers.mockResolvedValue(1325);
+  svc.StartAdvancedScan.mockResolvedValueOnce({ total: 800, skipped: 525, bad: [] });
+  render(<Scanner />);
+  expect(await screen.findByText(/sẽ quét 800 server ưu tiên/)).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "quét" }));
+  expect(await screen.findByText(/Đã quét 800 server ưu tiên, bỏ qua 525/)).toBeInTheDocument();
+
+  fireEvent.click(screen.getByText("tuỳ chọn"));
+  const max = screen.getByRole("spinbutton", { name: "số server tối đa mỗi lượt quét" });
+  expect(max).toHaveValue(800);
+  fireEvent.change(max, { target: { value: "2000" } });
+  fireEvent.blur(max);
+  await waitFor(() => expect(svc.SaveSettings).toHaveBeenCalled());
+  expect((svc.SaveSettings.mock.calls[svc.SaveSettings.mock.calls.length - 1] as any[])[0].tools.scanner.maxServers).toBe(2000);
+  expect(screen.getByText(/quét càng nhiều server càng lâu/i)).toBeInTheDocument();
 });

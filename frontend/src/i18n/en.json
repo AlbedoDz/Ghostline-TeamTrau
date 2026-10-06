@@ -517,8 +517,8 @@
       "action": "Fix the domain box"
     },
     "SCAN_TOO_MANY": {
-      "message": "Too many servers (at most 500 at a time)",
-      "action": "Filter the list"
+      "message": "Too many servers for one scan",
+      "action": "Raise \"max servers per scan\" or paste fewer lines"
     },
     "CFSCAN_NO_NETWORK": {
       "message": "Could not reach any Cloudflare IP",
@@ -936,7 +936,9 @@
       "timeoutMs": "per-query timeout (ms)",
       "matching": "{{count}} servers match",
       "willCap": "{{max}} priority servers will be scanned (pinned, good last time, built in)",
-      "capped": "Scanned 500 priority servers and skipped {{skipped}}. Narrow the filter (protocol, tags) to scan the group you need."
+      "capped": "Scanned {{max}} priority servers and skipped {{skipped}}. Raise \"max servers per scan\" in the options, or narrow the filter (protocol, tags).",
+      "maxServers": "max servers per scan",
+      "maxServersNote": "50–2000. More servers take longer: 500 take about 1–2 minutes, 2000 about 6–8; a scan stops after at most 10 minutes."
     },
     "cfscan": {
       "probePhase": "tried {{tried}} · working {{ok}}",

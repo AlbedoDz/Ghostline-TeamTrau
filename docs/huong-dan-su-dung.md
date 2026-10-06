@@ -394,7 +394,7 @@ Bốn công cụ chẩn đoán trên một trang.
 
 Nguồn **DNS nhà mạng** là chỗ duy nhất Ghostline gửi truy vấn không mã hoá: nhà mạng thấy tên miền bạn tra. Ghostline không bao giờ tích sẵn nguồn này; chỉ tích khi cần so sánh. Khi máy nhận DNS từ router, Ghostline đưa ra địa chỉ của router.
 
-**Scanner** chấm nhiều server cùng lúc: độ trễ qua nhiều lượt (trung vị, p90, jitter), tỉ lệ mất gói, server có kiểm tra DNSSEC không, có lọc quảng cáo không, và có trả địa chỉ giả cho các trang mẫu ở trang **Vượt DPI** không. Quét danh sách server có lọc, hoặc dán tối đa 500 địa chỉ. Từ kết quả có thể ghim server, chỉ dùng một server, thêm server vừa dán vào danh sách, hoặc xuất CSV mở được bằng Excel.
+**Scanner** chấm nhiều server cùng lúc: độ trễ qua nhiều lượt (trung vị, p90, jitter), tỉ lệ mất gói, server có kiểm tra DNSSEC không, có lọc quảng cáo không, và có trả địa chỉ giả cho các trang mẫu ở trang **Vượt DPI** không. Quét danh sách server có lọc, hoặc dán danh sách địa chỉ. Mặc định một lượt quét tối đa 500 server (chỉnh 50–2000 trong **tuỳ chọn**); bộ lọc khớp nhiều hơn thì quét các server hữu ích nhất trước: đã ghim, chạy tốt lần trước, rồi server có sẵn. Quét càng nhiều càng lâu: 2000 server mất khoảng 6–8 phút. Từ kết quả có thể ghim server, chỉ dùng một server, thêm server vừa dán vào danh sách, hoặc xuất CSV mở được bằng Excel.
 
 **IP Cloudflare** tìm các địa chỉ Cloudflare còn dùng được và nhanh trên mạng của bạn.
 

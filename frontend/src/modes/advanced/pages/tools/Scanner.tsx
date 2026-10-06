@@ -8,7 +8,7 @@ import tc from "./tools.module.css";
 
 const protocols = ["doh", "dot", "doq", "dnscrypt"];
 const tags = ["no-log", "no-filter", "dnssec"];
-const MAX_SCAN = 500;
+const DEFAULT_MAX_SCAN = 500;
 
 /** Scanner grades many DNS servers at once (spec 3 §6). */
 export function Scanner() {
@@ -41,6 +41,7 @@ export function Scanner() {
     void Service.CountScanServers(filter).then((n) => setCount(n ?? 0));
   }, [mode, protos, wantTags, pinnedOnly]);
 
+  const maxScan = settings?.tools?.scanner?.maxServers || DEFAULT_MAX_SCAN;
   const running = !!progress?.running;
   const toggle = (list: string[], v: string) => (list.includes(v) ? list.filter((x) => x !== v) : [...list, v]);
 
@@ -54,7 +55,7 @@ export function Scanner() {
     try {
       const st = await Service.StartAdvancedScan(req as any);
       setBad(st?.bad ?? []);
-      setNote(st?.skipped ? t("tools.scanner.capped", { skipped: st.skipped }) : null);
+      setNote(st?.skipped ? t("tools.scanner.capped", { max: st.total, skipped: st.skipped }) : null);
       useGhost.getState().setAdvScan({ done: 0, total: st?.total ?? 0, running: true } as any);
     } catch (e) {
       setError(describeError(e));
@@ -86,8 +87,8 @@ export function Scanner() {
             ))}
             <label><input type="checkbox" checked={pinnedOnly} onChange={() => setPinnedOnly(!pinnedOnly)} /> {t("tools.scanner.pinnedOnly")}</label>
             {count !== null && (
-              <span className={count > MAX_SCAN ? css.warn : css.dim}>
-                {t("tools.scanner.matching", { count })}{count > MAX_SCAN ? ` · ${t("tools.scanner.willCap", { max: MAX_SCAN })}` : ""}
+              <span className={count > maxScan ? css.warn : css.dim}>
+                {t("tools.scanner.matching", { count })}{count > maxScan ? ` · ${t("tools.scanner.willCap", { max: maxScan })}` : ""}
               </span>
             )}
           </div>
@@ -174,10 +175,13 @@ export function Scanner() {
 
 function ScannerOptions({ settings, onError }: { settings: Settings; onError: (e: string | null) => void }) {
   const { t } = useTranslation();
-  const sc = settings.tools?.scanner ?? { rounds: 5, workers: 8, timeoutMs: 3000 };
-  const [v, setV] = useState({ rounds: String(sc.rounds), workers: String(sc.workers), timeoutMs: String(sc.timeoutMs) });
+  const sc = settings.tools?.scanner ?? { rounds: 5, workers: 8, timeoutMs: 3000, maxServers: DEFAULT_MAX_SCAN };
+  const [v, setV] = useState({
+    rounds: String(sc.rounds), workers: String(sc.workers), timeoutMs: String(sc.timeoutMs),
+    maxServers: String(sc.maxServers || DEFAULT_MAX_SCAN),
+  });
   const save = () => {
-    const scanner = { rounds: Number(v.rounds), workers: Number(v.workers), timeoutMs: Number(v.timeoutMs) };
+    const scanner = { rounds: Number(v.rounds), workers: Number(v.workers), timeoutMs: Number(v.timeoutMs), maxServers: Number(v.maxServers) };
     const next = { ...settings, tools: { ...settings.tools, scanner } } as Settings;
     void Service.SaveSettings(next).then(() => { onError(null); useGhost.getState().setSettings(next); }).catch((e) => onError(describeError(e)));
   };
@@ -193,6 +197,8 @@ function ScannerOptions({ settings, onError }: { settings: Settings; onError: (e
       {field("rounds", t("tools.scanner.rounds"))}
       {field("workers", t("tools.scanner.workers"))}
       {field("timeoutMs", t("tools.scanner.timeoutMs"))}
+      {field("maxServers", t("tools.scanner.maxServers"))}
+      <div className={css.dim}>{t("tools.scanner.maxServersNote")}</div>
     </details>
   );
 }

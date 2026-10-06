@@ -517,8 +517,8 @@
       "action": "Sửa ô tên miền"
     },
     "SCAN_TOO_MANY": {
-      "message": "Quá nhiều máy chủ (tối đa 500 một lần)",
-      "action": "Lọc bớt danh sách"
+      "message": "Quá nhiều máy chủ cho một lượt quét",
+      "action": "Tăng \"số server tối đa mỗi lượt quét\" hoặc dán ít dòng hơn"
     },
     "CFSCAN_NO_NETWORK": {
       "message": "Không kết nối được tới IP Cloudflare nào",
@@ -936,7 +936,9 @@
       "timeoutMs": "thời hạn mỗi truy vấn (ms)",
       "matching": "{{count}} server khớp",
       "willCap": "sẽ quét {{max}} server ưu tiên (đã ghim, chạy tốt lần trước, có sẵn trong app)",
-      "capped": "Đã quét 500 server ưu tiên, bỏ qua {{skipped}} server. Lọc thêm (giao thức, thẻ) để quét đúng nhóm bạn cần."
+      "capped": "Đã quét {{max}} server ưu tiên, bỏ qua {{skipped}} server. Tăng \"số server tối đa mỗi lượt quét\" trong tuỳ chọn, hoặc lọc thêm (giao thức, thẻ).",
+      "maxServers": "số server tối đa mỗi lượt quét",
+      "maxServersNote": "50–2000. Quét càng nhiều server càng lâu: 500 server mất khoảng 1–2 phút, 2000 server khoảng 6–8 phút; một lượt quét dừng sau tối đa 10 phút."
     },
     "cfscan": {
       "probePhase": "đã thử {{tried}} · dùng được {{ok}}",

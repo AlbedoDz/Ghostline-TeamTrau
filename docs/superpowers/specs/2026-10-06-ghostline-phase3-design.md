@@ -160,7 +160,7 @@ Ghim / bỏ ghim (dùng `SetPinnedMany`), thêm server dán vào danh sách tự
 
 ### 6.5 Giới hạn
 
-- Tối đa 500 server một lần. Toàn bộ lượt quét ≤ 10 phút, hết thì dừng và hiện phần đã có.
+- Tối đa `tools.scanner.maxServers` server một lần (mặc định 500, chỉnh được 50–2000). Bộ lọc khớp nhiều hơn thì quét các server hữu ích nhất trước: đã ghim, chạy tốt ở lần quét trước (nhanh trước), rồi theo nguồn (có sẵn, danh sách tải về, tự thêm, DNSCrypt), và báo số server bị bỏ qua. Danh sách dán vào dài hơn giới hạn thì báo `SCAN_TOO_MANY`. Toàn bộ lượt quét ≤ 10 phút, hết thì dừng và hiện phần đã có.
 - Tiến độ phát qua sự kiện `tools:scan` (đã xong/tổng, kết quả từng server), tối đa 10 sự kiện/giây.
 
 ## 7. Quét IP sạch Cloudflare
@@ -296,7 +296,7 @@ Thêm vào phiên bản 4:
 {
   "version": 5,
   "tools": {
-    "scanner": { "rounds": 5, "workers": 8, "timeoutMs": 3000 },
+    "scanner": { "rounds": 5, "workers": 8, "timeoutMs": 3000, "maxServers": 500 },
     "cfscan": {
       "host": "speed.cloudflare.com",
       "maxIps": 2000,
@@ -321,7 +321,7 @@ Thêm vào phiên bản 4:
 | `TOOL_BUSY{tool}` | Bắt đầu một tác vụ khi tác vụ cùng loại đang chạy | Huỷ tác vụ đang chạy |
 | `LOOKUP_NOT_CONNECTED` | Chọn nguồn Ghostline khi chưa kết nối | Kết nối · Chọn nguồn khác |
 | `LOOKUP_BAD_NAME` | Tên miền hoặc IP (PTR) không hợp lệ | Sửa ô nhập |
-| `SCAN_TOO_MANY{count}` | Hơn 500 server | Lọc bớt |
+| `SCAN_TOO_MANY{count,max}` | Danh sách dán vào dài hơn `maxServers` | Tăng giới hạn hoặc dán ít dòng hơn |
 | `CFSCAN_NO_NETWORK` | Không có mạng, hoặc mọi IP đều trượt ở TCP trong 200 lần thử đầu | Kiểm tra mạng · Tắt VPN/firewall khác |
 | `CFSCAN_HOST_INVALID` | Host kiểm tra không phải tên miền hợp lệ | Khôi phục mặc định |
 | `STAMP_INVALID{detail}` | Không giải mã được, hoặc trường không hợp lệ khi tạo | Sửa trường được chỉ ra |
@@ -340,7 +340,7 @@ Phát triển theo TDD. Test cần mạng thật hoặc Windows thật gắn bui
 | Phần | Test |
 |---|---|
 | `lookup` | Server DNS giả (`miekg/dns` trên cổng ngẫu nhiên): mỗi loại bản ghi, PTR tự đổi tên, cờ AD/TC, NXDOMAIN, hết thời hạn. Kết luận: IP riêng → `poisoned`; NXDOMAIN với nguồn khác có IP → `poisoned`; cùng CDN khác IP → `match`; khác hẳn → `differs`; nguồn lỗi không ảnh hưởng kết luận. Định dạng `dig` ổn định (golden file) |
-| `scanner/advanced` | Server giả: độ trễ và tỉ lệ mất với đồng hồ giả và lỗi chèn vào; DNSSEC (SERVFAIL/có địa chỉ/AD); lọc quảng cáo đủ/một phần/không; đầu độc; lỗi một phép → `unknown`, không trượt cả server; sắp xếp; huỷ ≤ 1 giây; giới hạn 500 |
+| `scanner/advanced` | Server giả: độ trễ và tỉ lệ mất với đồng hồ giả và lỗi chèn vào; DNSSEC (SERVFAIL/có địa chỉ/AD); lọc quảng cáo đủ/một phần/không; đầu độc; lỗi một phép → `unknown`, không trượt cả server; sắp xếp; huỷ ≤ 1 giây; giới hạn `MaxServers` |
 | `cfscan` | Dải nhúng parse được, mọi IP lấy mẫu nằm trong dải (property test), 1 IP mỗi /24. Server TLS giả qua `Dial` giả: trace hợp lệ, sai trạng thái, thiếu `colo`, chứng chỉ sai tên → `tls_verify`, reset, timeout. Giới hạn 200 kết nối/giây (đồng hồ giả). Dừng sớm khi đủ `want`. Huỷ đóng mọi conn. Cache theo mạng. `integration`: quét thật 200 IP |
 | `stamps` | Vòng tạo → giải mã cho từng giao thức; giải mã mọi stamp trong `servers.json` và danh sách DNSCrypt; trường sai (hash sai độ dài, IP sai, provider DNSCrypt sai tiền tố) bị từ chối; fuzz `Decode` |
 | `backup` | Vòng xuất → nhập ra cùng dữ liệu. Các trường ở 9.2 không bao giờ có trong file (kể cả mật khẩu proxy). Mọi trường hợp ở 9.4. Nhập settings v1–v4 qua `MigrateSettings`. Lỗi ghi ở phần thứ 2 → phần 1 được khôi phục từ `.bak-import`. Gộp không tạo trùng. Token hết hạn (đồng hồ giả) |

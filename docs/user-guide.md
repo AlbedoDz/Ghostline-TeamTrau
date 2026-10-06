@@ -394,7 +394,7 @@ Four diagnostic tools on one page.
 
 The **ISP DNS** source is the only place Ghostline ever sends an unencrypted query: your ISP sees the domain you look up. It is never ticked for you; tick it only to compare. When the PC gets DNS from the router, Ghostline offers the router's address.
 
-**Scanner** grades many servers at once: latency over several rounds (median, p90, jitter), packet loss, whether the server validates DNSSEC, whether it filters ads, and whether it answers the test sites listed on the **DPI bypass** page with fake addresses. Scan the server list with filters, or paste up to 500 addresses. From the results you can pin servers, use only one, add pasted ones to your list, or export a CSV that opens in Excel.
+**Scanner** grades many servers at once: latency over several rounds (median, p90, jitter), packet loss, whether the server validates DNSSEC, whether it filters ads, and whether it answers the test sites listed on the **DPI bypass** page with fake addresses. Scan the server list with filters, or paste addresses. One scan grades up to 500 servers by default (50–2000 in **options**); when a filter matches more, the most useful are scanned first: pinned, good last time, then built in. More servers take longer: 2000 take about 6–8 minutes. From the results you can pin servers, use only one, add pasted ones to your list, or export a CSV that opens in Excel.
 
 **Cloudflare IP** looks for Cloudflare addresses that work and are fast on your network.
 
