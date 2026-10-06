@@ -48,6 +48,9 @@ type SimpleSettings struct {
 	// Custom is the user's own combination, remembered when they switch to
 	// a level so "custom" can bring it back. Nil until there is one.
 	Custom *SimpleCustom `json:"custom,omitempty"`
+	// Checked is set once the first-run network check was answered (used
+	// or skipped); until then the Simple interface runs it on open.
+	Checked bool `json:"checked"`
 }
 
 // SimpleCustom is a combination of the switches the protection levels set.
@@ -382,6 +385,7 @@ func MigrateSettings(b []byte) (Settings, error) {
 	}
 	if head.Version < 5 {
 		s.Tools = DefaultTools()
+		s.Simple.Checked = true // upgrading from v0.4 or older: not a new user
 	}
 	if s.Tools.Scanner.MaxServers == 0 { // v5 files from before maxServers
 		s.Tools.Scanner.MaxServers = DefaultScanMaxServers

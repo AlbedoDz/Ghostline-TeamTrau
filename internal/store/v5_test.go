@@ -144,3 +144,13 @@ func TestSettings_SimpleCustomRoundTrip(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, s.Simple, got.Simple)
 }
+
+func TestSimpleChecked_FreshInstallVsUpgrade(t *testing.T) {
+	require.False(t, store.DefaultSettings().Simple.Checked, "a fresh install runs the first network check")
+	s, err := store.MigrateSettings([]byte(`{"version":4,"language":"vi"}`))
+	require.NoError(t, err)
+	require.True(t, s.Simple.Checked, "people upgrading from v0.4 are not new")
+	s, err = store.MigrateSettings([]byte(`{"version":5,"simple":{"checked":false}}`))
+	require.NoError(t, err)
+	require.False(t, s.Simple.Checked)
+}
