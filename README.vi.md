@@ -216,15 +216,21 @@ Dự án được xây dựng trên [dnsproxy](https://github.com/AdguardTeam/dn
 
 ## Ủng hộ
 
-Ghostline miễn phí và sẽ luôn miễn phí. Nếu app có ích và bạn muốn ủng hộ để dự án tiếp tục phát triển, bạn có thể gửi qua [PayPal](https://paypal.me/hashcott), Binance Pay, stablecoin, hoặc quét mã QR MoMo bằng bất kỳ app ngân hàng nào (VietQR / Napas 247). Cảm ơn bạn!
+Ghostline miễn phí và sẽ luôn miễn phí. Nếu có thể, bạn hãy ưu tiên ủng hộ các dự án mà Ghostline dựa vào, vì phần việc khó nhất là của họ:
+
+- [zapret2](https://github.com/bol-van/zapret2) của bol-van: engine vượt DPI
+- [GoodbyeDPI](https://github.com/ValdikSS/GoodbyeDPI) của ValdikSS
+- [WinDivert](https://github.com/basil00/WinDivert) của basil00
+- [dnsproxy](https://github.com/AdguardTeam/dnsproxy) của AdGuard
+- [Wails](https://wails.io)
+
+Nếu bạn muốn ủng hộ cả Ghostline, bạn có thể gửi qua [PayPal](https://paypal.me/hashcott), stablecoin hoặc MoMo / VietQR. Cảm ơn bạn!
 
 <p align="center">
   <a href="https://paypal.me/hashcott"><img src="https://img.shields.io/badge/PayPal-hashcott-00457C?logo=paypal&logoColor=white" alt="Ủng hộ qua PayPal"></a>
 </p>
 
-**Binance Pay:** quét mã QR Binance Pay bên dưới bằng app Binance (tài khoản `duchanhstyle`). Chuyển giữa người dùng Binance với nhau miễn phí và tức thì.
-
-**Stablecoin (USDT hoặc USDC) từ ví khác:**
+**Stablecoin (USDT hoặc USDC):**
 
 ```
 0x3C0E297cC77416DA2Ac108F09360d7Bf7C4E2c8e
@@ -233,8 +239,9 @@ Ghostline miễn phí và sẽ luôn miễn phí. Nếu app có ích và bạn m
 > [!WARNING]
 > Chỉ gửi qua mạng **BNB Smart Chain (BEP20)** hoặc **Arc**. Gửi qua mạng khác, ví dụ Ethereum (ERC20) hay Tron (TRC20), sẽ mất tiền vĩnh viễn.
 
-| Binance Pay | MoMo / VietQR |
-| :---: | :---: |
-| <img src="docs/donate-binance-pay.png" width="240" alt="Mã QR ủng hộ qua Binance Pay"> | <img src="docs/donate-momo.png" width="240" alt="Mã QR ủng hộ qua MoMo / VietQR"> |
-| **USDT (BNB Smart Chain)** | **USDC (BNB Smart Chain)** |
-| <img src="docs/donate-usdt-bsc.png" width="240" alt="Mã QR ủng hộ USDT trên BNB Smart Chain"> | <img src="docs/donate-usdc-bsc.png" width="240" alt="Mã QR ủng hộ USDC trên BNB Smart Chain"> |
+<details>
+<summary><b>MoMo / VietQR</b> (bấm để xem mã QR)</summary>
+<br>
+Quét bằng MoMo hoặc bất kỳ app ngân hàng nào (VietQR / Napas 247).
+<p align="center"><img src="docs/donate-momo.png" width="240" alt="Mã QR ủng hộ qua MoMo / VietQR"></p>
+</details>
