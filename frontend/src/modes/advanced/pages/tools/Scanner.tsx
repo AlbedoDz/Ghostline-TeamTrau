@@ -8,6 +8,7 @@ import tc from "./tools.module.css";
 
 const protocols = ["doh", "dot", "doq", "dnscrypt"];
 const tags = ["no-log", "no-filter", "dnssec"];
+const MAX_SCAN = 500;
 
 /** Scanner grades many DNS servers at once (spec 3 §6). */
 export function Scanner() {
@@ -26,12 +27,19 @@ export function Scanner() {
   const [onlyAds, setOnlyAds] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
+  const [count, setCount] = useState<number | null>(null);
 
   const load = () => void Service.AdvancedResults().then((r) => setRows(r ?? []));
   useEffect(load, []);
   useEffect(() => {
     if (progress && !progress.running) load();
   }, [progress?.running]);
+
+  const filter = { protocols: protos, tags: wantTags, sources: [] as string[], pinnedOnly };
+  useEffect(() => {
+    if (mode !== "catalog") return;
+    void Service.CountScanServers(filter).then((n) => setCount(n ?? 0));
+  }, [mode, protos, wantTags, pinnedOnly]);
 
   const running = !!progress?.running;
   const toggle = (list: string[], v: string) => (list.includes(v) ? list.filter((x) => x !== v) : [...list, v]);
@@ -41,11 +49,12 @@ export function Scanner() {
     setBad([]);
     const poisonDomains = settings?.probeSites ?? [];
     const req = mode === "catalog"
-      ? { filter: { protocols: protos, tags: wantTags, sources: [], pinnedOnly }, pasted: "", poisonDomains }
+      ? { filter, pasted: "", poisonDomains }
       : { pasted, poisonDomains };
     try {
       const st = await Service.StartAdvancedScan(req as any);
       setBad(st?.bad ?? []);
+      setNote(st?.skipped ? t("tools.scanner.capped", { skipped: st.skipped }) : null);
       useGhost.getState().setAdvScan({ done: 0, total: st?.total ?? 0, running: true } as any);
     } catch (e) {
       setError(describeError(e));
@@ -76,6 +85,11 @@ export function Scanner() {
               <label key={g}><input type="checkbox" checked={wantTags.includes(g)} onChange={() => setWantTags(toggle(wantTags, g))} /> {g}</label>
             ))}
             <label><input type="checkbox" checked={pinnedOnly} onChange={() => setPinnedOnly(!pinnedOnly)} /> {t("tools.scanner.pinnedOnly")}</label>
+            {count !== null && (
+              <span className={count > MAX_SCAN ? css.warn : css.dim}>
+                {t("tools.scanner.matching", { count })}{count > MAX_SCAN ? ` · ${t("tools.scanner.willCap", { max: MAX_SCAN })}` : ""}
+              </span>
+            )}
           </div>
         ) : (
           <textarea aria-label={t("tools.scanner.pasteLabel")} rows={4} className={tc.wide} value={pasted}

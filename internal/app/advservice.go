@@ -37,8 +37,9 @@ type AdvScanRequest struct {
 // AdvScanStart reports how many servers will be scanned and the pasted
 // lines that were rejected.
 type AdvScanStart struct {
-	Total int      `json:"total"`
-	Bad   []string `json:"bad"`
+	Total   int      `json:"total"`
+	Skipped int      `json:"skipped"` // filtered servers left out by the 500 cap
+	Bad     []string `json:"bad"`
 }
 
 // AdvScanProgress is sent on EventToolsScan.
@@ -74,6 +75,12 @@ func (s *Service) StartAdvancedScan(req AdvScanRequest) (AdvScanStart, error) {
 	pasted := map[string]bool{}
 	if req.Filter != nil {
 		list = s.filterCatalog(*req.Filter)
+		if len(list) > advanced.MaxServers {
+			// Too many to grade at once: take the most useful 500.
+			list = s.rankForScan(list)
+			start.Skipped = len(list) - advanced.MaxServers
+			list = list[:advanced.MaxServers]
+		}
 	} else {
 		add, bad := servers.ParseImport([]byte(req.Pasted))
 		start.Bad = append(start.Bad, bad...)
@@ -142,6 +149,42 @@ func (s *Service) filterCatalog(f ServerFilter) []model.Server {
 			out = append(out, sv)
 		}
 	}
+	return out
+}
+
+// CountScanServers is how many catalog servers match f.
+func (s *Service) CountScanServers(f ServerFilter) int { return len(s.filterCatalog(f)) }
+
+// rankForScan orders servers by how useful a grade is: pinned first, then
+// those that worked in the last scan (fastest first), then by source
+// (built-in, remote list, custom, DNSCrypt list).
+func (s *Service) rankForScan(list []model.Server) []model.Server {
+	pinned := s.x.Settings.Get().Pinned
+	lat := map[string]time.Duration{}
+	for _, r := range s.o.ScanResults() {
+		if r.OK {
+			lat[r.ServerID] = r.Latency
+		}
+	}
+	srcRank := map[model.Source]int{model.SourceBuiltin: 0, model.SourceRemote: 1, model.SourceCustom: 2, model.SourceDNSCrypt: 3}
+	rank := func(sv model.Server) (int, time.Duration) {
+		if slices.Contains(pinned, sv.ID) {
+			return 0, 0
+		}
+		if l, ok := lat[sv.ID]; ok {
+			return 1, l
+		}
+		return 2 + srcRank[sv.Source], 0
+	}
+	out := slices.Clone(list)
+	slices.SortStableFunc(out, func(a, b model.Server) int {
+		ra, la := rank(a)
+		rb, lb := rank(b)
+		if ra != rb {
+			return ra - rb
+		}
+		return int(la - lb)
+	})
 	return out
 }
 

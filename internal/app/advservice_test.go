@@ -12,6 +12,7 @@ import (
 
 	"github.com/AdguardTeam/dnsproxy/upstream"
 	"github.com/hashcott/ghostline/internal/model"
+	"github.com/hashcott/ghostline/internal/scanner"
 	"github.com/miekg/dns"
 	"github.com/stretchr/testify/require"
 )
@@ -176,4 +177,34 @@ func TestCSVSafe(t *testing.T) {
 	for in, want := range map[string]string{"=1+1": "'=1+1", "+x": "'+x", "-x": "'-x", "@x": "'@x", "\tx": "'\tx", "\rx": "'\rx", "x=1": "x=1", "": ""} {
 		require.Equal(t, want, csvSafe(in), in)
 	}
+}
+
+func TestAdvScan_LargeFilterScansBest500(t *testing.T) {
+	h := newTools(t)
+	h.custom = nil
+	for i := range 600 {
+		h.custom = append(h.custom, model.Server{ID: fmt.Sprintf("d%03d", i), Name: fmt.Sprint("D", i), Protocol: model.ProtoDNSCrypt,
+			Address: fmt.Sprintf("https://d%d.example/dns-query", i), Source: model.SourceDNSCrypt})
+	}
+	st := h.box.Get()
+	st.Pinned = []string{"d599"}
+	require.NoError(t, h.box.Save(st))
+	h.o.d.Scans = &fScans{results: []scanner.Result{{ServerID: "d598", OK: true, Latency: 5 * time.Millisecond}}}
+	h.svc.x.BuildUpstream = func(model.Server) (upstream.Upstream, error) { return blockUp{}, nil }
+
+	require.Equal(t, 601, h.svc.CountScanServers(ServerFilter{}))
+	start, err := h.svc.StartAdvancedScan(AdvScanRequest{Filter: &ServerFilter{}})
+	require.NoError(t, err, "a large filter is cut down, not refused")
+	require.Equal(t, 500, start.Total)
+	require.Equal(t, 101, start.Skipped)
+	h.svc.mu.Lock()
+	_, pinned := h.svc.adv.servers["d599"]
+	_, wasOK := h.svc.adv.servers["d598"]
+	_, builtin := h.svc.adv.servers["cf"]
+	_, last := h.svc.adv.servers["d597"]
+	h.svc.mu.Unlock()
+	require.True(t, pinned && wasOK && builtin, "pinned, previously good and built-in servers come first")
+	require.False(t, last)
+	h.svc.CancelAdvancedScan()
+	waitAdvDone(t, h)
 }

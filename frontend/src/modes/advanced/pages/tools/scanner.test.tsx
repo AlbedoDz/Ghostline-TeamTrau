@@ -13,7 +13,8 @@ const row = (id: string, extra: Record<string, unknown> = {}, result: Record<str
 });
 
 const svc = vi.hoisted(() => ({
-  StartAdvancedScan: vi.fn(() => Promise.resolve({ total: 3, bad: [] as string[] })),
+  StartAdvancedScan: vi.fn(() => Promise.resolve({ total: 3, skipped: 0, bad: [] as string[] })),
+  CountScanServers: vi.fn(() => Promise.resolve(42)),
   CancelAdvancedScan: vi.fn(() => Promise.resolve()),
   AdvancedResults: vi.fn(() => Promise.resolve([] as any[])),
   AddScannedServers: vi.fn(() => Promise.resolve(1)),
@@ -97,4 +98,16 @@ test("options save tools.scanner and show range errors", async () => {
   await waitFor(() => expect(svc.SaveSettings).toHaveBeenCalled());
   expect((svc.SaveSettings.mock.calls[0] as any[])[0].tools.scanner.rounds).toBe(30);
   expect(await screen.findByText(/3\.\.20/)).toBeInTheDocument();
+});
+
+test("the filter shows how many servers match, and a large one is capped at 500", async () => {
+  svc.CountScanServers.mockResolvedValue(1325);
+  svc.StartAdvancedScan.mockResolvedValueOnce({ total: 500, skipped: 825, bad: [] });
+  render(<Scanner />);
+  expect(await screen.findByText(/1325 server khớp/)).toBeInTheDocument();
+  expect(screen.getByText(/sẽ quét 500 server ưu tiên/)).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("checkbox", { name: "dot" }));
+  await waitFor(() => expect(svc.CountScanServers).toHaveBeenLastCalledWith({ protocols: ["dot"], tags: [], sources: [], pinnedOnly: false }));
+  fireEvent.click(screen.getByRole("button", { name: "quét" }));
+  expect(await screen.findByText(/bỏ qua 825 server/)).toBeInTheDocument();
 });

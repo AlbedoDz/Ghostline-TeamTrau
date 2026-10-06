@@ -933,7 +933,10 @@
       "useOnly": "chỉ dùng",
       "rounds": "số lượt đo",
       "workers": "số luồng",
-      "timeoutMs": "thời hạn mỗi truy vấn (ms)"
+      "timeoutMs": "thời hạn mỗi truy vấn (ms)",
+      "matching": "{{count}} server khớp",
+      "willCap": "sẽ quét {{max}} server ưu tiên (đã ghim, chạy tốt lần trước, có sẵn trong app)",
+      "capped": "Đã quét 500 server ưu tiên, bỏ qua {{skipped}} server. Lọc thêm (giao thức, thẻ) để quét đúng nhóm bạn cần."
     },
     "cfscan": {
       "probePhase": "đã thử {{tried}} · dùng được {{ok}}",

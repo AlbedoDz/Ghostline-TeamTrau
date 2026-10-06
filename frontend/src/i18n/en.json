@@ -933,7 +933,10 @@
       "useOnly": "use only",
       "rounds": "rounds",
       "workers": "workers",
-      "timeoutMs": "per-query timeout (ms)"
+      "timeoutMs": "per-query timeout (ms)",
+      "matching": "{{count}} servers match",
+      "willCap": "{{max}} priority servers will be scanned (pinned, good last time, built in)",
+      "capped": "Scanned 500 priority servers and skipped {{skipped}}. Narrow the filter (protocol, tags) to scan the group you need."
     },
     "cfscan": {
       "probePhase": "tried {{tried}} · working {{ok}}",
