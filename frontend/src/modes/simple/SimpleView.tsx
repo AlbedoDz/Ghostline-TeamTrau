@@ -11,9 +11,18 @@ import { TerminalPanel } from "../../components/neon/TerminalPanel";
 import { Banner } from "../../components/neon/Banner";
 import { ConnectError } from "../../components/ConnectError";
 import { Warnings } from "../../components/Warnings";
+import { ProtectionLevels } from "./ProtectionLevels";
 import css from "./SimpleView.module.css";
 
-export function SimpleView({ onOpenLogs, onOpenServers = () => {} }: { onOpenLogs: () => void; onOpenServers?: () => void }) {
+export function SimpleView({
+  onOpenLogs,
+  onOpenServers = () => {},
+  onOpenFull = () => {},
+}: {
+  onOpenLogs: () => void;
+  onOpenServers?: () => void;
+  onOpenFull?: () => void;
+}) {
   const { t } = useTranslation();
   const snap = useGhost((s) => s.snapshot);
   const settings = useGhost((s) => s.settings);
@@ -103,6 +112,7 @@ export function SimpleView({ onOpenLogs, onOpenServers = () => {} }: { onOpenLog
           {isConnected(status) && t("simple.encrypted")}
           {status === "error" && snap.error?.code !== "RESTORE_FAILED" && t("simple.errorUnchanged")}
         </div>
+        <ProtectionLevels onOpenFull={onOpenFull} disabled={status === "connecting" || status === "disconnecting"} />
       </div>
       <div className={css.bottom}>
         <ConnectError onOpenServers={onOpenServers} onOpenLogs={onOpenLogs} />

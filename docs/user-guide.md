@@ -79,6 +79,17 @@ To cancel while connecting, click the power button again. To turn protection off
 
 *The preview plays sped up and silent; click it for the narrated video.*
 
+**Protection level.** Under the status, pick how much Ghostline does. You can change it any time, also while connected:
+
+| Level | What it turns on | When |
+| --- | --- | --- |
+| **DNS only** | Encrypted DNS | Your ISP blocks with DNS alone; the lightest |
+| **DNS + DPI bypass** *(recommended)* | Adds DPI bypass for every app | Sites are still blocked after the DNS change |
+| **Maximum** | Adds the proxy for this PC (it sets the Windows proxy); browsers get fragmented automatically on blocked sites | DPI bypass is not enough for some sites |
+| **Custom** | Your own combination from the Full interface | Lit when what you set there matches no level |
+
+A level only changes these switches; your engine, strategy, servers, rules and other settings stay as they are. When you leave **Custom** for a level, Ghostline remembers your combination, and clicking **Custom** brings it back. Fake SNI needs the proxy: a level without the proxy asks before turning it off, and **Custom** turns it back on.
+
 **The info panel below:**
 
 | Row | Meaning |

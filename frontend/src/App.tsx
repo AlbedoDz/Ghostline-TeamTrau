@@ -45,6 +45,7 @@ function App() {
               useGhost.getState().setPage("servers");
               onMode("full");
             }}
+            onOpenFull={() => onMode("full")}
           />
         ) : (
           <FullView />

@@ -59,7 +59,28 @@
     "proxy": "proxy",
     "openServers": "mở trang máy chủ",
     "disablePinnedOnly": "tắt chỉ dùng máy chủ ghim",
-    "dnsLan": "DNS cho LAN"
+    "dnsLan": "DNS cho LAN",
+    "level": {
+      "label": "mức bảo vệ",
+      "dns": "Chỉ DNS",
+      "dpi": "DNS + vượt DPI",
+      "max": "Tối đa",
+      "custom": "Tuỳ chỉnh",
+      "hint": {
+        "dns": "Chỉ mã hoá DNS. Hợp khi nhà mạng chỉ chặn bằng DNS; nhẹ nhất.",
+        "dpi": "Khuyên dùng. Thêm vượt DPI cho mọi ứng dụng, dùng engine và chiến lược đang chọn.",
+        "max": "Thêm proxy cho máy này (đặt proxy hệ thống): trình duyệt tự được fragment khi gặp trang bị chặn.",
+        "custom": "Tổ hợp bạn tự chỉnh ở giao diện Đầy đủ."
+      },
+      "part": {
+        "dpi": "vượt DPI",
+        "proxy": "proxy",
+        "proxyNoSystem": "proxy (không dùng cho máy này)",
+        "none": "chỉ DNS"
+      },
+      "editInFull": "chỉnh ở giao diện Đầy đủ ›",
+      "fakeSniOff": "Fake SNI cần proxy và sẽ bị tắt. Tiếp tục?"
+    }
   },
   "nav": {
     "overview": "tổng quan",
