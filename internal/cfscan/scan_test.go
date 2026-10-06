@@ -37,7 +37,8 @@ func TestScan_WantStopsEarly(t *testing.T) {
 	}
 	require.Equal(t, 10, ok)
 	require.Less(t, int(dials.Load()), 100)
-	require.Equal(t, dials.Load(), lim.n.Load(), "every probe waits on the limiter first")
+	// Every dial waited first; a worker may also wait and then stop at cancel.
+	require.LessOrEqual(t, dials.Load(), lim.n.Load(), "every probe waits on the limiter first")
 }
 
 func TestScan_NoNetworkStopsEarly(t *testing.T) {

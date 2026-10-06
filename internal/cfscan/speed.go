@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/netip"
+	"os"
 	"time"
 )
 
@@ -36,7 +37,9 @@ func (p Prober) Speed(ctx context.Context, ip netip.Addr, bytes int, limit time.
 		return 0, fmt.Errorf("cfscan: speed: %s", resp.Status)
 	}
 	n, err := io.Copy(io.Discard, io.LimitReader(resp.Body, int64(bytes)))
-	if err != nil && ctx.Err() == nil {
+	// Reaching the limit is not an error: the socket deadline (set from ctx)
+	// can fire a moment before ctx itself reports it.
+	if err != nil && ctx.Err() == nil && !errors.Is(err, os.ErrDeadlineExceeded) {
 		return 0, err
 	}
 	if n == 0 {
