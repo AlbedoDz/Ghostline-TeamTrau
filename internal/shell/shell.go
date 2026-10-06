@@ -259,6 +259,19 @@ func Run(o Options) error {
 			}
 			return names
 		},
+		BuildUpstream: build.Build,
+		PlainUpstream: plainUpstream,
+		DialDirect:    dialDirect,
+		ISPResolvers: func() []string {
+			st, _ := states.Load()
+			return ispResolvers(st, liveAdapters())
+		},
+		OpenFile: func(title string) (string, error) {
+			if wapp == nil {
+				return "", errors.New("no window")
+			}
+			return wapp.Dialog.OpenFile().SetTitle(title).AddFilter("Ghostline backup (*.json)", "*.json").PromptForSingleSelection()
+		},
 		SaveFile: func(name string, data []byte) error {
 			if wapp == nil {
 				return errors.New("no window")

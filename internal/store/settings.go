@@ -11,6 +11,7 @@ import (
 	"regexp"
 	"slices"
 	"strconv"
+	"strings"
 )
 
 // Settings is the user configuration (spec §9).
@@ -33,11 +34,116 @@ type Settings struct {
 	DPI              DPISettings       `json:"dpi"`
 	FragmentDNS      FragmentSettings  `json:"fragmentDns"`
 	Updates          UpdateSettings    `json:"updates"`
-	AdvancedWindow   WindowSize        `json:"advancedWindow"`
+	FullWindow       WindowSize        `json:"fullWindow"`
 	Proxy            ProxySettings     `json:"proxy"`
 	DNSBlockMode     string            `json:"dnsBlockMode"` // "zero" | "nxdomain"
 	DNSServer        DNSServerSettings `json:"dnsServer"`
 	FakeSNI          FakeSNISettings   `json:"fakeSni"`
+	Tools            ToolsSettings     `json:"tools"`
+	Simple           SimpleSettings    `json:"simple"`
+}
+
+// SimpleSettings belong to the Simple interface's protection levels.
+type SimpleSettings struct {
+	// Custom is the user's own combination, remembered when they switch to
+	// a level so "custom" can bring it back. Nil until there is one.
+	Custom *SimpleCustom `json:"custom,omitempty"`
+	// Checked is set once the first-run tune ran: on the first connect the
+	// Simple interface checks the test sites and auto-tunes DPI if needed.
+	Checked bool `json:"checked"`
+}
+
+// SimpleCustom is a combination of the switches the protection levels set.
+type SimpleCustom struct {
+	DPI         bool `json:"dpi"`
+	Proxy       bool `json:"proxy"`
+	SystemProxy bool `json:"systemProxy"`
+	FakeSNI     bool `json:"fakeSni"`
+}
+
+// ToolsSettings configure the Tools page (phase 3).
+type ToolsSettings struct {
+	Scanner ScannerTool `json:"scanner"`
+	CFScan  CFScanTool  `json:"cfscan"`
+}
+
+// ScannerTool configures the advanced DNS scanner.
+type ScannerTool struct {
+	Rounds     int `json:"rounds"`
+	Workers    int `json:"workers"`
+	TimeoutMs  int `json:"timeoutMs"`
+	MaxServers int `json:"maxServers"` // servers graded per scan
+}
+
+// Advanced scan size: default and allowed range.
+const (
+	DefaultScanMaxServers = 500
+	MinScanMaxServers     = 50
+	MaxScanMaxServers     = 2000
+)
+
+// CFScanTool configures the Cloudflare clean-IP scan.
+type CFScanTool struct {
+	Host        string `json:"host"`
+	MaxIPs      int    `json:"maxIps"`
+	Want        int    `json:"want"`
+	Concurrency int    `json:"concurrency"`
+	TimeoutMs   int    `json:"timeoutMs"`
+	SpeedTest   bool   `json:"speedTest"`
+	SpeedBytes  int    `json:"speedBytes"`
+}
+
+// DefaultTools returns the spec 3 §11 defaults.
+func DefaultTools() ToolsSettings {
+	return ToolsSettings{
+		Scanner: ScannerTool{Rounds: 5, Workers: 8, TimeoutMs: 3000, MaxServers: DefaultScanMaxServers},
+		CFScan: CFScanTool{Host: "speed.cloudflare.com", MaxIPs: 2000, Want: 50, Concurrency: 64,
+			TimeoutMs: 2000, SpeedTest: true, SpeedBytes: 1048576},
+	}
+}
+
+var hostLabel = regexp.MustCompile(`^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$`)
+
+// ValidHostname reports whether h is a DNS name (not an IP), at most 253
+// characters, with labels of letters, digits and inner hyphens.
+func ValidHostname(h string) bool {
+	if h == "" || len(h) > 253 || net.ParseIP(h) != nil {
+		return false
+	}
+	for _, l := range strings.Split(h, ".") {
+		if !hostLabel.MatchString(l) {
+			return false
+		}
+	}
+	return true
+}
+
+// ValidateTools checks tool options against the spec 3 §6.1, §7 and §11 ranges.
+func ValidateTools(t ToolsSettings) error {
+	sc, cf := t.Scanner, t.CFScan
+	switch {
+	case sc.Rounds < 3 || sc.Rounds > 20:
+		return fmt.Errorf("tools: scanner rounds must be 3..20")
+	case sc.Workers < 4 || sc.Workers > 32:
+		return fmt.Errorf("tools: scanner workers must be 4..32")
+	case sc.TimeoutMs < 1000 || sc.TimeoutMs > 10000:
+		return fmt.Errorf("tools: scanner timeoutMs must be 1000..10000")
+	case sc.MaxServers < MinScanMaxServers || sc.MaxServers > MaxScanMaxServers:
+		return fmt.Errorf("tools: scanner maxServers must be %d..%d", MinScanMaxServers, MaxScanMaxServers)
+	case !ValidHostname(cf.Host):
+		return fmt.Errorf("tools: cfscan host must be a domain name")
+	case cf.MaxIPs < 200 || cf.MaxIPs > 10000:
+		return fmt.Errorf("tools: cfscan maxIps must be 200..10000")
+	case cf.Want < 0 || cf.Want > 1000:
+		return fmt.Errorf("tools: cfscan want must be 0..1000")
+	case cf.Concurrency < 8 || cf.Concurrency > 128:
+		return fmt.Errorf("tools: cfscan concurrency must be 8..128")
+	case cf.TimeoutMs < 1000 || cf.TimeoutMs > 5000:
+		return fmt.Errorf("tools: cfscan timeoutMs must be 1000..5000")
+	case cf.SpeedBytes < 102400 || cf.SpeedBytes > 26214400:
+		return fmt.Errorf("tools: cfscan speedBytes must be 102400..26214400")
+	}
+	return nil
 }
 
 // ProxySettings configures the local proxy (phase 2A).
@@ -149,24 +255,31 @@ type WindowSize struct {
 	Height int `json:"height"`
 }
 
+// Interface modes (Settings.Mode). Files before v0.5 said "advanced" for
+// the full interface; MigrateSettings renames it.
+const (
+	ModeSimple = "simple"
+	ModeFull   = "full"
+)
+
 // DefaultSettings returns the spec §9 defaults.
 func DefaultSettings() Settings {
 	return Settings{
-		Version:        4,
-		Language:       "vi",
-		Mode:           "simple",
-		CloseToTray:    true,
-		Adapters:       "auto",
-		TestDomain:     "www.google.com",
-		Bootstrap:      []string{"1.1.1.1:53", "8.8.8.8:53"},
-		MaxUpstreams:   5,
-		IncludeTags:    []string{"no-filter"},
-		Pinned:         []string{},
-		ProbeSites:     []string{"youtube.com", "discord.com", "x.com"},
-		DPI:            DPISettings{Engine: EngineZapret2, Preset: "light", Scope: "all", Zapret2: Zapret2Settings{Strategy: "z-split"}},
-		FragmentDNS:    FragmentSettings{Chunks: 5, DelayMs: 5},
-		Updates:        UpdateSettings{CheckApp: true, UpdateServerList: true},
-		AdvancedWindow: WindowSize{Width: 1000, Height: 660},
+		Version:      5,
+		Language:     "vi",
+		Mode:         ModeSimple,
+		CloseToTray:  true,
+		Adapters:     "auto",
+		TestDomain:   "www.google.com",
+		Bootstrap:    []string{"1.1.1.1:53", "8.8.8.8:53"},
+		MaxUpstreams: 5,
+		IncludeTags:  []string{"no-filter"},
+		Pinned:       []string{},
+		ProbeSites:   []string{"youtube.com", "discord.com", "x.com"},
+		DPI:          DPISettings{Engine: EngineZapret2, Preset: "light", Scope: "all", Zapret2: Zapret2Settings{Strategy: "z-split"}},
+		FragmentDNS:  FragmentSettings{Chunks: 5, DelayMs: 5},
+		Updates:      UpdateSettings{CheckApp: true, UpdateServerList: true},
+		FullWindow:   WindowSize{Width: 1000, Height: 660},
 		Proxy: ProxySettings{
 			Port:      8080,
 			Fragment:  WebFragment{Mode: "auto", Method: "both", Chunks: 5, DelayMs: 5, AutoTimeoutMs: 3000, CacheDays: 7},
@@ -174,6 +287,7 @@ func DefaultSettings() Settings {
 		},
 		DNSBlockMode: "zero",
 		DNSServer:    DNSServerSettings{DoHPort: 443},
+		Tools:        DefaultTools(),
 	}
 }
 
@@ -220,24 +334,46 @@ func LoadSettings(path string) (s Settings, recovered bool, err error) {
 	if err != nil {
 		return s, false, err
 	}
-	b = bytes.TrimPrefix(b, []byte{0xEF, 0xBB, 0xBF}) // tolerate a UTF-8 BOM (Notepad)
-	if jerr := json.Unmarshal(b, &s); jerr != nil {
+	m, jerr := MigrateSettings(b)
+	if jerr != nil {
 		if err := os.Rename(path, path+".bak"); err != nil {
 			return DefaultSettings(), true, err
 		}
 		return DefaultSettings(), true, nil
 	}
+	return m, false, nil
+}
+
+// MigrateSettings parses a settings file of any version (v1–v5) into the
+// current version, filling missing fields with defaults. It fails only on
+// invalid JSON.
+func MigrateSettings(b []byte) (Settings, error) {
+	s := DefaultSettings()
+	b = bytes.TrimPrefix(b, []byte{0xEF, 0xBB, 0xBF}) // tolerate a UTF-8 BOM (Notepad)
+	if err := json.Unmarshal(b, &s); err != nil {
+		return DefaultSettings(), err
+	}
 	// v1 files gain the v2 defaults through the pre-filled struct. Files
 	// older than v3 predate zapret2: their users keep GoodbyeDPI.
-	var head struct{ Version int }
+	var head struct {
+		Version        int
+		FullWindow     *WindowSize `json:"fullWindow"`
+		AdvancedWindow *WindowSize `json:"advancedWindow"`
+	}
 	_ = json.Unmarshal(b, &head)
+	if s.Mode == "advanced" {
+		s.Mode = ModeFull
+	}
+	if head.FullWindow == nil && head.AdvancedWindow != nil {
+		s.FullWindow = *head.AdvancedWindow
+	}
 	if head.Version < 3 {
 		s.DPI.Engine = EngineGoodbyeDPI
 	}
 	if s.DPI.Engine != EngineGoodbyeDPI && s.DPI.Engine != EngineZapret2 {
 		s.DPI.Engine = EngineZapret2
 	}
-	s.Version = 4
+	s.Version = 5
 	if s.DNSServer.DoHPort == 0 {
 		s.DNSServer.DoHPort = 443
 	}
@@ -247,7 +383,14 @@ func LoadSettings(path string) (s Settings, recovered bool, err error) {
 	if slices.Equal(s.ProbeSites, oldProbeSites) {
 		s.ProbeSites = DefaultSettings().ProbeSites
 	}
-	return s, false, nil
+	if head.Version < 5 {
+		s.Tools = DefaultTools()
+		s.Simple.Checked = true // upgrading from v0.4 or older: not a new user
+	}
+	if s.Tools.Scanner.MaxServers == 0 { // v5 files from before maxServers
+		s.Tools.Scanner.MaxServers = DefaultScanMaxServers
+	}
+	return s, nil
 }
 
 // oldProbeSites is the default test-site list before v0.2.5. Files that

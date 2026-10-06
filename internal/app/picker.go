@@ -36,10 +36,19 @@ type ScanPicker struct {
 }
 
 const (
-	cacheTTL     = 24 * time.Hour
-	quickBudget  = 20 * time.Second
-	scanWorkers  = 16
+	cacheTTL    = 24 * time.Hour
+	quickBudget = 20 * time.Second
+	scanWorkers = 16
+	// fullBudget and fullWorkers bound the first scan on a network (no
+	// fresh cache): every server is checked so the fastest are chosen;
+	// later connects use the cache.
+	fullBudget   = 90 * time.Second
+	fullWorkers  = 32
 	defaultWants = 5
+	// candidates: a quick re-pick while connected collects this many times
+	// the servers it needs, then keeps the fastest; stopping at the first
+	// ones that answer would pick by luck, not by speed.
+	candidates = 4
 )
 
 func (p *ScanPicker) pool(s store.Settings) []model.Server {
@@ -73,6 +82,24 @@ func topOK(rs []scanner.Result, pool []model.Server, want int) []model.Server {
 }
 
 // Pick implements Picker (spec §6.3).
+// cacheCoverage is the share of the list a fresh cache must have results
+// for to be used instead of scanning.
+const cacheCoverage = 0.9
+
+func covers(rs []scanner.Result, pool []model.Server) bool {
+	have := make(map[string]bool, len(rs))
+	for _, r := range rs {
+		have[r.ServerID] = true
+	}
+	n := 0
+	for _, s := range pool {
+		if have[s.ID] {
+			n++
+		}
+	}
+	return len(pool) > 0 && float64(n) >= cacheCoverage*float64(len(pool))
+}
+
 func (p *ScanPicker) Pick(ctx context.Context, onProgress func(done, total int)) ([]model.Server, error) {
 	return p.pick(ctx, onProgress, true, nil)
 }
@@ -149,7 +176,10 @@ func (p *ScanPicker) pickFrom(ctx context.Context, pool []model.Server, want int
 
 	p.mu.Lock()
 	if useCache {
-		if rs, ok := p.Cache.Fresh(key, now, cacheTTL); ok {
+		// The cache stands in for a full scan only if it covers nearly the
+		// whole list: one written before the list grew (the DNSCrypt list
+		// arriving after a first connect) would hide every new server.
+		if rs, ok := p.Cache.Fresh(key, now, cacheTTL); ok && covers(rs, pool) {
 			if top := topOK(rs, pool, want); len(top) >= want {
 				p.mu.Unlock()
 				return top, nil
@@ -160,8 +190,12 @@ func (p *ScanPicker) pickFrom(ctx context.Context, pool []model.Server, want int
 	p.mu.Unlock()
 
 	start := time.Now()
+	opt := scanner.Options{Workers: scanWorkers, Want: want * candidates, Budget: quickBudget}
+	if useCache { // connecting without a fresh cache: check them all
+		opt = scanner.Options{Workers: fullWorkers, Budget: fullBudget}
+	}
 	rs := scanner.Scan(ctx, ordered, p.Checker, scanner.Options{
-		Workers: scanWorkers, Want: want, Budget: quickBudget,
+		Workers: opt.Workers, Want: opt.Want, Budget: opt.Budget,
 		OnProgress: func(done, total int, _ scanner.Result) {
 			if onProgress != nil {
 				onProgress(done, total)
@@ -213,14 +247,17 @@ func (p *ScanPicker) Rescan(ctx context.Context, onProgress func(done, total int
 	if s.PinnedOnly {
 		pool = p.pool(s)
 	}
-	rs := scanner.Scan(ctx, pool, p.Checker, scanner.Options{Workers: scanWorkers, OnProgress: onProgress})
+	rs := scanner.Scan(ctx, pool, p.Checker, scanner.Options{Workers: fullWorkers, OnProgress: onProgress})
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	// Merge, so a cancelled scan keeps what it checked and the rest of the
+	// last scan.
+	p.Cache.Merge(p.NetKey(), p.Now(), rs)
+	saveErr := p.SaveCache(p.Cache)
 	if err := ctx.Err(); err != nil {
 		return rs, err
 	}
-	p.mu.Lock()
-	defer p.mu.Unlock()
-	p.Cache.Merge(p.NetKey(), p.Now(), rs) // a cancelled full scan keeps the rest
-	return rs, p.SaveCache(p.Cache)
+	return rs, saveErr
 }
 
 // Results returns the last scan for the current network, whatever its age.

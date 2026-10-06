@@ -2,10 +2,12 @@ package app
 
 import (
 	"context"
+	"crypto/x509"
 	"errors"
 	"fmt"
 	"io/fs"
 	"log/slog"
+	"net"
 	"net/netip"
 	"os"
 	"path/filepath"
@@ -14,6 +16,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/AdguardTeam/dnsproxy/upstream"
 	"github.com/hashcott/ghostline/internal/dnsserver"
 	"github.com/hashcott/ghostline/internal/dpi"
 	"github.com/hashcott/ghostline/internal/engine"
@@ -47,6 +50,13 @@ func (b *SettingsBox) Get() store.Settings {
 }
 
 // Save persists and adopts s.
+// set replaces the settings in memory only (the file was already written).
+func (b *SettingsBox) set(s store.Settings) {
+	b.mu.Lock()
+	b.s = s
+	b.mu.Unlock()
+}
+
 func (b *SettingsBox) Save(s store.Settings) error {
 	b.mu.Lock()
 	defer b.mu.Unlock()
@@ -114,6 +124,13 @@ type ServiceDeps struct {
 	WifiNames func() []string
 	// SaveFile asks where to save data (native dialog) and writes it.
 	SaveFile func(name string, data []byte) error
+
+	// Phase 3 tools.
+	BuildUpstream func(model.Server) (upstream.Upstream, error)
+	PlainUpstream func(ip string) (upstream.Upstream, error)                        // plain UDP 53: Ghostline's own engine and the ISP lookup source only
+	DialDirect    func(ctx context.Context, network, addr string) (net.Conn, error) // clean-IP scan: straight out, not via the proxy
+	OpenFile      func(title string) (string, error)                                // native open dialog; "" when cancelled
+	ISPResolvers  func() []string                                                   // this PC's DNS before Ghostline took over
 }
 
 // Service is bound to the frontend by Wails; its exported methods are the
@@ -124,6 +141,16 @@ type Service struct {
 
 	mu         sync.Mutex
 	scanCancel context.CancelFunc
+
+	// Phase 3 tools: one job per tool (guarded by mu).
+	advCancel  context.CancelFunc
+	adv        advJob
+	cfCancel   context.CancelFunc
+	cf         cfJob
+	cfCacheMu  sync.Mutex       // load-modify-save of cfscan-cache.json
+	cfRoots    *x509.CertPool   // nil = system roots; tests inject a test CA
+	imp        *importTicket    // the last import preview
+	now        func() time.Time // nil = time.Now; tests inject
 	tuneCancel context.CancelFunc
 	overrideCh chan bool
 
@@ -159,7 +186,9 @@ func (s *Service) SaveSettings(n store.Settings) error { return s.saveSettings(n
 // saveSettings validates and stores n. The DNS server and Fake SNI blocks
 // change only through their own bindings (owned=true): the UI's copy of the
 // settings may be stale and must not undo them.
-func (s *Service) saveSettings(n store.Settings, owned bool) error {
+// validateSettings checks the fields every save (and every import) must
+// pass.
+func (s *Service) validateSettings(n store.Settings) error {
 	if n.Language != "vi" && n.Language != "en" {
 		return fmt.Errorf("settings: language must be vi or en")
 	}
@@ -177,10 +206,20 @@ func (s *Service) saveSettings(n store.Settings, owned bool) error {
 	if err := store.ValidateProxy(n.Proxy); err != nil {
 		return err
 	}
+	if err := store.ValidateTools(n.Tools); err != nil {
+		return err
+	}
 	if n.DNSBlockMode != "zero" && n.DNSBlockMode != "nxdomain" {
 		return fmt.Errorf("settings: dnsBlockMode must be zero or nxdomain")
 	}
 	if err := s.validateDPI(n.DPI); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *Service) saveSettings(n store.Settings, owned bool) error {
+	if err := s.validateSettings(n); err != nil {
 		return err
 	}
 	old := s.x.Settings.Get()
@@ -231,10 +270,11 @@ func (s *Service) saveSettings(n store.Settings, owned bool) error {
 	return nil
 }
 
-// SetMode switches simple/advanced and resizes the window.
+// SetMode switches between the simple and the full interface and resizes
+// the window.
 func (s *Service) SetMode(mode string) error {
-	if mode != "simple" && mode != "advanced" {
-		return fmt.Errorf("mode must be simple or advanced")
+	if mode != store.ModeSimple && mode != store.ModeFull {
+		return fmt.Errorf("mode must be simple or full")
 	}
 	st := s.x.Settings.Get()
 	st.Mode = mode

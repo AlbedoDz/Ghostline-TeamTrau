@@ -80,24 +80,15 @@ func (c DNSChecker) Check(ctx context.Context, s model.Server) Result {
 		return r
 	}
 	defer u.Close()
-	q := new(dns.Msg).SetQuestion(dns.Fqdn(c.TestDomain), dns.TypeA)
 	var lat time.Duration
 	// One budget covers both queries (spec: 3s per server).
 	qctx, cancel := context.WithTimeout(ctx, c.Timeout)
 	defer cancel()
 	for i := 0; i < 2; i++ {
-		start := time.Now()
-		resp, err := u.Exchange(qctx, q.Copy())
-		lat = time.Since(start)
-		timedOut := qctx.Err() != nil
+		resp, d, err := Exchange(qctx, u, c.TestDomain, dns.TypeA, false)
+		lat = d
 		if err != nil {
-			if strings.Contains(strings.ToLower(err.Error()), "bootstrap") {
-				r.Reason = "bootstrap" // could not resolve the server's own hostname
-			} else if errors.Is(err, context.DeadlineExceeded) || timedOut || isTimeout(err) {
-				r.Reason = "timeout"
-			} else {
-				r.Reason = "error"
-			}
+			r.Reason = Classify(err, qctx.Err())
 			return r
 		}
 		if resp.Rcode != dns.RcodeSuccess {

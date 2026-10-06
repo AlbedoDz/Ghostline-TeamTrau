@@ -15,12 +15,12 @@ func TestSettings_V3toV4Defaults(t *testing.T) {
 	s, recovered, err := store.LoadSettings(path)
 	require.NoError(t, err)
 	require.False(t, recovered)
-	require.Equal(t, 4, s.Version)
+	require.Equal(t, 5, s.Version)
 	require.Equal(t, store.DNSServerSettings{DoHPort: 443}, s.DNSServer)
 	require.Equal(t, store.FakeSNISettings{}, s.FakeSNI)
 	require.Equal(t, store.EngineGoodbyeDPI, s.DPI.Engine)
 	require.Equal(t, "medium", s.DPI.Preset)
-	require.Equal(t, 4, store.DefaultSettings().Version)
+	require.Equal(t, 5, store.DefaultSettings().Version)
 }
 
 func TestSettings_DNSServerRoundTrip(t *testing.T) {

@@ -13,6 +13,7 @@ import (
 	"github.com/hashcott/ghostline/internal/brand"
 	"github.com/hashcott/ghostline/internal/icon"
 	"github.com/hashcott/ghostline/internal/model"
+	"github.com/hashcott/ghostline/internal/store"
 	"github.com/hashcott/ghostline/internal/winutil"
 	"github.com/wailsapp/wails/v3/pkg/application"
 	"github.com/wailsapp/wails/v3/pkg/events"
@@ -46,8 +47,8 @@ func (e *emitter) Emit(name string, data any) {
 }
 
 const (
-	simpleW, simpleH = 380, 580
-	minAdvW, minAdvH = 900, 600
+	simpleW, simpleH   = 380, 580
+	minFullW, minFullH = 900, 600
 )
 
 var statusColour = map[app.Status]color.RGBA{
@@ -106,9 +107,9 @@ func (u *ui) createWindow() {
 		BackgroundColour:    application.NewRGB(5, 7, 10),
 		URL:                 "/",
 	}
-	if s.Mode == "advanced" {
-		opts.Width, opts.Height = max(s.AdvancedWindow.Width, minAdvW), max(s.AdvancedWindow.Height, minAdvH)
-		opts.MinWidth, opts.MinHeight = minAdvW, minAdvH
+	if s.Mode == store.ModeFull {
+		opts.Width, opts.Height = max(s.FullWindow.Width, minFullW), max(s.FullWindow.Height, minFullH)
+		opts.MinWidth, opts.MinHeight = minFullW, minFullH
 		opts.DisableResize = false
 	}
 	w := u.app.Window.NewWithOptions(opts)
@@ -149,13 +150,13 @@ func (u *ui) resize(mode string) {
 	cx, cy := x+w0/2, y+h0/2
 	s := u.box.Get()
 	w, h := simpleW, simpleH
-	if mode == "advanced" {
-		w, h = max(s.AdvancedWindow.Width, minAdvW), max(s.AdvancedWindow.Height, minAdvH)
+	if mode == store.ModeFull {
+		w, h = max(s.FullWindow.Width, minFullW), max(s.FullWindow.Height, minFullH)
 		u.win.SetResizable(true)
-		u.win.SetMinSize(minAdvW, minAdvH)
+		u.win.SetMinSize(minFullW, minFullH)
 	} else {
-		if w0 >= minAdvW { // remember the advanced size
-			s.AdvancedWindow.Width, s.AdvancedWindow.Height = w0, h0
+		if w0 >= minFullW { // remember the full-interface size
+			s.FullWindow.Width, s.FullWindow.Height = w0, h0
 			_ = u.box.Save(s)
 		}
 		u.win.SetMinSize(simpleW, simpleH)

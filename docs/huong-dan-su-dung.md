@@ -9,7 +9,7 @@ Hướng dẫn này dành cho người dùng Windows 10/11, không cần biết 
 1. [Ghostline làm gì?](#1-ghostline-làm-gì)
 2. [Cài đặt](#2-cài-đặt)
 3. [Bắt đầu nhanh: một nút bấm](#3-bắt-đầu-nhanh-một-nút-bấm)
-4. [Chế độ Nâng cao](#4-chế-độ-nâng-cao)
+4. [Giao diện Đầy đủ](#4-giao-diện-đầy-đủ)
    - [Tổng quan](#41-tổng-quan)
    - [Máy chủ](#42-máy-chủ)
    - [Vượt DPI](#43-vượt-dpi)
@@ -19,6 +19,8 @@ Hướng dẫn này dành cho người dùng Windows 10/11, không cần biết 
    - [Rules và danh sách](#47-rules-và-danh-sách)
    - [DNS server](#48-dns-server)
    - [Fake SNI](#49-fake-sni)
+   - [Công cụ](#410-công-cụ)
+   - [Sao lưu và chuyển máy](#411-sao-lưu-và-chuyển-máy)
 5. [Icon ở khay hệ thống](#5-icon-ở-khay-hệ-thống)
 6. [Khi một trang web vẫn bị chặn](#6-khi-một-trang-web-vẫn-bị-chặn)
 7. [Xử lý sự cố](#7-xử-lý-sự-cố)
@@ -60,15 +62,15 @@ So mã hiện ra với dòng tương ứng trong file `SHA256SUMS` trên trang R
 
 ## 3. Bắt đầu nhanh: một nút bấm
 
-<p align="center"><img src="screenshots/simple-vi.png" width="320" alt="Chế độ Đơn giản"></p>
-<a href="videos/clips/connect-vi.mp4"><img src="videos/clips/connect-vi.webp" width="640" alt="Kết nối ở chế độ Đơn giản"></a>
+<p align="center"><img src="screenshots/simple-vi.png" width="320" alt="Giao diện Đơn giản"></p>
+<a href="videos/clips/connect-vi.mp4"><img src="videos/clips/connect-vi.webp" width="640" alt="Kết nối ở giao diện Đơn giản"></a>
 
 *Ảnh động được tua nhanh, không có tiếng; bấm vào để xem video có lồng tiếng.*
 
-Khi mở lần đầu, Ghostline ở chế độ **ĐƠN GIẢN**.
+Khi mở lần đầu, Ghostline ở giao diện **Đơn giản**.
 
 1. Bấm **nút nguồn tròn ở giữa**.
-2. Ghostline lần lượt: kiểm tra hệ thống → chọn máy chủ → bật engine → chụp DNS gốc → bật lưới an toàn → đặt DNS → xác minh không rò rỉ. Lần đầu mất khoảng 10–25 giây vì phải quét máy chủ; các lần sau chỉ vài giây.
+2. Ghostline lần lượt: kiểm tra hệ thống → chọn máy chủ → bật engine → chụp DNS gốc → bật lưới an toàn → đặt DNS → xác minh không rò rỉ. Lần đầu trên một mạng, app kiểm tra toàn bộ máy chủ không lọc nội dung (khoảng 700; máy chủ bạn ghim hoặc tự thêm luôn được tính) để chọn những cái nhanh nhất, mất khoảng 30–60 giây; bước này hiện tiến độ (ví dụ *chọn máy chủ 120/730*). Trong 24 giờ sau, cùng mạng đó, app dùng lại kết quả nên kết nối chỉ vài giây.
 3. Khi vòng tròn sáng xanh và hiện **[ ĐÃ BẢO VỆ ]** là xong: mọi truy vấn DNS của máy đã được mã hoá.
 
 Muốn huỷ khi đang kết nối: bấm nút nguồn lần nữa. Muốn tắt bảo vệ: bấm nút nguồn khi đang ở trạng thái Đã bảo vệ, DNS được trả về như cũ.
@@ -76,6 +78,19 @@ Muốn huỷ khi đang kết nối: bấm nút nguồn lần nữa. Muốn tắt
 <a href="videos/clips/disconnect-vi.mp4"><img src="videos/clips/disconnect-vi.webp" width="640" alt="Ngắt kết nối"></a>
 
 *Ảnh động được tua nhanh, không có tiếng; bấm vào để xem video có lồng tiếng.*
+
+**Lần kết nối đầu tiên: tự dò.** Lần đầu bấm kết nối sau khi cài, Ghostline thêm một bước vào danh sách: kiểm tra các trang mẫu qua DNS mã hoá của nó, và nếu vẫn còn trang bị chặn thì tự dò vượt DPI trên các trang đó, kèm tiến độ (ví dụ *tự dò vượt DPI với trang mẫu 12/900*). Tìm được chiến lược thì vượt DPI tự bật và mức chuyển sang **DNS + vượt DPI**; không trang nào bị chặn thì giữ **Chỉ DNS**. Bước này chỉ chạy một lần; ngắt kết nối giữa chừng thì lần kết nối sau chạy lại.
+
+**Mức bảo vệ.** Dưới dòng trạng thái, chọn Ghostline làm tới đâu. Đổi được bất cứ lúc nào, kể cả khi đang kết nối:
+
+| Mức | Bật gì | Khi nào |
+| --- | --- | --- |
+| **Chỉ DNS** | DNS mã hoá | Nhà mạng chỉ chặn bằng DNS; nhẹ nhất |
+| **DNS + vượt DPI** *(khuyên dùng)* | Thêm vượt DPI cho mọi ứng dụng | Đổi DNS rồi mà trang vẫn bị chặn |
+| **Tối đa** | Thêm proxy cho máy này (đặt proxy hệ thống của Windows); trình duyệt tự được fragment khi gặp trang bị chặn | Vượt DPI vẫn chưa đủ với vài trang |
+| **Tuỳ chỉnh** | Tổ hợp bạn tự chỉnh ở giao diện Đầy đủ | Sáng lên khi cài đặt ở đó không khớp mức nào |
+
+Mỗi mức chỉ đổi các công tắc trên; engine, chiến lược, máy chủ, rules và các cài đặt khác giữ nguyên. Khi chuyển từ **Tuỳ chỉnh** sang một mức, Ghostline ghi nhớ tổ hợp của bạn, bấm **Tuỳ chỉnh** để lấy lại. Fake SNI cần proxy: chọn mức không có proxy sẽ hỏi trước khi tắt Fake SNI, và **Tuỳ chỉnh** bật lại nó.
 
 **Bảng thông tin bên dưới:**
 
@@ -96,9 +111,11 @@ Muốn huỷ khi đang kết nối: bấm nút nguồn lần nữa. Muốn tắt
 | SUY GIẢM | Máy chủ phản hồi chậm hoặc không phản hồi; Ghostline đang tự tìm máy chủ khác. Mạng vẫn dùng được |
 | LỖI | Không kết nối được. **DNS của máy không bị thay đổi**. Đọc thông báo bên dưới để biết cách xử lý (xem [phần 7](#7-xử-lý-sự-cố)) |
 
-## 4. Chế độ Nâng cao
+## 4. Giao diện Đầy đủ
 
-Bấm **NÂNG CAO** ở góc trên bên trái để mở giao diện đầy đủ. Bấm **ĐƠN GIẢN** để quay lại. Thanh bên trái luôn có trạng thái hiện tại và nút **⏻ KẾT NỐI / NGẮT KẾT NỐI**.
+Bấm **ĐẦY ĐỦ** ở góc trên bên trái để xem mọi trang và cài đặt. Bấm **ĐƠN GIẢN** để quay lại. Thanh bên trái luôn có trạng thái hiện tại và nút **⏻ KẾT NỐI / NGẮT KẾT NỐI**.
+
+Thanh bên chia trang thành nhóm: **cơ bản** (tổng quan, máy chủ, vượt DPI), **nâng cao** (proxy, rules, DNS server) và **chẩn đoán** (công cụ), cuối cùng là cài đặt. **Fake SNI** là một tab của trang **proxy**, còn **nhật ký** là tab đầu tiên của trang **công cụ**.
 
 ### 4.1. Tổng quan
 
@@ -202,6 +219,8 @@ Danh sách trang dùng để kiểm tra kết nối (mặc định: youtube.com,
 Bạn có thể sửa danh sách trang mẫu trong ô bên dưới, mỗi dòng một trang.
 
 ### 4.4. Nhật ký
+
+Mở ở **công cụ › nhật ký** (tab đầu tiên).
 
 ![Nhật ký](screenshots/logs-vi.png)
 
@@ -358,7 +377,7 @@ DNS mã hoá chỉ dùng khi ở Wi-Fi nhà; khi dùng 4G/5G hay mạng khác, i
 **Từng bước: bật Fake SNI**
 
 1. Bấm **Kết nối**. Ở **Proxy**, bật **bật proxy** và **dùng cho máy này**.
-2. Mở **Fake SNI**, đọc và cuộn cảnh báo tới cuối, tích **tôi đã hiểu**, rồi bấm **tiếp tục**.
+2. Mở **proxy › fake sni**, đọc và cuộn cảnh báo tới cuối, tích **tôi đã hiểu**, rồi bấm **tiếp tục**.
 3. Bật **bật Fake SNI**, rồi bật một **nhóm preset** hoặc viết rule `sni=` ở trang **Rules**.
 4. Mở trang đó trong trình duyệt. Bộ đếm cho biết số kết nối đã giải mã hoặc phải quay về fragment.
 5. Xong thì bấm **tắt Fake SNI** trên dải tím.
@@ -375,6 +394,44 @@ Tính năng nâng cao cho trang nằm sau CDN cho phép *domain fronting*. Proxy
 
 Danh sách từ nguồn khác chỉ được dùng rule `sni=` sau khi bạn bật **tin cho Fake SNI**; preset của Ghostline có chữ ký.
 
+
+### 4.10. Công cụ
+
+Trang công cụ gồm nhật ký (tab đầu tiên, [phần 4.4](#44-nhật-ký)) và bốn công cụ chẩn đoán.
+
+**Lookup** tra một tên miền qua nhiều nguồn cùng lúc và cho biết các câu trả lời có khớp nhau không.
+
+1. Gõ tên miền (dán link từ trình duyệt cũng được) và chọn loại bản ghi. Với **PTR**, gõ một IP.
+2. Tích các nguồn. Mặc định có Ghostline (khi đã kết nối) và các server nhanh nhất từ lần quét gần nhất.
+3. Bấm **tra**. Thẻ ở trên cho biết:
+   - **Bị đầu độc DNS:** một nguồn trả về IP nội bộ, hoặc báo tên miền không tồn tại trong khi nguồn khác tìm thấy. Đó là cách nhà mạng chặn bằng DNS.
+   - **Kết quả khác nhau:** địa chỉ khác nhau. CDN trả IP theo vị trí, nên chỉ vậy thì chưa chắc là bị chặn.
+   - **Kết quả khớp nhau:** cùng địa chỉ, hoặc cùng một CDN.
+4. **chi tiết** hiện từng câu trả lời như `dig` in ra, có TTL và các cờ.
+
+Nguồn **DNS nhà mạng** là chỗ duy nhất Ghostline gửi truy vấn không mã hoá: nhà mạng thấy tên miền bạn tra. Ghostline không bao giờ tích sẵn nguồn này; chỉ tích khi cần so sánh. Khi máy nhận DNS từ router, Ghostline đưa ra địa chỉ của router.
+
+**Scanner** chấm nhiều server cùng lúc: độ trễ qua nhiều lượt (trung vị, p90, jitter), tỉ lệ mất gói, server có kiểm tra DNSSEC không, có lọc quảng cáo không, và có trả địa chỉ giả cho các trang mẫu ở trang **Vượt DPI** không. Quét danh sách server có lọc, hoặc dán danh sách địa chỉ. Mặc định một lượt quét tối đa 500 server (chỉnh 50–2000 trong **tuỳ chọn**); bộ lọc khớp nhiều hơn thì quét các server hữu ích nhất trước: đã ghim, chạy tốt lần trước, rồi server có sẵn. Quét càng nhiều càng lâu: 2000 server mất khoảng 6–8 phút. Từ kết quả có thể ghim server, chỉ dùng một server, thêm server vừa dán vào danh sách, hoặc xuất CSV mở được bằng Excel.
+
+**IP Cloudflare** tìm các địa chỉ Cloudflare còn dùng được và nhanh trên mạng của bạn.
+
+1. Bấm **quét**. Ghostline thử một địa chỉ trong mỗi khối mạng của Cloudflare, chỉ qua cổng 443, tối đa 200 kết nối mới mỗi giây, đi thẳng ra mạng (không qua proxy của Ghostline). Đủ 50 địa chỉ dùng được thì dừng.
+2. 10 địa chỉ nhanh nhất được đo thêm tốc độ tải.
+3. Chọn vài địa chỉ rồi **sao chép**, hoặc **tạo rule**: gõ các domain (ví dụ `example.com` và `*.example.com`), Ghostline thêm rule `ip=` vào trang **Rules**.
+
+Rule `ip=` chỉ có tác dụng với ứng dụng dùng DNS hoặc proxy của Ghostline, và chỉ đúng với domain thật sự nằm sau Cloudflare. Kết quả được lưu theo từng mạng; **kiểm tra lại** thử lại các địa chỉ đang chọn. Địa chỉ dùng được hôm nay có thể bị chặn ngày mai: quét lại khi trang không vào được nữa.
+
+**Stamp** đọc và tạo stamp `sdns://`. Dán stamp để xem bên trong có gì, hoặc điền biểu mẫu (hay **điền từ URL**) để tạo stamp, rồi **thêm vào danh sách server**. Stamp relay và ODoH đọc được nhưng Ghostline không dùng.
+
+### 4.11. Sao lưu và chuyển máy
+
+Trong **Cài đặt › Sao lưu và chuyển máy**:
+
+- **xuất cài đặt…** lưu một file `.ghostline.json`. Chọn phần cần xuất: cài đặt, rule và danh sách, server tự thêm, danh sách đen vượt DPI, danh sách tự học của zapret2. File không bao giờ chứa tên Wi-Fi nhà, card mạng, mật khẩu proxy, nhật ký hay chứng chỉ. Danh sách trỏ tới một file trên máy này không được xuất.
+- **nhập cài đặt…** chỉ dùng được khi đã ngắt kết nối. Ghostline cho xem trước những gì sẽ thay đổi, và hỏi riêng trước khi nhập rule chuyển hướng lưu lượng đã giải mã (`sni=`, `connect=`). Khi nhập, Fake SNI, DNS server, chia sẻ trong LAN và khởi động cùng Windows luôn bị tắt, và danh sách từ nguồn khác không còn được tin cho Fake SNI: bật lại trên máy này nếu cần. Mật khẩu proxy phải nhập lại.
+- Nếu ghi lỗi giữa chừng, mọi file được trả về như cũ. File bị thay khi nhập được giữ lại bên cạnh với tên `*.bak-import`.
+
+`Ghostline.exe --export <file>` ghi cùng bản sao lưu đó từ dòng lệnh, để gửi cho người đang giúp bạn. Chạy trong Command Prompt hoặc PowerShell để thấy kết quả; giống như khi mở Ghostline, Windows sẽ hỏi quyền quản trị.
 
 ## 5. Icon ở khay hệ thống
 

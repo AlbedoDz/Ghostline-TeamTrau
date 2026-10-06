@@ -34,7 +34,7 @@ export function TitleBar({ mode, onMode, lang, onLang }: Props) {
         </div>
       </div>
       <div className={css.tabs} role="tablist">
-        {(["simple", "advanced"] as Mode[]).map((m) => (
+        {(["simple", "full"] as Mode[]).map((m) => (
           <button
             key={m}
             role="tab"

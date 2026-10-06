@@ -4,7 +4,7 @@ import { useGhost, type Mode } from "./app/store";
 import { Service } from "./app/api";
 import { TitleBar } from "./components/neon/TitleBar";
 import { SimpleView } from "./modes/simple/SimpleView";
-import { AdvancedView } from "./modes/advanced/AdvancedView";
+import { FullView } from "./modes/full/FullView";
 import { FakeSniBanner } from "./components/FakeSniBanner";
 import i18n, { initI18n, type Lang } from "./i18n";
 import css from "./App.module.css";
@@ -14,7 +14,7 @@ function App() {
   const setSettings = useGhost((s) => s.setSettings);
   useEffect(() => startBridge(), []);
 
-  const mode: Mode = settings?.mode === "advanced" ? "advanced" : "simple";
+  const mode: Mode = settings?.mode === "full" ? "full" : "simple";
   const lang: Lang = (i18n.language as Lang) === "en" ? "en" : "vi";
 
   const onMode = (m: Mode) => {
@@ -39,15 +39,16 @@ function App() {
           <SimpleView
             onOpenLogs={() => {
               useGhost.getState().setPage("logs");
-              onMode("advanced");
+              onMode("full");
             }}
             onOpenServers={() => {
               useGhost.getState().setPage("servers");
-              onMode("advanced");
+              onMode("full");
             }}
+            onOpenFull={() => onMode("full")}
           />
         ) : (
-          <AdvancedView />
+          <FullView />
         )}
       </main>
     </div>

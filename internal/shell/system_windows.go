@@ -76,22 +76,32 @@ func (s safety) StartWatchdog(pid uint32, start time.Time) (func() error, error)
 func (s safety) CreateRecoveryTask() error { return startup.Create(startup.RecoveryTask(s.exe)) }
 func (s safety) DeleteRecoveryTask() error { return startup.Delete(startup.RecoveryTask(s.exe).Name) }
 
-// networkKey identifies the current network by the default gateway of the
-// first connected adapter and that adapter's hardware address.
-func networkKey() string {
+// adaptersAddresses returns the GetAdaptersAddresses list (with
+// gateways), or nil.
+func adaptersAddresses() *windows.IpAdapterAddresses {
 	size := uint32(15 * 1024)
 	var buf []byte
 	for i := 0; i < 3; i++ {
 		buf = make([]byte, size)
 		err := windows.GetAdaptersAddresses(windows.AF_UNSPEC, 0x80, 0, (*windows.IpAdapterAddresses)(unsafe.Pointer(&buf[0])), &size)
 		if err == nil {
-			break
+			return (*windows.IpAdapterAddresses)(unsafe.Pointer(&buf[0]))
 		}
 		if !errors.Is(err, windows.ERROR_BUFFER_OVERFLOW) {
-			return "unknown"
+			return nil
 		}
 	}
-	for aa := (*windows.IpAdapterAddresses)(unsafe.Pointer(&buf[0])); aa != nil; aa = aa.Next {
+	return nil
+}
+
+// networkKey identifies the current network by the default gateway of the
+// first connected adapter and that adapter's hardware address.
+func networkKey() string {
+	first := adaptersAddresses()
+	if first == nil {
+		return "unknown"
+	}
+	for aa := first; aa != nil; aa = aa.Next {
 		if aa.OperStatus != 1 || aa.FirstGatewayAddress == nil {
 			continue
 		}
@@ -100,6 +110,23 @@ func networkKey() string {
 		return scanner.NetworkKey(gw, mac)
 	}
 	return scanner.NetworkKey("none", "none")
+}
+
+// liveAdapters lists the DNS servers (static or DHCP) and gateway of every
+// up adapter that has a gateway.
+func liveAdapters() []liveAdapter {
+	var out []liveAdapter
+	for aa := adaptersAddresses(); aa != nil; aa = aa.Next {
+		if aa.OperStatus != 1 || aa.FirstGatewayAddress == nil {
+			continue
+		}
+		la := liveAdapter{Gateway: aa.FirstGatewayAddress.Address.IP().String()}
+		for d := aa.FirstDnsServerAddress; d != nil; d = d.Next {
+			la.DNS = append(la.DNS, d.Address.IP().String())
+		}
+		out = append(out, la)
+	}
+	return out
 }
 
 const webView2ClientKey = `SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}`

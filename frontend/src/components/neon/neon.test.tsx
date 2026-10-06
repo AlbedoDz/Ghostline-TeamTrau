@@ -95,3 +95,16 @@ test("Sidebar marks the active item and selects", () => {
   expect(onSelect).toHaveBeenCalledWith("a");
   expect(screen.getByText("foot")).toBeInTheDocument();
 });
+
+test("Sidebar shows group headers that are not buttons", () => {
+  render(<Sidebar items={[{ id: "h1", label: "cơ bản", header: true }, { id: "a", label: "tổng quan" }]} active="a" onSelect={() => {}} />);
+  expect(screen.getByText("cơ bản")).toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "cơ bản" })).toBeNull();
+  expect(screen.getAllByRole("button")).toHaveLength(1);
+});
+
+test("Sidebar draws an empty header as a separator", () => {
+  render(<Sidebar items={[{ id: "a", label: "công cụ" }, { id: "sep", label: "", header: true }, { id: "b", label: "cài đặt" }]} active="a" onSelect={() => {}} />);
+  expect(screen.getByRole("separator")).toBeInTheDocument();
+  expect(screen.getAllByRole("button")).toHaveLength(2);
+});

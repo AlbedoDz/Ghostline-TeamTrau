@@ -11,6 +11,16 @@ import (
 //go:embed servers.json
 var BuiltinJSON []byte
 
+// DNSCryptMD and DNSCryptSig are the DNSCrypt public resolvers list and
+// its minisign signature, refreshed by tools/fetchdnscrypt at each release.
+// They are used until the first download, which can come late or fail.
+//
+//go:embed dnscrypt/public-resolvers.md
+var DNSCryptMD []byte
+
+//go:embed dnscrypt/public-resolvers.md.minisig
+var DNSCryptSig []byte
+
 // FakeSNIPresets holds the built-in copies of lists/fakesni/*.txt and their
 // .sig files, used when a preset has never been downloaded. The app checks
 // the signature before using one.

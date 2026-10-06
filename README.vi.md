@@ -23,9 +23,9 @@
 Ghostline chạy một DNS server cục bộ trên `127.0.0.1` / `::1`, trỏ mọi card mạng về đó, rồi chuyển tiếp truy vấn qua **DoH, DoT, DoQ hoặc DNSCrypt** tới máy chủ nhanh nhất còn hoạt động. Khi kết nối mã hoá bị can thiệp bằng cách soi gói tin (DPI), Ghostline có thể chạy thêm một engine vượt DPI: **zapret2** (khuyên dùng) hoặc **GoodbyeDPI**. Trên hết, Ghostline được thiết kế để **luôn trả lại DNS gốc của bạn**, kể cả khi app bị tắt đột ngột hay máy mất điện.
 
 <p align="center">
-  <img src="docs/screenshots/simple-vi.png" height="360" alt="Chế độ Đơn giản">
+  <img src="docs/screenshots/simple-vi.png" height="360" alt="Giao diện Đơn giản">
   &nbsp;
-  <img src="docs/screenshots/overview-vi.png" height="360" alt="Chế độ Nâng cao">
+  <img src="docs/screenshots/overview-vi.png" height="360" alt="Giao diện Đầy đủ">
 </p>
 
 ## Mục lục
@@ -57,8 +57,10 @@ Ghostline chạy một DNS server cục bộ trên `127.0.0.1` / `::1`, trỏ m�
 - **Rules và danh sách cộng đồng:** chặn, cho phép, DNS giả, fragment hoặc đi qua upstream proxy theo domain, keyword, regexp hay CIDR. Import danh sách hosts, AdBlock/AdGuard, dnsmasq, Unbound, RPZ, Clash, v2ray, sing-box hoặc CIDR thẳng từ link GitHub, tự cập nhật theo lịch.
 - **DNS server cho mạng nhà:** DNS mã hoá cho điện thoại, TV, máy chơi game và router trong Wi-Fi: DNS cổng 53 (không cần chứng chỉ) hoặc DNS-over-HTTPS, có trang cài đặt qua mã QR và profile cho iOS.
 - **Fake SNI (nâng cao, mặc định tắt):** với trang nằm sau CDN cho phép domain fronting, proxy gửi ra mạng một tên miền khác được phép. Chỉ giải mã HTTPS của những tên miền bạn chọn, bằng chứng chỉ chỉ ký được cho đúng các tên miền đó và bị gỡ khi ngắt kết nối.
+- **Công cụ chẩn đoán:** tra DNS so sánh nhiều nguồn và phát hiện DNS bị đầu độc, Scanner nâng cao chấm server theo độ trễ, mất gói, DNSSEC, lọc quảng cáo và đầu độc, công cụ tìm IP Cloudflare sạch rồi tạo rule `ip=`, và công cụ đọc/tạo stamp DNS.
+- **Sao lưu và khôi phục:** xuất cài đặt, rule, danh sách và server tự thêm ra một file rồi nhập trên máy khác. Thông tin riêng tư và gắn với máy không bao giờ được xuất, và khi nhập không bao giờ tự bật Fake SNI hay chia sẻ trong LAN.
 - **Danh sách máy chủ có chữ ký:** cập nhật mỗi ngày, xác minh bằng ed25519; danh sách DNSCrypt được kiểm tra bằng minisign.
-- **Chế độ Đơn giản và Nâng cao**, icon khay, giao diện tiếng Việt và tiếng Anh, phong cách neon-terminal.
+- **Giao diện Đơn giản và Đầy đủ**, icon khay, giao diện tiếng Việt và tiếng Anh, phong cách neon-terminal.
 - **Bản cài đặt hoặc portable:** bản portable lưu mọi dữ liệu trong thư mục `data\` cạnh file exe.
 - **Chỉ thông báo khi có bản mới:** không bao giờ tự cập nhật ngầm.
 
@@ -113,7 +115,7 @@ Get-FileHash .\Ghostline-0.1.0-portable.zip -Algorithm SHA256
 > 📖 Hướng dẫn chi tiết từng màn hình, cách xử lý khi không vào được trang và xử lý sự cố: **[docs/huong-dan-su-dung.md](docs/huong-dan-su-dung.md)**
 
 1. Mở Ghostline và bấm **Kết nối**. App tự chọn máy chủ, chuyển hướng DNS và kiểm tra rò rỉ.
-2. Nếu vẫn còn trang bị chặn, hoặc bật **proxy** (Nâng cao → Proxy → bật proxy + dùng cho máy này) để trình duyệt được fragment tự động, hoặc vào **Nâng cao → DPI**, chọn engine (khuyên dùng **zapret2**), bật lên rồi bấm **tự dò**.
+2. Nếu vẫn còn trang bị chặn, hoặc bật **proxy** (Đầy đủ → Proxy → bật proxy + dùng cho máy này) để trình duyệt được fragment tự động, hoặc vào **Đầy đủ → Vượt DPI**, chọn engine (khuyên dùng **zapret2**), bật lên rồi bấm **tự dò**.
    Muốn chia sẻ cho thiết bị khác, bật **chia sẻ LAN** rồi quét mã QR bằng điện thoại (mạng phải là *Private*).
 3. Bấm **Ngắt kết nối** (hoặc thoát từ icon khay) để trả lại DNS gốc.
 
@@ -216,15 +218,21 @@ Dự án được xây dựng trên [dnsproxy](https://github.com/AdguardTeam/dn
 
 ## Ủng hộ
 
-Ghostline miễn phí và sẽ luôn miễn phí. Nếu app có ích và bạn muốn ủng hộ để dự án tiếp tục phát triển, bạn có thể gửi qua [PayPal](https://paypal.me/hashcott), Binance Pay, stablecoin, hoặc quét mã QR MoMo bằng bất kỳ app ngân hàng nào (VietQR / Napas 247). Cảm ơn bạn!
+Ghostline miễn phí và sẽ luôn miễn phí. Nếu có thể, bạn hãy ưu tiên ủng hộ các dự án mà Ghostline dựa vào, vì phần việc khó nhất là của họ:
+
+- [zapret2](https://github.com/bol-van/zapret2) của bol-van: engine vượt DPI
+- [GoodbyeDPI](https://github.com/ValdikSS/GoodbyeDPI) của ValdikSS
+- [WinDivert](https://github.com/basil00/WinDivert) của basil00
+- [dnsproxy](https://github.com/AdguardTeam/dnsproxy) của AdGuard
+- [Wails](https://wails.io)
+
+Nếu bạn muốn ủng hộ cả Ghostline, bạn có thể gửi qua [PayPal](https://paypal.me/hashcott), stablecoin hoặc MoMo / VietQR. Cảm ơn bạn!
 
 <p align="center">
   <a href="https://paypal.me/hashcott"><img src="https://img.shields.io/badge/PayPal-hashcott-00457C?logo=paypal&logoColor=white" alt="Ủng hộ qua PayPal"></a>
 </p>
 
-**Binance Pay:** quét mã QR Binance Pay bên dưới bằng app Binance (tài khoản `duchanhstyle`). Chuyển giữa người dùng Binance với nhau miễn phí và tức thì.
-
-**Stablecoin (USDT hoặc USDC) từ ví khác:**
+**Stablecoin (USDT hoặc USDC):**
 
 ```
 0x3C0E297cC77416DA2Ac108F09360d7Bf7C4E2c8e
@@ -233,8 +241,9 @@ Ghostline miễn phí và sẽ luôn miễn phí. Nếu app có ích và bạn m
 > [!WARNING]
 > Chỉ gửi qua mạng **BNB Smart Chain (BEP20)** hoặc **Arc**. Gửi qua mạng khác, ví dụ Ethereum (ERC20) hay Tron (TRC20), sẽ mất tiền vĩnh viễn.
 
-| Binance Pay | MoMo / VietQR |
-| :---: | :---: |
-| <img src="docs/donate-binance-pay.png" width="240" alt="Mã QR ủng hộ qua Binance Pay"> | <img src="docs/donate-momo.png" width="240" alt="Mã QR ủng hộ qua MoMo / VietQR"> |
-| **USDT (BNB Smart Chain)** | **USDC (BNB Smart Chain)** |
-| <img src="docs/donate-usdt-bsc.png" width="240" alt="Mã QR ủng hộ USDT trên BNB Smart Chain"> | <img src="docs/donate-usdc-bsc.png" width="240" alt="Mã QR ủng hộ USDC trên BNB Smart Chain"> |
+<details>
+<summary><b>MoMo / VietQR</b> (bấm để xem mã QR)</summary>
+<br>
+Quét bằng MoMo hoặc bất kỳ app ngân hàng nào (VietQR / Napas 247).
+<p align="center"><img src="docs/donate-momo.png" width="240" alt="Mã QR ủng hộ qua MoMo / VietQR"></p>
+</details>

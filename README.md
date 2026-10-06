@@ -23,9 +23,9 @@ English · [Tiếng Việt](README.vi.md)
 Ghostline runs a local DNS server on `127.0.0.1` / `::1`, points every network adapter at it, and forwards your queries over **DoH, DoT, DoQ or DNSCrypt** to the fastest healthy resolver. When your network interferes with encrypted connections by inspecting packets (DPI), it can also run a DPI bypass engine: **zapret2** (recommended) or **GoodbyeDPI**. Above all, it is built to **always give your original DNS back**, even if the app crashes or the machine loses power.
 
 <p align="center">
-  <img src="docs/screenshots/simple-en.png" height="360" alt="Simple mode">
+  <img src="docs/screenshots/simple-en.png" height="360" alt="Simple interface">
   &nbsp;
-  <img src="docs/screenshots/overview-en.png" height="360" alt="Advanced mode">
+  <img src="docs/screenshots/overview-en.png" height="360" alt="Full interface">
 </p>
 
 ## Table of contents
@@ -58,8 +58,10 @@ Ghostline runs a local DNS server on `127.0.0.1` / `::1`, points every network a
 - **Rules and community lists:** block, allow, fake DNS, fragment or route through an upstream proxy by domain, keyword, regexp or CIDR. Import hosts, AdBlock/AdGuard, dnsmasq, Unbound, RPZ, Clash, v2ray, sing-box or CIDR lists straight from a GitHub link, updated on a schedule.
 - **DNS server for your home network:** encrypted DNS for phones, TVs, consoles and routers on your Wi-Fi: plain DNS on port 53 (no certificate needed) or DNS-over-HTTPS, with a QR-code setup page and an iOS profile.
 - **Fake SNI (advanced, off by default):** for sites behind CDNs that allow domain fronting, the proxy sends a different, allowed domain name to the network. It decrypts HTTPS only for domains you choose, with a certificate that can sign only those domains and is removed on disconnect.
+- **Diagnostic tools:** DNS lookup that compares sources and spots DNS poisoning, an advanced scanner that grades servers on latency, loss, DNSSEC, ad filtering and poisoning, a Cloudflare clean-IP finder that turns results into `ip=` rules, and a DNS stamp reader and builder.
+- **Backup and restore:** export settings, rules, lists and your servers to one file and import them on another PC. Private and machine-bound values are never exported, and an import never turns on Fake SNI or sharing on the LAN.
 - **Signed server list:** updated daily and verified with ed25519; the DNSCrypt list is checked with minisign.
-- **Simple and Advanced modes**, a tray icon, Vietnamese and English UI, and a neon-terminal look.
+- **Simple and Full interfaces**, a tray icon, Vietnamese and English UI, and a neon-terminal look.
 - **Installer or portable:** the portable build keeps all data in a `data\` folder next to the exe.
 - **Update notifications only:** Ghostline tells you about a new version and never updates itself silently.
 
@@ -112,7 +114,7 @@ Get-FileHash .\Ghostline-0.1.0-portable.zip -Algorithm SHA256
 > 📖 A detailed user guide covering every screen, unblocking sites and troubleshooting: **[docs/user-guide.md](docs/user-guide.md)** ([Tiếng Việt](docs/huong-dan-su-dung.md))
 
 1. Start Ghostline and press **Connect**. It picks a server, redirects DNS and verifies there is no leak.
-2. If some sites are still blocked, either turn on the **proxy** (Advanced → Proxy → enable proxy + use for this PC) so browsers get automatic fragmentation, or open **Advanced → DPI**, pick an engine (**zapret2** is recommended), turn it on and press **auto-tune**.
+2. If some sites are still blocked, either turn on the **proxy** (Full → Proxy → enable proxy + use for this PC) so browsers get automatic fragmentation, or open **Full → DPI bypass**, pick an engine (**zapret2** is recommended), turn it on and press **auto-tune**.
    To share with other devices, turn on **share on LAN** and scan the QR code on your phone (the network must be *Private*).
 3. Press **Disconnect** (or quit from the tray) to restore your original DNS.
 
@@ -226,15 +228,21 @@ It stands on the shoulders of [dnsproxy](https://github.com/AdguardTeam/dnsproxy
 
 ## Donate
 
-Ghostline is free and always will be. If it helps you and you would like to support its development, you can send a tip through [PayPal](https://paypal.me/hashcott), Binance Pay, stablecoins, or by scanning the MoMo QR code with any Vietnamese banking app (VietQR / Napas 247). Thank you!
+Ghostline is free and always will be. If you can, please support the projects it is built on first; they do the heavy lifting:
+
+- [zapret2](https://github.com/bol-van/zapret2) by bol-van: the DPI bypass engine
+- [GoodbyeDPI](https://github.com/ValdikSS/GoodbyeDPI) by ValdikSS
+- [WinDivert](https://github.com/basil00/WinDivert) by basil00
+- [dnsproxy](https://github.com/AdguardTeam/dnsproxy) by AdGuard
+- [Wails](https://wails.io)
+
+If you would also like to support Ghostline itself, you can send a tip through [PayPal](https://paypal.me/hashcott), stablecoins, or MoMo / VietQR. Thank you!
 
 <p align="center">
   <a href="https://paypal.me/hashcott"><img src="https://img.shields.io/badge/PayPal-hashcott-00457C?logo=paypal&logoColor=white" alt="Donate with PayPal"></a>
 </p>
 
-**Binance Pay:** scan the Binance Pay QR code below with the Binance app (account `duchanhstyle`). Transfers between Binance users are free and instant.
-
-**Stablecoins (USDT or USDC) from any other wallet:**
+**Stablecoins (USDT or USDC):**
 
 ```
 0x3C0E297cC77416DA2Ac108F09360d7Bf7C4E2c8e
@@ -243,8 +251,9 @@ Ghostline is free and always will be. If it helps you and you would like to supp
 > [!WARNING]
 > Send only through **BNB Smart Chain (BEP20)** or **Arc**. Coins sent through any other network, such as Ethereum (ERC20) or Tron (TRC20), will be lost.
 
-| Binance Pay | MoMo / VietQR |
-| :---: | :---: |
-| <img src="docs/donate-binance-pay.png" width="240" alt="Binance Pay donation QR code"> | <img src="docs/donate-momo.png" width="240" alt="MoMo / VietQR donation QR code"> |
-| **USDT (BNB Smart Chain)** | **USDC (BNB Smart Chain)** |
-| <img src="docs/donate-usdt-bsc.png" width="240" alt="USDT donation QR code on BNB Smart Chain"> | <img src="docs/donate-usdc-bsc.png" width="240" alt="USDC donation QR code on BNB Smart Chain"> |
+<details>
+<summary><b>MoMo / VietQR</b> (click to show the QR code)</summary>
+<br>
+Scan with MoMo or any Vietnamese banking app (VietQR / Napas 247).
+<p align="center"><img src="docs/donate-momo.png" width="240" alt="MoMo / VietQR donation QR code"></p>
+</details>

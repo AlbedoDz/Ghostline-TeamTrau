@@ -44,6 +44,14 @@ type Fetcher struct {
 
 var safeName = regexp.MustCompile(`^[A-Za-z0-9._-]+$`)
 
+var safeID = regexp.MustCompile(`^[A-Za-z0-9_-]{1,64}$`)
+
+// ValidID reports whether id is safe as a cache file name: letters, digits,
+// '-' and '_' only, so it can never leave the cache directory.
+func ValidID(id string) bool { return safeID.MatchString(id) }
+
+var errBadID = errors.New("lists: invalid list id")
+
 func (f *Fetcher) cachePath(id, include string) string {
 	if include == "" {
 		return filepath.Join(f.Dir, id+".txt")
@@ -54,6 +62,9 @@ func (f *Fetcher) cachePath(id, include string) string {
 // Fetch downloads (or reads) l, parses it, refreshes the cache and l's
 // metadata. On error the cache is left as it was and l.LastError is set.
 func (f *Fetcher) Fetch(ctx context.Context, l *List) (Result, error) {
+	if !ValidID(l.ID) {
+		return Result{}, errBadID
+	}
 	r, meta, err := f.fetch(ctx, l)
 	if err != nil {
 		l.LastError = err.Error()
@@ -269,6 +280,9 @@ func (f *Fetcher) includes(l *List, r *Result, names []string, depth int, seen m
 
 // LoadCached parses the cached copy of l (and its cached includes).
 func (f *Fetcher) LoadCached(l List) (Result, error) {
+	if !ValidID(l.ID) {
+		return Result{}, errBadID
+	}
 	data, err := os.ReadFile(f.cachePath(l.ID, ""))
 	switch {
 	case err == nil && l.Signed:

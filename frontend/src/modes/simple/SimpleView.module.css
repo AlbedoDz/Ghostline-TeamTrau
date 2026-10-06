@@ -97,3 +97,60 @@
 .update:hover {
   background: color-mix(in srgb, var(--green) 12%, transparent);
 }
+
+/* Protection level: a segmented choice under the status line. */
+.levels {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 0 16px;
+}
+
+.levelRow {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  border: 1px solid var(--line-strong);
+}
+
+.level {
+  padding: 4px 10px;
+  font-size: 11px;
+  color: var(--text);
+  letter-spacing: 0.04em;
+}
+
+.level + .level {
+  border-left: 1px solid var(--line);
+}
+
+.level:hover:not(:disabled) {
+  color: var(--green);
+}
+
+.level[aria-checked="true"] {
+  background: rgba(0, 255, 163, 0.16);
+  color: var(--green);
+  font-weight: 700;
+}
+
+.level:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.levelNote {
+  font-size: 11px;
+  color: var(--dim);
+  text-align: center;
+  max-width: 380px;
+  min-height: 2.8em; /* room for two lines, so the layout does not jump */
+}
+
+.levelError {
+  font-size: 11px;
+  color: var(--red);
+  text-align: center;
+}
+

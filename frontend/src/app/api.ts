@@ -20,7 +20,21 @@ export type {
   DNSServerStatus,
   FakeSNIStatus,
   SetupCountdown,
+  LookupResult,
+  StampCard,
+  AdvRow,
+  AdvScanProgress,
+  AdvScanStart,
+  ServerFilter,
+  CFView,
+  CFProgress,
+  ImportPreview,
 } from "../../bindings/github.com/hashcott/ghostline/internal/app/models";
+export type { Answer, Source as LookupSource, Verdict } from "../../bindings/github.com/hashcott/ghostline/internal/lookup/models";
+export type { Fields as StampFields } from "../../bindings/github.com/hashcott/ghostline/internal/stamps/models";
+export type { Result as AdvResult } from "../../bindings/github.com/hashcott/ghostline/internal/scanner/advanced/models";
+export type { Result as CfResult } from "../../bindings/github.com/hashcott/ghostline/internal/cfscan/models";
+export type { Choices as ImportChoices, Preview as BackupPreview, Warning as BackupWarning } from "../../bindings/github.com/hashcott/ghostline/internal/backup/models";
 export type { ServeStats } from "../../bindings/github.com/hashcott/ghostline/internal/engine/models";
 export type { Cert } from "../../bindings/github.com/hashcott/ghostline/internal/certstore/models";
 export type { Rule, Decision, LineError, Source as RuleSource } from "../../bindings/github.com/hashcott/ghostline/internal/rules/models";

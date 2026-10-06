@@ -15,6 +15,7 @@ type Paths struct {
 	State              string
 	Meta               string
 	ScanCache          string
+	CFScanCache        string
 	ServersRemote      string
 	ServersRemoteSig   string
 	ServersDNSCrypt    string
@@ -55,6 +56,7 @@ func ResolvePaths(exePath, appData string) Paths {
 	p.LANCAKey = j("lan-ca.key")
 	p.Meta = j("meta.json")
 	p.ScanCache = j("scan-cache.json")
+	p.CFScanCache = j("cfscan-cache.json")
 	p.ServersRemote = j("servers-remote.json")
 	p.ServersRemoteSig = j("servers-remote.json.sig")
 	p.ServersDNSCrypt = j("servers-dnscrypt.md")

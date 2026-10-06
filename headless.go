@@ -2,11 +2,13 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"log/slog"
 	"os"
 	"path/filepath"
 	"time"
 
+	"github.com/hashcott/ghostline/internal/app"
 	"github.com/hashcott/ghostline/internal/brand"
 	"github.com/hashcott/ghostline/internal/certs"
 	"github.com/hashcott/ghostline/internal/certstore"
@@ -19,7 +21,7 @@ import (
 	"github.com/hashcott/ghostline/internal/winutil"
 )
 
-// runHeadless handles --watchdog and --restore. It never touches Wails.
+// runHeadless handles --watchdog, --restore, --remove-certs and --export. It never touches Wails.
 func runHeadless(mode cli.Mode) int {
 	exe, err := os.Executable()
 	if err != nil {
@@ -30,6 +32,18 @@ func runHeadless(mode cli.Mode) int {
 	if w, err := logx.NewRotating(paths.LogDir, "ghostline", 5<<20, 3); err == nil {
 		defer w.Close()
 		logger = slog.New(slog.NewTextHandler(w, nil)).With("mode", modeName(mode.Kind))
+	}
+	if mode.Kind == cli.KindExport {
+		// Read-only: no state lock, no recovery. A GUI exe has no console of
+		// its own: borrow the caller's so the result can be read.
+		winutil.AttachParentConsole()
+		if err := app.ExportTo(paths, mode.ExportPath, brand.Version); err != nil {
+			logger.Error("export failed", "err", err)
+			fmt.Fprintln(os.Stderr, "Ghostline: export failed:", err)
+			return 1
+		}
+		fmt.Fprintln(os.Stdout, "Ghostline: settings exported to", mode.ExportPath)
+		return 0
 	}
 	lock, err := winutil.NewNamedMutex(brand.StateMutex)
 	if err != nil {
@@ -79,6 +93,8 @@ func modeName(k cli.Kind) string {
 		return "remove-certs"
 	case cli.KindAutostart:
 		return "autostart"
+	case cli.KindExport:
+		return "export"
 	}
 	return "ui"
 }

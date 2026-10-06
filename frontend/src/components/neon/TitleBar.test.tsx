@@ -12,12 +12,14 @@ test("language toggle calls onLang with the other language", () => {
   expect(onLang).toHaveBeenCalledWith("en");
 });
 
-test("mode tabs call onMode", () => {
+test("mode tabs sit on their own row and call onMode", () => {
   const onMode = vi.fn();
-  render(<TitleBar mode="simple" onMode={onMode} lang="vi" onLang={() => {}} />);
-  fireEvent.click(screen.getByRole("tab", { name: /NÂNG CAO/ }));
-  expect(onMode).toHaveBeenCalledWith("advanced");
-  expect(screen.getByRole("tab", { name: /ĐƠN GIẢN/ })).toHaveAttribute("aria-selected", "true");
+  const { container } = render(<TitleBar mode="simple" onMode={onMode} lang="vi" onLang={() => {}} />);
+  const simple = screen.getByRole("tab", { name: "[ĐƠN GIẢN]" });
+  expect(simple).toHaveAttribute("aria-selected", "true");
+  fireEvent.click(screen.getByRole("tab", { name: "ĐẦY ĐỦ" }));
+  expect(onMode).toHaveBeenCalledWith("full");
+  expect(container.querySelector("[data-drag]")!.contains(simple), "below the title bar, not in it").toBe(false);
 });
 
 test("drag region and no-drag buttons", () => {

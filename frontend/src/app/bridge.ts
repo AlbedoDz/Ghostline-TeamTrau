@@ -21,6 +21,8 @@ export function startBridge(): () => void {
     Events.On("setup:countdown", (ev: any) => useGhost.getState().setSetup(ev.data)),
     Events.On("certs:changed", () => useGhost.getState().bumpCerts()),
     Events.On("lists:progress", () => useGhost.getState().bumpRules()),
+    Events.On("tools:scan", (ev: any) => useGhost.getState().setAdvScan(ev.data)),
+    Events.On("tools:cfscan", (ev: any) => useGhost.getState().setCfScan(ev.data)),
   ];
   void Service.GetSnapshot().then(s.setSnapshot);
   void Service.GetSettings().then((st) => {

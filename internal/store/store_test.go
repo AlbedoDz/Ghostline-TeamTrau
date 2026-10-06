@@ -41,7 +41,7 @@ func TestWriteJSONAtomic_RoundTripLeavesNoTemp(t *testing.T) {
 
 func TestDefaultSettings_MatchSpec(t *testing.T) {
 	s := store.DefaultSettings()
-	require.Equal(t, 4, s.Version)
+	require.Equal(t, 5, s.Version)
 	require.Equal(t, "vi", s.Language)
 	require.Equal(t, "simple", s.Mode)
 	require.True(t, s.CloseToTray)
@@ -54,7 +54,7 @@ func TestDefaultSettings_MatchSpec(t *testing.T) {
 	require.Equal(t, store.DPISettings{Enabled: false, Engine: "zapret2", Preset: "light", CustomArgs: "", Scope: "all", Zapret2: store.Zapret2Settings{Strategy: "z-split"}}, s.DPI)
 	require.Equal(t, store.FragmentSettings{Enabled: false, Chunks: 5, DelayMs: 5}, s.FragmentDNS)
 	require.Equal(t, store.UpdateSettings{CheckApp: true, UpdateServerList: true}, s.Updates)
-	require.Equal(t, store.WindowSize{Width: 1000, Height: 660}, s.AdvancedWindow)
+	require.Equal(t, store.WindowSize{Width: 1000, Height: 660}, s.FullWindow)
 	require.False(t, s.StartWithWindows)
 	require.False(t, s.AutoConnect)
 	require.False(t, s.PinnedOnly)
@@ -180,5 +180,5 @@ func TestLoadSettings_AcceptsUTF8BOM(t *testing.T) { // Notepad may add a BOM
 	s, recovered, err := store.LoadSettings(path)
 	require.NoError(t, err)
 	require.False(t, recovered)
-	require.Equal(t, "advanced", s.Mode)
+	require.Equal(t, store.ModeFull, s.Mode, "\"advanced\" from older files becomes \"full\"")
 }

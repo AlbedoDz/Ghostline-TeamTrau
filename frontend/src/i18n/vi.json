@@ -21,7 +21,7 @@
   },
   "mode": {
     "simple": "ĐƠN GIẢN",
-    "advanced": "NÂNG CAO"
+    "full": "ĐẦY ĐỦ"
   },
   "status": {
     "disconnected": "CHƯA BẢO VỆ",
@@ -59,18 +59,50 @@
     "proxy": "proxy",
     "openServers": "mở trang máy chủ",
     "disablePinnedOnly": "tắt chỉ dùng máy chủ ghim",
-    "dnsLan": "DNS cho LAN"
+    "dnsLan": "DNS cho LAN",
+    "level": {
+      "label": "mức bảo vệ",
+      "dns": "Chỉ DNS",
+      "dpi": "DNS + vượt DPI",
+      "max": "Tối đa",
+      "custom": "Tuỳ chỉnh",
+      "hint": {
+        "dns": "Chỉ mã hoá DNS; nhẹ nhất, hợp khi nhà mạng chỉ chặn bằng DNS.",
+        "dpi": "Thêm vượt DPI cho mọi ứng dụng (khuyên dùng).",
+        "max": "Thêm proxy cho máy này: trình duyệt tự được fragment khi gặp trang bị chặn.",
+        "custom": "Tổ hợp bạn tự chỉnh ở giao diện Đầy đủ."
+      },
+      "part": {
+        "dpi": "vượt DPI",
+        "proxy": "proxy",
+        "proxyNoSystem": "proxy (không dùng cho máy này)",
+        "none": "chỉ DNS"
+      },
+      "editInFull": "chỉnh ở giao diện Đầy đủ ›",
+      "fakeSniOff": "Fake SNI cần proxy và sẽ bị tắt. Tiếp tục?",
+      "applying": "Đang áp dụng “{{level}}”…"
+    },
+    "firstRun": {
+      "probe": "kiểm tra trang mẫu…",
+      "tune": "tự dò vượt DPI với trang mẫu {{index}}/{{total}}"
+    }
   },
   "nav": {
     "overview": "tổng quan",
     "servers": "máy chủ",
     "dpi": "vượt dpi",
+    "tools": "công cụ",
     "logs": "nhật ký",
     "settings": "cài đặt",
     "proxy": "proxy",
     "rules": "rules",
     "dnsserver": "dns server",
-    "fakesni": "fake sni"
+    "fakesni": "fake sni",
+    "group": {
+      "basic": "cơ bản",
+      "advanced": "nâng cao",
+      "diagnose": "chẩn đoán"
+    }
   },
   "overview": {
     "latency60": "độ trễ · 60 giây",
@@ -269,6 +301,46 @@
       "removeAll": "gỡ tất cả chứng chỉ Ghostline",
       "confirmRemoveAll": "Gỡ mọi chứng chỉ Ghostline? DNS server và Fake SNI sẽ bị tắt.",
       "retry": "thử gỡ lại"
+    },
+    "backup": {
+      "title": "Sao lưu và chuyển máy",
+      "note": "Xuất cài đặt, rule, danh sách và server tự thêm ra một file để dùng trên máy khác.",
+      "export": "xuất cài đặt…",
+      "import": "nhập cài đặt…",
+      "exportTitle": "Chọn phần cần xuất",
+      "doExport": "xuất",
+      "neverExported": "Không bao giờ xuất: tên Wi-Fi nhà, card mạng, mật khẩu proxy, nhật ký, chứng chỉ.",
+      "sec": {
+        "settings": "cài đặt",
+        "rules": "rule và danh sách",
+        "customServers": "server tự thêm",
+        "dpiBlacklist": "danh sách đen vượt DPI",
+        "dpiAutoHostlist": "danh sách tự học zapret2"
+      },
+      "importTitle": "Nhập cài đặt",
+      "fileInfo": "File từ Ghostline {{version}}, tạo ngày {{date}}",
+      "counts": "(mới {{new}} · bị thay {{replaced}})",
+      "merge": "gộp với dữ liệu hiện có",
+      "doImport": "nhập",
+      "imported": "Đã nhập. Bấm Kết nối để dùng cấu hình mới.",
+      "warn": {
+        "flag_off": {
+          "fakeSni_enabled": "Fake SNI sẽ bị tắt; bật lại trong trang Fake SNI nếu cần.",
+          "dnsServer_enabled": "DNS server sẽ bị tắt; bật lại trong trang DNS server nếu cần.",
+          "dnsServer_shareLan": "Chia sẻ DNS cho LAN sẽ bị tắt.",
+          "proxy_shareLan": "Chia sẻ proxy cho LAN sẽ bị tắt.",
+          "startWithWindows": "Khởi động cùng Windows sẽ bị tắt."
+        },
+        "trusted_reset": {
+          "x": "Danh sách \"{{name}}\" không còn được tin cho Fake SNI."
+        },
+        "http_list": {
+          "x": "Danh sách \"{{name}}\" tải qua http:// (không mã hoá)."
+        }
+      },
+      "sniTitle": "File có rule chuyển hướng lưu lượng đã giải mã (sni= / connect=):",
+      "sniAck": "Tôi hiểu các rule này chuyển hướng lưu lượng đã giải mã",
+      "sniDrop": "nhập nhưng bỏ các rule này"
     }
   },
   "errors": {
@@ -322,7 +394,7 @@
     },
     "AUTOTUNE_NO_PRESET": {
       "message": "không tìm được cấu hình vượt DPI phù hợp",
-      "action": "Thử Mode 1–6 hoặc tham số tự nhập trong chế độ Nâng cao"
+      "action": "Thử Mode 1–6 hoặc tham số tự nhập ở giao diện Đầy đủ"
     },
     "INTERNAL": {
       "message": "lỗi nội bộ ở bước {{step}}",
@@ -462,6 +534,54 @@
     "FAKESNI_NOT_ACKED": {
       "message": "hãy đọc và xác nhận cảnh báo Fake SNI trước",
       "action": "Mở trang Fake SNI"
+    },
+    "TOOL_BUSY": {
+      "message": "Công cụ này đang chạy",
+      "action": "Đợi xong hoặc bấm Huỷ"
+    },
+    "LOOKUP_NOT_CONNECTED": {
+      "message": "Ghostline chưa kết nối, không tra qua Ghostline được",
+      "action": "Bấm Kết nối, hoặc bỏ chọn nguồn Ghostline"
+    },
+    "LOOKUP_BAD_NAME": {
+      "message": "Tên miền hoặc IP không hợp lệ",
+      "action": "Sửa ô tên miền"
+    },
+    "SCAN_TOO_MANY": {
+      "message": "Quá nhiều máy chủ cho một lượt quét",
+      "action": "Tăng \"số server tối đa mỗi lượt quét\" hoặc dán ít dòng hơn"
+    },
+    "CFSCAN_NO_NETWORK": {
+      "message": "Không kết nối được tới IP Cloudflare nào",
+      "action": "Kiểm tra mạng; tắt VPN hoặc firewall khác rồi thử lại"
+    },
+    "CFSCAN_HOST_INVALID": {
+      "message": "Host kiểm tra không phải tên miền hợp lệ",
+      "action": "Khôi phục mặc định"
+    },
+    "STAMP_INVALID": {
+      "message": "Stamp không hợp lệ",
+      "action": "Sửa trường được nêu"
+    },
+    "IMPORT_INVALID": {
+      "message": "File sao lưu không dùng được",
+      "action": "Chọn file khác"
+    },
+    "IMPORT_WHILE_CONNECTED": {
+      "message": "Chỉ nhập được khi đã ngắt kết nối",
+      "action": "Bấm Ngắt kết nối rồi nhập lại"
+    },
+    "IMPORT_EXPIRED": {
+      "message": "Bản xem trước đã hết hạn",
+      "action": "Chọn lại file"
+    },
+    "IMPORT_WRITE_FAILED": {
+      "message": "Không ghi được cài đặt; mọi thứ đã được khôi phục như cũ",
+      "action": "Thử lại hoặc mở nhật ký"
+    },
+    "EXPORT_WRITE_FAILED": {
+      "message": "Không ghi được file xuất",
+      "action": "Chọn thư mục khác"
     }
   },
   "tray": {
@@ -732,5 +852,155 @@
     "banner": "Fake SNI đang bật — Ghostline đang giải mã HTTPS của {{count}} tên miền",
     "view": "xem",
     "off": "tắt Fake SNI"
+  },
+  "tools": {
+    "title": "Công cụ",
+    "copy": "sao chép",
+    "tab": {
+      "logs": "nhật ký",
+      "lookup": "lookup",
+      "scanner": "scanner",
+      "cfscan": "ip cloudflare",
+      "stamp": "stamp"
+    },
+    "lookup": {
+      "name": "tên miền",
+      "placeholder": "ví dụ youtube.com, hoặc một IP khi tra PTR",
+      "type": "loại bản ghi",
+      "run": "tra",
+      "isp": "DNS nhà mạng {{ip}}",
+      "unencrypted": "không mã hoá",
+      "addSource": "thêm nguồn",
+      "addSourceHint": "URL/stamp của server, hoặc IP của DNS thường",
+      "add": "thêm",
+      "ispNote": "Nguồn DNS nhà mạng gửi truy vấn không mã hoá, nhà mạng thấy được tên miền đang tra. Chỉ dùng để so sánh khi chẩn đoán.",
+      "details": "chi tiết",
+      "col": {
+        "source": "nguồn",
+        "status": "trạng thái",
+        "latency": "độ trễ",
+        "answer": "trả lời"
+      },
+      "per": {
+        "poisoned": "đầu độc",
+        "differs": "khác",
+        "match": "khớp",
+        "failed": "lỗi"
+      },
+      "fail": {
+        "timeout": "hết thời gian",
+        "bootstrap": "không phân giải được server",
+        "error": "lỗi"
+      },
+      "verdict": {
+        "poisoned": {
+          "title": "Bị đầu độc DNS",
+          "body": "Ít nhất một nguồn trả về IP nội bộ hoặc báo tên miền không tồn tại trong khi nguồn khác có địa chỉ. Đó là dấu hiệu nhà mạng chặn bằng DNS."
+        },
+        "differs": {
+          "title": "Kết quả khác nhau",
+          "body": "Các nguồn trả về địa chỉ khác nhau. CDN có thể trả IP khác nhau theo vị trí, nên chưa chắc là bị chặn."
+        },
+        "match": {
+          "title": "Kết quả khớp nhau",
+          "body": "Các nguồn trả về cùng địa chỉ (hoặc cùng một CDN)."
+        },
+        "failed": {
+          "title": "Không nguồn nào trả lời",
+          "body": "Mọi nguồn đều lỗi hoặc hết thời gian. Kiểm tra kết nối mạng."
+        }
+      },
+      "running": "đang tra…",
+      "busy": "Đang tra {{name}} qua {{count}} nguồn… (tối đa 5 giây mỗi nguồn)"
+    },
+    "stamp": {
+      "decodeTitle": "Giải mã",
+      "buildTitle": "Tạo stamp",
+      "input": "stamp cần giải mã",
+      "decode": "giải mã",
+      "add": "thêm vào danh sách server",
+      "added": "Đã thêm {{count}} máy chủ",
+      "notUsable": "Ghostline không dùng loại này",
+      "ipOptional": "IP (tuỳ chọn)",
+      "fromUrl": "điền từ URL",
+      "build": "tạo stamp",
+      "f": {
+        "proto": "giao thức",
+        "addr": "địa chỉ IP",
+        "host": "host",
+        "path": "đường dẫn",
+        "providerName": "tên provider",
+        "publicKey": "khoá công khai",
+        "hashes": "hash chứng chỉ"
+      }
+    },
+    "scan": "quét",
+    "cancel": "huỷ",
+    "options": "tuỳ chọn",
+    "select": "chọn {{what}}",
+    "tri": {
+      "yes": "có",
+      "no": "không",
+      "partial": "một phần",
+      "unknown": "?"
+    },
+    "scanner": {
+      "fromList": "danh sách có sẵn",
+      "fromPaste": "dán danh sách",
+      "pinnedOnly": "chỉ server đã ghim",
+      "pasteLabel": "server cần quét",
+      "badLines": "Bỏ qua các dòng không hợp lệ: {{lines}}",
+      "onlyDNSSEC": "chỉ server có DNSSEC",
+      "onlyAds": "chỉ server lọc quảng cáo",
+      "pinSelected": "ghim mục đã chọn",
+      "exportCsv": "xuất CSV",
+      "col": {
+        "server": "server",
+        "median": "trung vị",
+        "loss": "mất gói",
+        "ads": "lọc QC",
+        "poison": "đầu độc"
+      },
+      "unreachable": "không dùng được ({{reason}})",
+      "add": "thêm",
+      "added": "Đã thêm vào danh sách server",
+      "useOnly": "chỉ dùng",
+      "rounds": "số lượt đo",
+      "workers": "số luồng",
+      "timeoutMs": "thời hạn mỗi truy vấn (ms)",
+      "matching": "{{count}} server khớp",
+      "willCap": "sẽ quét {{max}} server ưu tiên (đã ghim, chạy tốt lần trước, có sẵn trong app)",
+      "capped": "Đã quét {{max}} server ưu tiên, bỏ qua {{skipped}} server. Tăng \"số server tối đa mỗi lượt quét\" trong tuỳ chọn, hoặc lọc thêm (giao thức, thẻ).",
+      "maxServers": "số server tối đa mỗi lượt quét",
+      "maxServersNote": "50–2000. Quét càng nhiều server càng lâu: 500 server mất khoảng 1–2 phút, 2000 server khoảng 6–8 phút; một lượt quét dừng sau tối đa 10 phút."
+    },
+    "cfscan": {
+      "probePhase": "đã thử {{tried}} · dùng được {{ok}}",
+      "speedPhase": "đang đo tốc độ tải các IP tốt nhất…",
+      "direct": "Quét đi thẳng ra mạng, không qua proxy của Ghostline; chỉ cổng 443, tối đa 200 kết nối mới mỗi giây.",
+      "scannedAt": "đã quét lúc {{time}}",
+      "createRule": "tạo rule",
+      "recheck": "kiểm tra lại",
+      "col": {
+        "latency": "độ trễ"
+      },
+      "note": {
+        "no_speed_endpoint": "Host kiểm tra không có /__down nên bỏ qua đo tốc độ."
+      },
+      "ruleNote": "Rule ip= chỉ có tác dụng với ứng dụng dùng DNS hoặc proxy của Ghostline, và chỉ có tác dụng với domain thật sự nằm sau Cloudflare.",
+      "tooManyIps": "Chọn tối đa {{max}} IP cho một rule.",
+      "domains": "domain",
+      "suggest": "gợi ý:",
+      "create": "tạo",
+      "ruleCreated": "Đã tạo rule ip= trong trang Rules.",
+      "host": "host kiểm tra",
+      "restoreDefault": "khôi phục mặc định",
+      "maxIps": "số IP tối đa",
+      "want": "dừng khi đủ (0 = quét hết)",
+      "concurrency": "số kết nối cùng lúc",
+      "timeoutMs": "thời hạn mỗi IP (ms)",
+      "speedTest": "đo tốc độ tải",
+      "rechecking": "đang kiểm tra…"
+    }
   }
 }

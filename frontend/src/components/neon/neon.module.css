@@ -237,7 +237,29 @@
 .side button {
   text-align: left;
   padding: 6px 14px;
+  color: var(--text); /* pages read clearly; group labels stay quieter */
+}
+.side button:hover {
+  color: var(--text-strong);
+}
+/* Group label: quieter than the pages, so it reads as a label. */
+.sideHeader {
+  margin: 10px 14px 2px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
   color: var(--dim);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.sideHeader:first-child {
+  margin-top: 0;
+  padding-top: 2px;
+  border-top: 0;
+}
+.sideDivider {
+  margin: 10px 14px 6px;
+  border-top: 1px solid var(--line);
 }
 .side button[aria-current="page"] {
   color: var(--green);

@@ -21,7 +21,7 @@ func loadRaw(t *testing.T, raw string) store.Settings {
 
 func TestLoadSettings_V2KeepsGoodbyeDPI(t *testing.T) { // Review Focus #3
 	s := loadRaw(t, `{"version":2,"dpi":{"enabled":true,"preset":"high","scope":"blacklist"}}`)
-	require.Equal(t, 4, s.Version)
+	require.Equal(t, 5, s.Version)
 	require.Equal(t, "goodbyedpi", s.DPI.Engine)
 	require.Equal(t, "high", s.DPI.Preset)
 	require.Equal(t, "blacklist", s.DPI.Scope)
@@ -37,7 +37,7 @@ func TestLoadSettings_V1FileKeepsGoodbyeDPI(t *testing.T) {
 func TestLoadSettings_NoFileIsZapret2(t *testing.T) {
 	s, _, err := store.LoadSettings(filepath.Join(t.TempDir(), "settings.json"))
 	require.NoError(t, err)
-	require.Equal(t, 4, s.Version)
+	require.Equal(t, 5, s.Version)
 	require.Equal(t, "zapret2", s.DPI.Engine)
 	require.Equal(t, store.Zapret2Settings{Strategy: "z-split"}, s.DPI.Zapret2)
 }

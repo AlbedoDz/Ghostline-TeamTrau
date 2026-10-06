@@ -38,17 +38,29 @@
   color: var(--green) !important;
 }
 
+/* Simple / Full: the original row, made easier to spot. */
 .tabs {
   display: flex;
-  gap: 14px;
-  padding: 9px 14px;
-  font-size: 11px;
+  gap: 4px;
+  padding: 4px 14px 0;
+  font-size: 12px;
+  border-bottom: 1px solid var(--line);
 }
 
 .tabs button {
-  color: var(--dim);
+  padding: 6px 10px;
+  margin-bottom: -1px;
+  color: var(--text);
+  letter-spacing: 0.08em;
+  border-bottom: 2px solid transparent;
+}
+
+.tabs button:hover {
+  color: var(--green);
 }
 
 .tabs .on {
   color: var(--green);
+  font-weight: 700;
+  border-bottom-color: var(--green);
 }

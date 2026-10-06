@@ -9,7 +9,7 @@ This guide is for anyone running Windows 10/11; no technical background is neede
 1. [What Ghostline does](#1-what-ghostline-does)
 2. [Installing](#2-installing)
 3. [Quick start: one button](#3-quick-start-one-button)
-4. [Advanced mode](#4-advanced-mode)
+4. [Full interface](#4-full-interface)
    - [Overview](#41-overview)
    - [Servers](#42-servers)
    - [DPI bypass](#43-dpi-bypass)
@@ -19,6 +19,8 @@ This guide is for anyone running Windows 10/11; no technical background is neede
    - [Rules and lists](#47-rules-and-lists)
    - [DNS server](#48-dns-server)
    - [Fake SNI](#49-fake-sni)
+   - [Tools](#410-tools)
+   - [Backup and moving to another PC](#411-backup-and-moving-to-another-pc)
 5. [The tray icon](#5-the-tray-icon)
 6. [When a site is still blocked](#6-when-a-site-is-still-blocked)
 7. [Troubleshooting](#7-troubleshooting)
@@ -60,15 +62,15 @@ Compare the result with the matching line in `SHA256SUMS` on the Releases page. 
 
 ## 3. Quick start: one button
 
-<p align="center"><img src="screenshots/simple-en.png" width="320" alt="Simple mode"></p>
-<a href="videos/clips/connect-en.mp4"><img src="videos/clips/connect-en.webp" width="640" alt="Connecting in Simple mode"></a>
+<p align="center"><img src="screenshots/simple-en.png" width="320" alt="Simple interface"></p>
+<a href="videos/clips/connect-en.mp4"><img src="videos/clips/connect-en.webp" width="640" alt="Connecting in the Simple interface"></a>
 
 *The preview plays sped up and silent; click it for the narrated video.*
 
-Ghostline opens in **SIMPLE** mode.
+Ghostline opens in the **Simple** interface.
 
 1. Click the **round power button** in the middle.
-2. Ghostline goes through: checking the system → choosing servers → starting the engine → saving original DNS → arming safety net → setting DNS → verifying no leaks. The first time takes about 10–25 seconds because it scans servers; after that it takes a few seconds.
+2. Ghostline goes through: checking the system → choosing servers → starting the engine → saving original DNS → arming safety net → setting DNS → verifying no leaks. The first time on a network it checks every server that does not filter content (about 700; servers you pinned or added are always included) to pick the fastest, which takes about 30–60 seconds; the step shows how far it is (for example *choosing servers 120/730*). For the next 24 hours on the same network it reuses that result and connects in a few seconds.
 3. When the ring glows green and shows **[ PROTECTED ]**, you're done: every DNS query on the machine is encrypted.
 
 To cancel while connecting, click the power button again. To turn protection off, click the power button while protected; your DNS goes back to what it was.
@@ -76,6 +78,19 @@ To cancel while connecting, click the power button again. To turn protection off
 <a href="videos/clips/disconnect-en.mp4"><img src="videos/clips/disconnect-en.webp" width="640" alt="Disconnecting"></a>
 
 *The preview plays sped up and silent; click it for the narrated video.*
+
+**First connect: auto-tune.** The first time you connect after installing, Ghostline adds one more step to the list: it checks the test sites through its encrypted DNS and, if some are still blocked, auto-tunes DPI bypass on them, showing its progress (for example *auto-tuning DPI bypass on the test sites 12/900*). When it finds a working strategy, DPI bypass turns on and the level becomes **DNS + DPI bypass**; if nothing is blocked, the level stays **DNS only**. It runs once; if you disconnect before it finishes, it runs again on the next connect.
+
+**Protection level.** Under the status, pick how much Ghostline does. You can change it any time, also while connected:
+
+| Level | What it turns on | When |
+| --- | --- | --- |
+| **DNS only** | Encrypted DNS | Your ISP blocks with DNS alone; the lightest |
+| **DNS + DPI bypass** *(recommended)* | Adds DPI bypass for every app | Sites are still blocked after the DNS change |
+| **Maximum** | Adds the proxy for this PC (it sets the Windows proxy); browsers get fragmented automatically on blocked sites | DPI bypass is not enough for some sites |
+| **Custom** | Your own combination from the Full interface | Lit when what you set there matches no level |
+
+A level only changes these switches; your engine, strategy, servers, rules and other settings stay as they are. When you leave **Custom** for a level, Ghostline remembers your combination, and clicking **Custom** brings it back. Fake SNI needs the proxy: a level without the proxy asks before turning it off, and **Custom** turns it back on.
 
 **The info panel below:**
 
@@ -96,9 +111,11 @@ To cancel while connecting, click the power button again. To turn protection off
 | DEGRADED | Servers are slow or not answering; Ghostline is finding new ones by itself. Browsing still works |
 | ERROR | Connecting failed. **Your DNS was not changed.** Read the message below it for what to do (see [section 7](#7-troubleshooting)) |
 
-## 4. Advanced mode
+## 4. Full interface
 
-Click **ADVANCED** at the top left for the full interface, and **SIMPLE** to go back. The left sidebar always shows the current status and a **⏻ CONNECT / DISCONNECT** button.
+Click **FULL** at the top left for every page and setting, and **SIMPLE** to go back. The left sidebar always shows the current status and a **⏻ CONNECT / DISCONNECT** button.
+
+The sidebar groups the pages: **basic** (overview, servers, DPI bypass), **advanced** (proxy, rules, DNS server) and **diagnostics** (tools), then settings. **Fake SNI** is a tab of the **proxy** page, and **logs** is the first tab of the **tools** page.
 
 ### 4.1. Overview
 
@@ -202,6 +219,8 @@ The sites used to check connectivity (default: youtube.com, discord.com, x.com).
 You can edit the list in the box below, one site per line.
 
 ### 4.4. Logs
+
+Open it from **tools › logs** (the first tab).
 
 ![Logs](screenshots/logs-en.png)
 
@@ -358,7 +377,7 @@ The encrypted DNS is used only on your home Wi-Fi; on mobile data and other netw
 **Step by step: turn Fake SNI on**
 
 1. Click **Connect**. On **Proxy**, turn on **enable proxy** and **use for this PC**.
-2. Open **Fake SNI**, read the warning and scroll it to the end, tick **I understand**, then click **continue**.
+2. Open **proxy › fake sni**, read the warning and scroll it to the end, tick **I understand**, then click **continue**.
 3. Turn on **turn Fake SNI on**, and turn on a **preset group** or write `sni=` rules on the **Rules** page.
 4. Open the site in your browser. The counters show how many connections were decrypted or fell back to fragmentation.
 5. Click **turn Fake SNI off** in the violet banner when you are done.
@@ -375,6 +394,44 @@ An advanced feature for sites behind CDNs that allow *domain fronting*. The prox
 
 Lists from other sources can carry `sni=` rules only after you mark them **trust for Fake SNI**; Ghostline's own presets are signed.
 
+
+### 4.10. Tools
+
+The tools page has the logs (first tab, [section 4.4](#44-logs)) and four diagnostic tools.
+
+**Lookup** asks one domain through several sources at once and says whether the answers agree.
+
+1. Type a domain (a link pasted from the browser works too) and pick the record type. For **PTR**, type an IP.
+2. Tick the sources. By default you get Ghostline (when connected) and the fastest servers from the last scan.
+3. Click **look up**. The card on top reads:
+   - **DNS is poisoned:** a source answered a private IP, or said the domain does not exist while others found it. That is how ISPs block with DNS.
+   - **Answers differ:** different addresses. CDNs answer by location, so this alone does not mean blocking.
+   - **Answers match:** same addresses, or the same CDN.
+4. **details** shows each answer the way `dig` prints it, with TTLs and flags.
+
+The **ISP DNS** source is the only place Ghostline ever sends an unencrypted query: your ISP sees the domain you look up. It is never ticked for you; tick it only to compare. When the PC gets DNS from the router, Ghostline offers the router's address.
+
+**Scanner** grades many servers at once: latency over several rounds (median, p90, jitter), packet loss, whether the server validates DNSSEC, whether it filters ads, and whether it answers the test sites listed on the **DPI bypass** page with fake addresses. Scan the server list with filters, or paste addresses. One scan grades up to 500 servers by default (50–2000 in **options**); when a filter matches more, the most useful are scanned first: pinned, good last time, then built in. More servers take longer: 2000 take about 6–8 minutes. From the results you can pin servers, use only one, add pasted ones to your list, or export a CSV that opens in Excel.
+
+**Cloudflare IP** looks for Cloudflare addresses that work and are fast on your network.
+
+1. Click **scan**. Ghostline tries one address in each block of Cloudflare's network, over port 443 only, at most 200 new connections a second, straight out (not through Ghostline's proxy). It stops once 50 addresses work.
+2. The 10 fastest also get a download speed test.
+3. Select a few addresses, then **copy** them, or **create rule**: type the domains (for example `example.com` and `*.example.com`) and Ghostline adds an `ip=` rule on the **Rules** page.
+
+An `ip=` rule only affects apps that use Ghostline's DNS or proxy, and only works for domains that really are behind Cloudflare. Results are kept per network; **check again** retests the selected addresses. A clean address today may be blocked tomorrow: scan again when a site stops loading.
+
+**Stamp** reads and builds `sdns://` stamps. Paste stamps to see what is inside, or fill the form (or **fill from URL**) to build one, then **add to servers**. Relay and ODoH stamps can be read but Ghostline does not use them.
+
+### 4.11. Backup and moving to another PC
+
+In **Settings › Backup and move to another PC**:
+
+- **export settings…** saves a `.ghostline.json` file. Choose what goes in: settings, rules and lists, your servers, the DPI blacklist, the zapret2 learned list. It never contains your home Wi-Fi name, network adapters, proxy passwords, logs or certificates. Lists that point at a file on this PC are left out.
+- **import settings…** works only while disconnected. Ghostline shows what will change first, and asks before importing rules that redirect decrypted traffic (`sni=`, `connect=`). An import always turns off Fake SNI, the DNS server, sharing on the LAN and start with Windows, and lists from other sources are no longer trusted for Fake SNI: turn them on again on this PC if you need them. Proxy passwords must be typed again.
+- If writing fails halfway, every file is put back as it was. The files an import replaced are kept next to them as `*.bak-import`.
+
+`Ghostline.exe --export <file>` writes the same backup from the command line, for sending to someone who helps you. Run it from Command Prompt or PowerShell to see the result; like Ghostline itself, it asks for administrator permission.
 
 ## 5. The tray icon
 

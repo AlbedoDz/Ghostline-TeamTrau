@@ -2,6 +2,8 @@ import { create } from "zustand";
 import type {
   AppInfo,
   AutotuneProgress,
+  AdvScanProgress,
+  CFProgress,
   ConnEvent,
   LogEvent,
   ProxyStats,
@@ -15,8 +17,10 @@ import type {
   UpdateInfo,
 } from "./api";
 
-export type Mode = "simple" | "advanced";
-export type Page = "overview" | "servers" | "dpi" | "proxy" | "rules" | "dnsserver" | "fakesni" | "logs" | "settings";
+export type Mode = "simple" | "full";
+export type Page = "overview" | "servers" | "dpi" | "proxy" | "rules" | "dnsserver" | "fakesni" | "tools" | "logs" | "settings";
+export type ToolsTab = "logs" | "lookup" | "scanner" | "cfscan" | "stamp";
+export type ProxyTab = "proxy" | "fakesni";
 
 const emptySnapshot = {
   status: "disconnected",
@@ -52,6 +56,14 @@ type State = {
   dnsStats: ServeStats | null;
   setup: SetupCountdown | null;
   certsVersion: number;
+  toolsTab: ToolsTab;
+  setToolsTab: (t: ToolsTab) => void;
+  proxyTab: ProxyTab;
+  setProxyTab: (t: ProxyTab) => void;
+  advScan: AdvScanProgress | null;
+  setAdvScan: (p: AdvScanProgress) => void;
+  cfScan: CFProgress | null;
+  setCfScan: (p: CFProgress) => void;
   setDnsStats: (s: ServeStats) => void;
   setSetup: (s: SetupCountdown) => void;
   bumpCerts: () => void;
@@ -95,6 +107,10 @@ const initial = {
   dnsStats: null as ServeStats | null,
   setup: null as SetupCountdown | null,
   certsVersion: 0,
+  toolsTab: "logs" as ToolsTab,
+  proxyTab: "proxy" as ProxyTab,
+  advScan: null as AdvScanProgress | null,
+  cfScan: null as CFProgress | null,
 };
 
 const tail = <T,>(arr: T[], v: T, n: number) => {
@@ -127,7 +143,14 @@ export const useGhost = create<State>((set) => ({
   setScan: (scan) => set({ scan }),
   setAutotune: (autotune) => set({ autotune }),
   setUpdate: (update) => set({ update }),
-  setPage: (page) => set({ page }),
+  // Logs and Fake SNI are tabs of Tools and Proxy: links to them open the
+  // host page on that tab.
+  setPage: (page) =>
+    set(page === "logs" ? { page: "tools", toolsTab: "logs" } : page === "fakesni" ? { page: "proxy", proxyTab: "fakesni" } : { page }),
+  setToolsTab: (toolsTab) => set({ toolsTab }),
+  setProxyTab: (proxyTab) => set({ proxyTab }),
+  setAdvScan: (advScan) => set({ advScan }),
+  setCfScan: (cfScan) => set({ cfScan }),
   dismissBanner: (bannerDismissed) => set({ bannerDismissed }),
   setQueryLog: (queryLog) => set(queryLog ? { queryLog } : { queryLog, proxyConns: [] }),
   setProxyStats: (proxyStats) => set({ proxyStats }),

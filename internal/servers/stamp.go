@@ -8,8 +8,8 @@ import (
 	"net"
 	"strings"
 
-	"github.com/ameshkov/dnsstamps"
 	"github.com/hashcott/ghostline/internal/model"
+	"github.com/hashcott/ghostline/internal/stamps"
 )
 
 // ErrUnencrypted rejects plain DNS servers: Ghostline only speaks encrypted DNS.
@@ -21,35 +21,39 @@ var errSkip = errors.New("servers: unsupported stamp type")
 // FromStamp builds a server from an sdns:// stamp. The stamp itself stays the
 // address; IPs and tags are read from it.
 func FromStamp(stamp string, src model.Source) (model.Server, error) {
-	st, err := dnsstamps.NewServerStampFromString(stamp)
+	f, err := stamps.Decode(stamp)
 	if err != nil {
 		return model.Server{}, fmt.Errorf("servers: bad stamp: %w", err)
 	}
-	s := model.Server{Address: stamp, Source: src, Provider: st.ProviderName, Name: st.ProviderName}
-	switch st.Proto {
-	case dnsstamps.StampProtoTypeDNSCrypt:
+	provider := f.Host
+	if f.Proto == "dnscrypt" {
+		provider = f.ProviderName
+	}
+	s := model.Server{Address: stamp, Source: src, Provider: provider, Name: provider}
+	switch f.Proto {
+	case "dnscrypt":
 		s.Protocol = model.ProtoDNSCrypt
-	case dnsstamps.StampProtoTypeDoH:
+	case "doh":
 		s.Protocol = model.ProtoDoH
-	case dnsstamps.StampProtoTypeTLS:
+	case "dot":
 		s.Protocol = model.ProtoDoT
-	case dnsstamps.StampProtoTypeDoQ:
+	case "doq":
 		s.Protocol = model.ProtoDoQ
-	case dnsstamps.StampProtoTypePlain:
+	case "plain":
 		return model.Server{}, ErrUnencrypted
 	default:
 		return model.Server{}, errSkip
 	}
-	if ip := stampIP(st.ServerAddrStr); ip != "" {
+	if ip := stampIP(f.Addr); ip != "" {
 		s.IPs = []string{ip}
 	}
-	if st.Props&dnsstamps.ServerInformalPropertyNoFilter != 0 {
+	if f.NoFilter {
 		s.Tags = append(s.Tags, "no-filter")
 	}
-	if st.Props&dnsstamps.ServerInformalPropertyNoLog != 0 {
+	if f.NoLog {
 		s.Tags = append(s.Tags, "no-log")
 	}
-	if st.Props&dnsstamps.ServerInformalPropertyDNSSEC != 0 {
+	if f.DNSSEC {
 		s.Tags = append(s.Tags, "dnssec")
 	}
 	return s, nil

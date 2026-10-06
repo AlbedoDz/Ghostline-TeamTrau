@@ -334,7 +334,14 @@ func (o *Orchestrator) connectSteps() []step {
 			return nil
 		}},
 		{name: "pick", do: func(ctx context.Context) error {
-			ss, err := o.d.Picker.Pick(ctx, nil)
+			ss, err := o.d.Picker.Pick(ctx, func(done, total int) {
+				// A first scan checks every server: show how far it is,
+				// without an event per server.
+				if done == 1 || done == total || done%10 == 0 {
+					o.update(func(s *Snapshot) { s.PickDone, s.PickTotal = done, total })
+				}
+			})
+			o.update(func(s *Snapshot) { s.PickDone, s.PickTotal = 0, 0 })
 			if err != nil {
 				var np *NoPinnedError
 				if errors.As(err, &np) {

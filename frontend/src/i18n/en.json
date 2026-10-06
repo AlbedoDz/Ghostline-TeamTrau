@@ -21,7 +21,7 @@
   },
   "mode": {
     "simple": "SIMPLE",
-    "advanced": "ADVANCED"
+    "full": "FULL"
   },
   "status": {
     "disconnected": "UNPROTECTED",
@@ -59,18 +59,50 @@
     "proxy": "proxy",
     "openServers": "open servers",
     "disablePinnedOnly": "turn off pinned-only",
-    "dnsLan": "DNS for LAN"
+    "dnsLan": "DNS for LAN",
+    "level": {
+      "label": "protection level",
+      "dns": "DNS only",
+      "dpi": "DNS + DPI bypass",
+      "max": "Maximum",
+      "custom": "Custom",
+      "hint": {
+        "dns": "Encrypted DNS only; the lightest, for ISPs that block with DNS alone.",
+        "dpi": "Adds DPI bypass for every app (recommended).",
+        "max": "Adds the proxy for this PC: browsers get fragmented automatically on blocked sites.",
+        "custom": "Your own combination from the Full interface."
+      },
+      "part": {
+        "dpi": "DPI bypass",
+        "proxy": "proxy",
+        "proxyNoSystem": "proxy (not for this PC)",
+        "none": "DNS only"
+      },
+      "editInFull": "change in the Full interface ›",
+      "fakeSniOff": "Fake SNI needs the proxy and will be turned off. Continue?",
+      "applying": "Applying “{{level}}”…"
+    },
+    "firstRun": {
+      "probe": "checking the test sites…",
+      "tune": "auto-tuning DPI bypass on the test sites {{index}}/{{total}}"
+    }
   },
   "nav": {
     "overview": "overview",
     "servers": "servers",
     "dpi": "dpi bypass",
+    "tools": "tools",
     "logs": "logs",
     "settings": "settings",
     "proxy": "proxy",
     "rules": "rules",
     "dnsserver": "dns server",
-    "fakesni": "fake sni"
+    "fakesni": "fake sni",
+    "group": {
+      "basic": "basic",
+      "advanced": "advanced",
+      "diagnose": "diagnostics"
+    }
   },
   "overview": {
     "latency60": "latency · 60 seconds",
@@ -269,6 +301,46 @@
       "removeAll": "remove all Ghostline certificates",
       "confirmRemoveAll": "Remove every Ghostline certificate? The DNS server and Fake SNI will be turned off.",
       "retry": "retry removal"
+    },
+    "backup": {
+      "title": "Backup and move to another PC",
+      "note": "Export settings, rules, lists and your own servers to one file to use on another PC.",
+      "export": "export settings…",
+      "import": "import settings…",
+      "exportTitle": "Choose what to export",
+      "doExport": "export",
+      "neverExported": "Never exported: home Wi-Fi name, network adapters, proxy passwords, logs, certificates.",
+      "sec": {
+        "settings": "settings",
+        "rules": "rules and lists",
+        "customServers": "your servers",
+        "dpiBlacklist": "DPI blacklist",
+        "dpiAutoHostlist": "zapret2 learned list"
+      },
+      "importTitle": "Import settings",
+      "fileInfo": "File from Ghostline {{version}}, made on {{date}}",
+      "counts": "(new {{new}} · replaced {{replaced}})",
+      "merge": "merge with what is here",
+      "doImport": "import",
+      "imported": "Imported. Press Connect to use the new configuration.",
+      "warn": {
+        "flag_off": {
+          "fakeSni_enabled": "Fake SNI will be turned off; turn it on again on the Fake SNI page if needed.",
+          "dnsServer_enabled": "The DNS server will be turned off; turn it on again on the DNS server page if needed.",
+          "dnsServer_shareLan": "Sharing DNS on the LAN will be turned off.",
+          "proxy_shareLan": "Sharing the proxy on the LAN will be turned off.",
+          "startWithWindows": "Start with Windows will be turned off."
+        },
+        "trusted_reset": {
+          "x": "List \"{{name}}\" is no longer trusted for Fake SNI."
+        },
+        "http_list": {
+          "x": "List \"{{name}}\" downloads over http:// (unencrypted)."
+        }
+      },
+      "sniTitle": "The file has rules that redirect decrypted traffic (sni= / connect=):",
+      "sniAck": "I understand these rules redirect decrypted traffic",
+      "sniDrop": "import but drop these rules"
     }
   },
   "errors": {
@@ -322,7 +394,7 @@
     },
     "AUTOTUNE_NO_PRESET": {
       "message": "no working DPI bypass configuration found",
-      "action": "Try Mode 1–6 or custom arguments in Advanced mode"
+      "action": "Try Mode 1–6 or custom arguments in the Full interface"
     },
     "INTERNAL": {
       "message": "internal error at step {{step}}",
@@ -462,6 +534,54 @@
     "FAKESNI_NOT_ACKED": {
       "message": "read and confirm the Fake SNI warning first",
       "action": "Open the Fake SNI page"
+    },
+    "TOOL_BUSY": {
+      "message": "This tool is already running",
+      "action": "Wait for it or press Cancel"
+    },
+    "LOOKUP_NOT_CONNECTED": {
+      "message": "Ghostline is not connected, so it cannot be a lookup source",
+      "action": "Connect, or untick the Ghostline source"
+    },
+    "LOOKUP_BAD_NAME": {
+      "message": "Invalid domain or IP",
+      "action": "Fix the domain box"
+    },
+    "SCAN_TOO_MANY": {
+      "message": "Too many servers for one scan",
+      "action": "Raise \"max servers per scan\" or paste fewer lines"
+    },
+    "CFSCAN_NO_NETWORK": {
+      "message": "Could not reach any Cloudflare IP",
+      "action": "Check the network; turn off other VPNs or firewalls and retry"
+    },
+    "CFSCAN_HOST_INVALID": {
+      "message": "The test host is not a valid domain name",
+      "action": "Restore the default"
+    },
+    "STAMP_INVALID": {
+      "message": "Invalid stamp",
+      "action": "Fix the field named"
+    },
+    "IMPORT_INVALID": {
+      "message": "This backup file cannot be used",
+      "action": "Choose another file"
+    },
+    "IMPORT_WHILE_CONNECTED": {
+      "message": "Import works only while disconnected",
+      "action": "Disconnect, then import again"
+    },
+    "IMPORT_EXPIRED": {
+      "message": "The preview has expired",
+      "action": "Choose the file again"
+    },
+    "IMPORT_WRITE_FAILED": {
+      "message": "Could not write the settings; everything was put back as it was",
+      "action": "Retry or open the log"
+    },
+    "EXPORT_WRITE_FAILED": {
+      "message": "Could not write the export file",
+      "action": "Choose another folder"
     }
   },
   "tray": {
@@ -732,5 +852,155 @@
     "banner": "Fake SNI is on — Ghostline is decrypting HTTPS for {{count}} domains",
     "view": "view",
     "off": "turn Fake SNI off"
+  },
+  "tools": {
+    "title": "Tools",
+    "copy": "copy",
+    "tab": {
+      "logs": "logs",
+      "lookup": "lookup",
+      "scanner": "scanner",
+      "cfscan": "cloudflare ip",
+      "stamp": "stamp"
+    },
+    "lookup": {
+      "name": "domain",
+      "placeholder": "e.g. youtube.com, or an IP for PTR",
+      "type": "record type",
+      "run": "look up",
+      "isp": "ISP DNS {{ip}}",
+      "unencrypted": "unencrypted",
+      "addSource": "add source",
+      "addSourceHint": "server URL/stamp, or a plain DNS IP",
+      "add": "add",
+      "ispNote": "The ISP DNS source sends an unencrypted query: your ISP sees the domain you look up. Use it only to compare when diagnosing.",
+      "details": "details",
+      "col": {
+        "source": "source",
+        "status": "status",
+        "latency": "latency",
+        "answer": "answer"
+      },
+      "per": {
+        "poisoned": "poisoned",
+        "differs": "differs",
+        "match": "match",
+        "failed": "failed"
+      },
+      "fail": {
+        "timeout": "timed out",
+        "bootstrap": "server name not resolved",
+        "error": "error"
+      },
+      "verdict": {
+        "poisoned": {
+          "title": "DNS is poisoned",
+          "body": "At least one source answered a private IP, or said the domain does not exist while another source has addresses. That is how ISPs block with DNS."
+        },
+        "differs": {
+          "title": "Answers differ",
+          "body": "The sources answered different addresses. CDNs answer by location, so this is not necessarily blocking."
+        },
+        "match": {
+          "title": "Answers match",
+          "body": "The sources answered the same addresses (or the same CDN)."
+        },
+        "failed": {
+          "title": "No source answered",
+          "body": "Every source failed or timed out. Check the network."
+        }
+      },
+      "running": "looking up…",
+      "busy": "Looking up {{name}} through {{count}} sources… (at most 5 seconds each)"
+    },
+    "stamp": {
+      "decodeTitle": "Decode",
+      "buildTitle": "Build a stamp",
+      "input": "stamps to decode",
+      "decode": "decode",
+      "add": "add to servers",
+      "added": "Added {{count}} server(s)",
+      "notUsable": "Ghostline does not use this type",
+      "ipOptional": "IP (optional)",
+      "fromUrl": "fill from URL",
+      "build": "build stamp",
+      "f": {
+        "proto": "protocol",
+        "addr": "IP address",
+        "host": "host",
+        "path": "path",
+        "providerName": "provider name",
+        "publicKey": "public key",
+        "hashes": "certificate hashes"
+      }
+    },
+    "scan": "scan",
+    "cancel": "cancel",
+    "options": "options",
+    "select": "select {{what}}",
+    "tri": {
+      "yes": "yes",
+      "no": "no",
+      "partial": "partly",
+      "unknown": "?"
+    },
+    "scanner": {
+      "fromList": "server list",
+      "fromPaste": "paste a list",
+      "pinnedOnly": "pinned servers only",
+      "pasteLabel": "servers to scan",
+      "badLines": "Skipped invalid lines: {{lines}}",
+      "onlyDNSSEC": "only servers with DNSSEC",
+      "onlyAds": "only ad-filtering servers",
+      "pinSelected": "pin selected",
+      "exportCsv": "export CSV",
+      "col": {
+        "server": "server",
+        "median": "median",
+        "loss": "loss",
+        "ads": "ads",
+        "poison": "poisoned"
+      },
+      "unreachable": "unusable ({{reason}})",
+      "add": "add",
+      "added": "Added to the server list",
+      "useOnly": "use only",
+      "rounds": "rounds",
+      "workers": "workers",
+      "timeoutMs": "per-query timeout (ms)",
+      "matching": "{{count}} servers match",
+      "willCap": "{{max}} priority servers will be scanned (pinned, good last time, built in)",
+      "capped": "Scanned {{max}} priority servers and skipped {{skipped}}. Raise \"max servers per scan\" in the options, or narrow the filter (protocol, tags).",
+      "maxServers": "max servers per scan",
+      "maxServersNote": "50–2000. More servers take longer: 500 take about 1–2 minutes, 2000 about 6–8; a scan stops after at most 10 minutes."
+    },
+    "cfscan": {
+      "probePhase": "tried {{tried}} · working {{ok}}",
+      "speedPhase": "measuring download speed of the best IPs…",
+      "direct": "The scan goes straight out, not through Ghostline's proxy; port 443 only, at most 200 new connections per second.",
+      "scannedAt": "scanned at {{time}}",
+      "createRule": "create rule",
+      "recheck": "check again",
+      "col": {
+        "latency": "latency"
+      },
+      "note": {
+        "no_speed_endpoint": "The test host has no /__down, so the speed test was skipped."
+      },
+      "ruleNote": "An ip= rule only affects apps that use Ghostline's DNS or proxy, and only works for domains that really are behind Cloudflare.",
+      "tooManyIps": "Choose at most {{max}} IPs for one rule.",
+      "domains": "domain",
+      "suggest": "suggestions:",
+      "create": "create",
+      "ruleCreated": "Created ip= rules on the Rules page.",
+      "host": "test host",
+      "restoreDefault": "restore default",
+      "maxIps": "max IPs",
+      "want": "stop after (0 = all)",
+      "concurrency": "parallel connections",
+      "timeoutMs": "per-IP timeout (ms)",
+      "speedTest": "download speed test",
+      "rechecking": "checking…"
+    }
   }
 }
