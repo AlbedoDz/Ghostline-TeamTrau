@@ -81,16 +81,6 @@
       "editInFull": "change in the Full interface ›",
       "fakeSniOff": "Fake SNI needs the proxy and will be turned off. Continue?",
       "applying": "Applying “{{level}}”…"
-    },
-    "check": {
-      "running": "Checking your network… (DNS and DPI blocking on the test sites)",
-      "found": "ISP DNS poisoned {{poisoned}}/{{total}} sites · {{blocked}}/{{total}} sites blocked by DPI",
-      "suggest": "→ suggested: {{level}}",
-      "ispNote": "The check asked your ISP DNS ({{ip}}) unencrypted, for the test sites only.",
-      "apply": "use this level",
-      "skip": "skip",
-      "retry": "retry",
-      "again": "check my network again"
     }
   },
   "nav": {
@@ -588,10 +578,6 @@
     "EXPORT_WRITE_FAILED": {
       "message": "Could not write the export file",
       "action": "Choose another folder"
-    },
-    "CHECK_WHILE_CONNECTED": {
-      "message": "The network check runs only while disconnected",
-      "action": "Disconnect and try again"
     }
   },
   "tray": {
