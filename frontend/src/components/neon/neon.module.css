@@ -237,16 +237,18 @@
 .side button {
   text-align: left;
   padding: 6px 14px;
-  color: var(--dim);
+  color: var(--text); /* pages read clearly; group labels stay quieter */
 }
-/* Group label: readable, but clearly not a page. */
+.side button:hover {
+  color: var(--text-strong);
+}
+/* Group label: quieter than the pages, so it reads as a label. */
 .sideHeader {
   margin: 10px 14px 2px;
   padding-top: 8px;
   border-top: 1px solid var(--line);
-  color: var(--cyan);
-  font-size: 10.5px;
-  font-weight: 700;
+  color: var(--dim);
+  font-size: 10px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
 }
