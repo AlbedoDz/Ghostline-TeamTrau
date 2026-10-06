@@ -103,3 +103,28 @@
   height: 100%;
   background: var(--green, #00ffa3);
 }
+
+/* Buttons and boxes on the tools page and the backup section look like the
+   rest of the app (neon Chip), not like plain text. */
+.ui button:not([role="tab"]) {
+  white-space: nowrap;
+  border: 1px solid rgba(0, 255, 163, 0.3);
+  color: var(--text);
+  padding: 0 8px;
+  line-height: 1.8;
+}
+
+.ui button:not([role="tab"]):hover:not(:disabled) {
+  border-color: var(--green);
+  color: var(--green);
+}
+
+.ui button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.ui input[type="checkbox"],
+.ui input[type="radio"] {
+  accent-color: var(--green);
+}

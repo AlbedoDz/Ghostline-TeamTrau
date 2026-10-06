@@ -4,6 +4,7 @@ import { Service, type ImportPreview } from "../../../../app/api";
 import { useGhost } from "../../../../app/store";
 import { describeError, initI18n } from "../../../../i18n";
 import css from "../../advanced.module.css";
+import tc from "../tools/tools.module.css";
 
 const sections = ["settings", "rules", "customServers", "dpiBlacklist", "dpiAutoHostlist"];
 
@@ -38,7 +39,7 @@ export function Backup() {
   const toggle = (s: string) => setPick((p) => (p.includes(s) ? p.filter((x) => x !== s) : [...p, s]));
 
   return (
-    <div className={css.panel}>
+    <div className={`${css.panel} ${tc.ui}`}>
       <div className={css.panelTitle}>{t("settings.backup.title")}</div>
       <div className={css.dim}>{t("settings.backup.note")}</div>
       <div className={css.row}>

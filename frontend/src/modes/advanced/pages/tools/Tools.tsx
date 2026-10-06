@@ -5,6 +5,7 @@ import { Scanner } from "./Scanner";
 import { CfScan } from "./CfScan";
 import { Stamp } from "./Stamp";
 import css from "../../advanced.module.css";
+import tc from "./tools.module.css";
 
 const tabs: ToolsTab[] = ["lookup", "scanner", "cfscan", "stamp"];
 
@@ -14,7 +15,7 @@ export function Tools() {
   const tab = useGhost((s) => s.toolsTab);
   const setTab = useGhost((s) => s.setToolsTab);
   return (
-    <div className={css.page}>
+    <div className={`${css.page} ${tc.ui}`}>
       <div className={css.head}>
         <span>{t("tools.title")}</span>
         <div className={css.tools} role="tablist">
