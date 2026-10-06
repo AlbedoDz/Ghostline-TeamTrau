@@ -173,7 +173,7 @@ func TestLoadBackupData_FromDisk(t *testing.T) {
 	require.Equal(t, []string{"a.com"}, patternsOf(d.Rules.Rules))
 	require.Equal(t, "youtube.com\n", d.Blacklist)
 	require.NotEmpty(t, d.Custom)
-	var _ []model.Server = d.Custom
+	_ = []model.Server(d.Custom) // Custom keeps the full server type
 }
 
 func TestApplyImport_RefusedWhileAConnectIsRunning(t *testing.T) {

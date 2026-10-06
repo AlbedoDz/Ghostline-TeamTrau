@@ -42,7 +42,7 @@ func runHeadless(mode cli.Mode) int {
 			fmt.Fprintln(os.Stderr, "Ghostline: export failed:", err)
 			return 1
 		}
-		fmt.Fprintln(os.Stdout, "Ghostline: settings exported to", mode.ExportPath)
+		_, _ = fmt.Fprintln(os.Stdout, "Ghostline: settings exported to", mode.ExportPath)
 		return 0
 	}
 	lock, err := winutil.NewNamedMutex(brand.StateMutex)
