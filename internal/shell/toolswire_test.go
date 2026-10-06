@@ -40,3 +40,8 @@ func TestISPResolvers_DropsLoopbackLinkLocalAndDupes(t *testing.T) {
 	}
 	require.Equal(t, []string{"8.8.8.8", "2001:4860:4860::8888"}, ispResolvers(st, live))
 }
+
+func TestISPResolvers_IPv4First(t *testing.T) {
+	live := []liveAdapter{{DNS: []string{"2001:ee0:23::23", "2001:ee0:26::26", "123.23.23.23", "123.26.26.26"}}}
+	require.Equal(t, []string{"123.23.23.23", "123.26.26.26", "2001:ee0:23::23", "2001:ee0:26::26"}, ispResolvers(store.State{Phase: "clean"}, live))
+}

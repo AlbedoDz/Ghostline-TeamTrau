@@ -37,7 +37,8 @@ func (s *Service) connected() bool {
 }
 
 // DefaultLookupSources is Ghostline (when connected) plus the fastest
-// servers from the last scan, three sources in all. It never includes the
+// servers from the last scan, filled up from the server list, three
+// sources in all. It never includes the
 // unencrypted ISP source.
 func (s *Service) DefaultLookupSources() []lookup.Source {
 	var out []lookup.Source
@@ -50,13 +51,28 @@ func (s *Service) DefaultLookupSources() []lookup.Source {
 	}
 	rs := slices.Clone(s.o.ScanResults())
 	slices.SortStableFunc(rs, func(a, b scanner.Result) int { return int(a.Latency - b.Latency) })
-	for _, r := range rs {
-		if len(out) == 3 {
-			break
-		}
-		if sv, ok := byID[r.ServerID]; ok && r.OK {
+	have := map[string]bool{}
+	add := func(sv model.Server) {
+		if len(out) < 3 && !have[sv.ID] {
+			have[sv.ID] = true
 			out = append(out, lookup.Source{Kind: "server", Ref: sv.ID, Label: sv.Name})
 		}
+	}
+	for _, r := range rs {
+		if sv, ok := byID[r.ServerID]; ok && r.OK {
+			add(sv)
+		}
+	}
+	// Never scanned (or nothing worked): still offer encrypted sources so
+	// the ISP is never compared only with itself. Built-in servers first.
+	cat := s.x.Catalog()
+	for _, sv := range cat {
+		if sv.Source == model.SourceBuiltin {
+			add(sv)
+		}
+	}
+	for _, sv := range cat {
+		add(sv)
 	}
 	return out
 }

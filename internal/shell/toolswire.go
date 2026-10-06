@@ -5,6 +5,7 @@ import (
 	"net"
 	"net/netip"
 	"slices"
+	"strings"
 	"time"
 
 	"github.com/AdguardTeam/dnsproxy/upstream"
@@ -56,6 +57,14 @@ func ispResolvers(st store.State, live []liveAdapter) []string {
 			add(a.Gateway)
 		}
 	}
+	// IPv4 first: an ISP's IPv6 resolver often does not answer.
+	v6 := func(ip string) int {
+		if strings.Contains(ip, ":") {
+			return 1
+		}
+		return 0
+	}
+	slices.SortStableFunc(out, func(x, y string) int { return v6(x) - v6(y) })
 	return out
 }
 

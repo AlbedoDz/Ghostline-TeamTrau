@@ -206,3 +206,17 @@ func TestLookup_BuildFailureMarksOnlyThatSource(t *testing.T) {
 	require.Equal(t, []lookup.Verdict{lookup.VerdictMatch, lookup.VerdictFailed}, res.Verdicts)
 	require.Equal(t, lookup.VerdictMatch, res.Overall)
 }
+
+func TestDefaultLookupSources_FallBackToCatalogWithoutScan(t *testing.T) {
+	h := newTools(t)
+	h.o.d.Scans = &fScans{} // fresh install: never scanned
+	srcs := h.svc.DefaultLookupSources()
+	require.Len(t, srcs, 3, "always offer encrypted sources, never only the ISP")
+	require.Equal(t, "cf", srcs[0].Ref, "built-in servers first")
+	for _, s := range srcs {
+		require.Equal(t, "server", s.Kind)
+	}
+	h.o.update(func(s *Snapshot) { s.Status = StatusProtected })
+	srcs = h.svc.DefaultLookupSources()
+	require.Equal(t, []string{"ghostline", "server", "server"}, []string{srcs[0].Kind, srcs[1].Kind, srcs[2].Kind})
+}
