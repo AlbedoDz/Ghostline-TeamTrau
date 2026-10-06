@@ -14,6 +14,8 @@
 
 [English](README.md) · Tiếng Việt
 
+<a href="https://github.com/hashcott/ghostline/releases/latest/download/ghostline-amd64-installer.exe"><img src="https://img.shields.io/badge/%E2%AC%87%20T%E1%BA%A3i%20v%E1%BB%81-Windows%2010%2F11%20x64-2ea44f?style=for-the-badge" alt="Tải Ghostline cho Windows"></a>
+
 </div>
 
 ---
@@ -84,13 +86,13 @@ Video khoảng 2 phút rưỡi có lồng tiếng: kết nối bằng một nút
 
 ## Cài đặt
 
-Tải từ trang [Releases](https://github.com/hashcott/ghostline/releases):
+**[⬇ Tải bản mới nhất](https://github.com/hashcott/ghostline/releases/latest)** — hoặc chọn một file bên dưới. Các phiên bản cũ nằm ở trang [Releases](https://github.com/hashcott/ghostline/releases).
 
-| File | Là gì |
-| --- | --- |
-| `ghostline-amd64-installer.exe` | Bản cài đặt (tự cài WebView2 nếu thiếu) |
-| `Ghostline-<phiên bản>-portable.zip` | Bản portable: giải nén rồi chạy |
-| `SHA256SUMS` | Mã SHA-256 của hai file trên |
+| File | Là gì | Tải về |
+| --- | --- | --- |
+| `ghostline-amd64-installer.exe` | Bản cài đặt (tự cài WebView2 nếu thiếu) | **[Tải trực tiếp ⬇](https://github.com/hashcott/ghostline/releases/latest/download/ghostline-amd64-installer.exe)** |
+| `Ghostline-<phiên bản>-portable.zip` | Bản portable: giải nén rồi chạy | [Từ bản mới nhất](https://github.com/hashcott/ghostline/releases/latest) |
+| `SHA256SUMS` | Mã SHA-256 của hai file trên | [Tải trực tiếp](https://github.com/hashcott/ghostline/releases/latest/download/SHA256SUMS) |
 
 Kiểm tra file đã tải:
 
