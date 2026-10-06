@@ -32,6 +32,7 @@ type Options struct {
 	Timeout       time.Duration // per query
 	TestDomain    string
 	PoisonDomains []string
+	MaxServers    int                                        // servers per scan; 0 = DefaultMaxServers
 	MaxDuration   time.Duration                              // whole scan; 0 = 10 minutes
 	Label         func() string                              // random label for latency rounds; nil = 8 random chars
 	Sleep         func(context.Context, time.Duration) error // pause between rounds; nil = timer

@@ -71,15 +71,20 @@ func toolBusy(tool string) error { return appErr(CodeToolBusy, nil, "tool", tool
 // EventToolsScan. It runs outside the connect lock.
 func (s *Service) StartAdvancedScan(req AdvScanRequest) (AdvScanStart, error) {
 	start := AdvScanStart{Bad: []string{}}
+	st := s.x.Settings.Get()
+	maxN := st.Tools.Scanner.MaxServers
+	if maxN <= 0 {
+		maxN = advanced.DefaultMaxServers
+	}
 	var list []model.Server
 	pasted := map[string]bool{}
 	if req.Filter != nil {
 		list = s.filterCatalog(*req.Filter)
-		if len(list) > advanced.MaxServers {
-			// Too many to grade at once: take the most useful 500.
+		if len(list) > maxN {
+			// More than one scan grades: take the most useful maxN.
 			list = s.rankForScan(list)
-			start.Skipped = len(list) - advanced.MaxServers
-			list = list[:advanced.MaxServers]
+			start.Skipped = len(list) - maxN
+			list = list[:maxN]
 		}
 	} else {
 		add, bad := servers.ParseImport([]byte(req.Pasted))
@@ -90,17 +95,16 @@ func (s *Service) StartAdvancedScan(req AdvScanRequest) (AdvScanStart, error) {
 		list = add
 	}
 	start.Total = len(list)
-	if len(list) > advanced.MaxServers {
-		return start, appErr(CodeScanTooMany, nil, "count", len(list))
+	if len(list) > maxN {
+		return start, appErr(CodeScanTooMany, fmt.Errorf("%d servers, at most %d per scan", len(list), maxN), "count", len(list), "max", maxN)
 	}
-	st := s.x.Settings.Get()
 	poison := req.PoisonDomains
 	if len(poison) == 0 {
 		poison = st.ProbeSites
 	}
 	c := advanced.Checker{Build: s.x.BuildUpstream, Opt: advanced.Options{
 		Rounds: st.Tools.Scanner.Rounds, Timeout: time.Duration(st.Tools.Scanner.TimeoutMs) * time.Millisecond,
-		TestDomain: st.TestDomain, PoisonDomains: poison,
+		TestDomain: st.TestDomain, PoisonDomains: poison, MaxServers: maxN,
 	}}
 
 	s.mu.Lock()

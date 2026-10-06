@@ -285,3 +285,14 @@ func TestScan_DurationCap(t *testing.T) {
 	require.NoError(t, err)
 	require.Less(t, time.Since(start), time.Second)
 }
+
+func TestScan_MaxServersOption(t *testing.T) {
+	c, _ := newChecker(honest)
+	c.Opt.MaxServers = 10
+	_, err := advanced.Scan(context.Background(), servers(11), c, 4, nil)
+	require.ErrorIs(t, err, advanced.ErrTooMany)
+	c.Opt.MaxServers = 600
+	rs, err := advanced.Scan(context.Background(), servers(501), c, 32, nil)
+	require.NoError(t, err, "a configured limit above 500 is honoured")
+	require.Len(t, rs, 501)
+}

@@ -12,11 +12,11 @@ import (
 	"github.com/hashcott/ghostline/internal/model"
 )
 
-// MaxServers caps one scan.
-const MaxServers = 500
+// DefaultMaxServers caps one scan when Options.MaxServers is 0.
+const DefaultMaxServers = 500
 
-// ErrTooMany rejects a scan of more than MaxServers servers.
-var ErrTooMany = errors.New("advanced: more than 500 servers")
+// ErrTooMany rejects a scan of more servers than Options.MaxServers.
+var ErrTooMany = errors.New("advanced: too many servers for one scan")
 
 // progressEvery throttles progress callbacks to about 10 per second.
 const progressEvery = 100 * time.Millisecond
@@ -24,7 +24,11 @@ const progressEvery = 100 * time.Millisecond
 // Scan grades servers in parallel and returns them sorted. A cancelled or
 // timed-out scan returns the servers finished so far.
 func Scan(ctx context.Context, list []model.Server, c Checker, workers int, onProgress func(done, total int, r Result)) ([]Result, error) {
-	if len(list) > MaxServers {
+	maxN := c.Opt.MaxServers
+	if maxN <= 0 {
+		maxN = DefaultMaxServers
+	}
+	if len(list) > maxN {
 		return nil, ErrTooMany
 	}
 	if workers <= 0 {

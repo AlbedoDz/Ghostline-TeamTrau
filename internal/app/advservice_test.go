@@ -208,3 +208,33 @@ func TestAdvScan_LargeFilterScansBest500(t *testing.T) {
 	h.svc.CancelAdvancedScan()
 	waitAdvDone(t, h)
 }
+
+func TestAdvScan_LimitComesFromSettings(t *testing.T) {
+	h := newTools(t)
+	h.custom = nil
+	for i := range 120 {
+		h.custom = append(h.custom, model.Server{ID: fmt.Sprintf("x%03d", i), Name: fmt.Sprint("X", i), Protocol: model.ProtoDoH,
+			Address: fmt.Sprintf("https://x%d.example/dns-query", i), Source: model.SourceCustom})
+	}
+	st := h.box.Get()
+	st.Tools.Scanner.MaxServers = 50
+	require.NoError(t, h.box.Save(st))
+	h.svc.x.BuildUpstream = func(model.Server) (upstream.Upstream, error) { return blockUp{}, nil }
+
+	start, err := h.svc.StartAdvancedScan(AdvScanRequest{Filter: &ServerFilter{}})
+	require.NoError(t, err)
+	require.Equal(t, 50, start.Total)
+	require.Equal(t, 71, start.Skipped) // 120 custom + 1 built-in
+	h.svc.CancelAdvancedScan()
+	waitAdvDone(t, h)
+
+	var lines []string
+	for i := range 51 {
+		lines = append(lines, fmt.Sprintf("https://p%d.example/dns-query", i))
+	}
+	_, err = h.svc.StartAdvancedScan(AdvScanRequest{Pasted: strings.Join(lines, "\n")})
+	var ae *AppError
+	require.ErrorAs(t, err, &ae)
+	require.Equal(t, CodeScanTooMany, ae.Code)
+	require.Equal(t, 50, ae.Params["max"])
+}

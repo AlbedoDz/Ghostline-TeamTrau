@@ -12,7 +12,7 @@ import (
 
 func defaultTools() store.ToolsSettings {
 	return store.ToolsSettings{
-		Scanner: store.ScannerTool{Rounds: 5, Workers: 8, TimeoutMs: 3000},
+		Scanner: store.ScannerTool{Rounds: 5, Workers: 8, TimeoutMs: 3000, MaxServers: 500},
 		CFScan: store.CFScanTool{Host: "speed.cloudflare.com", MaxIPs: 2000, Want: 50, Concurrency: 64,
 			TimeoutMs: 2000, SpeedTest: true, SpeedBytes: 1048576},
 	}
@@ -67,6 +67,8 @@ func TestValidateTools(t *testing.T) {
 		func(t *store.ToolsSettings) { t.Scanner.Workers = 33 },
 		func(t *store.ToolsSettings) { t.Scanner.TimeoutMs = 999 },
 		func(t *store.ToolsSettings) { t.Scanner.TimeoutMs = 10001 },
+		func(t *store.ToolsSettings) { t.Scanner.MaxServers = 49 },
+		func(t *store.ToolsSettings) { t.Scanner.MaxServers = 2001 },
 		func(t *store.ToolsSettings) { t.CFScan.MaxIPs = 199 },
 		func(t *store.ToolsSettings) { t.CFScan.MaxIPs = 10001 },
 		func(t *store.ToolsSettings) { t.CFScan.Want = -1 },
@@ -93,4 +95,20 @@ func TestValidateTools(t *testing.T) {
 func TestPaths_CFScanCache(t *testing.T) {
 	p := store.ResolvePaths(`C:\x\ghostline.exe`, `C:\AppData`)
 	require.Equal(t, filepath.Join(`C:\AppData`, "Ghostline", "cfscan-cache.json"), p.CFScanCache)
+}
+
+func TestSettingsV5_MissingMaxServersGetsDefault(t *testing.T) {
+	// A v5 file written before maxServers existed.
+	s, err := store.MigrateSettings([]byte(`{"version":5,"tools":{"scanner":{"rounds":7,"workers":8,"timeoutMs":3000}}}`))
+	require.NoError(t, err)
+	require.Equal(t, 7, s.Tools.Scanner.Rounds)
+	require.Equal(t, 500, s.Tools.Scanner.MaxServers)
+}
+
+func TestValidateTools_MaxServersBounds(t *testing.T) {
+	for _, n := range []int{50, 500, 2000} {
+		ts := defaultTools()
+		ts.Scanner.MaxServers = n
+		require.NoError(t, store.ValidateTools(ts), n)
+	}
 }

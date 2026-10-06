@@ -50,10 +50,18 @@ type ToolsSettings struct {
 
 // ScannerTool configures the advanced DNS scanner.
 type ScannerTool struct {
-	Rounds    int `json:"rounds"`
-	Workers   int `json:"workers"`
-	TimeoutMs int `json:"timeoutMs"`
+	Rounds     int `json:"rounds"`
+	Workers    int `json:"workers"`
+	TimeoutMs  int `json:"timeoutMs"`
+	MaxServers int `json:"maxServers"` // servers graded per scan
 }
+
+// Advanced scan size: default and allowed range.
+const (
+	DefaultScanMaxServers = 500
+	MinScanMaxServers     = 50
+	MaxScanMaxServers     = 2000
+)
 
 // CFScanTool configures the Cloudflare clean-IP scan.
 type CFScanTool struct {
@@ -69,7 +77,7 @@ type CFScanTool struct {
 // DefaultTools returns the spec 3 §11 defaults.
 func DefaultTools() ToolsSettings {
 	return ToolsSettings{
-		Scanner: ScannerTool{Rounds: 5, Workers: 8, TimeoutMs: 3000},
+		Scanner: ScannerTool{Rounds: 5, Workers: 8, TimeoutMs: 3000, MaxServers: DefaultScanMaxServers},
 		CFScan: CFScanTool{Host: "speed.cloudflare.com", MaxIPs: 2000, Want: 50, Concurrency: 64,
 			TimeoutMs: 2000, SpeedTest: true, SpeedBytes: 1048576},
 	}
@@ -101,6 +109,8 @@ func ValidateTools(t ToolsSettings) error {
 		return fmt.Errorf("tools: scanner workers must be 4..32")
 	case sc.TimeoutMs < 1000 || sc.TimeoutMs > 10000:
 		return fmt.Errorf("tools: scanner timeoutMs must be 1000..10000")
+	case sc.MaxServers < MinScanMaxServers || sc.MaxServers > MaxScanMaxServers:
+		return fmt.Errorf("tools: scanner maxServers must be %d..%d", MinScanMaxServers, MaxScanMaxServers)
 	case !ValidHostname(cf.Host):
 		return fmt.Errorf("tools: cfscan host must be a domain name")
 	case cf.MaxIPs < 200 || cf.MaxIPs > 10000:
@@ -339,6 +349,9 @@ func MigrateSettings(b []byte) (Settings, error) {
 	}
 	if head.Version < 5 {
 		s.Tools = DefaultTools()
+	}
+	if s.Tools.Scanner.MaxServers == 0 { // v5 files from before maxServers
+		s.Tools.Scanner.MaxServers = DefaultScanMaxServers
 	}
 	return s, nil
 }
