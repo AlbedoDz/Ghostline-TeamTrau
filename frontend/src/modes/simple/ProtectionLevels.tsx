@@ -15,9 +15,11 @@ export function ProtectionLevels({ onOpenFull, disabled }: { onOpenFull: () => v
   const settings = useGhost((s) => s.settings);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // The level being applied: shown at once, before the engine is up.
+  const [pending, setPending] = useState<Level | null>(null);
   const descId = useId();
   if (!settings) return null;
-  const current = levelOf(settings);
+  const current = pending ?? levelOf(settings);
   const now = comboOf(settings);
 
   const choose = async (level: Level) => {
@@ -45,16 +47,25 @@ export function ProtectionLevels({ onOpenFull, disabled }: { onOpenFull: () => v
     if (fakeSniOff && !window.confirm(t("simple.level.fakeSniOff"))) return;
 
     setBusy(true);
+    setPending(level);
     try {
       if (fakeSniOff) await Service.SetFakeSNI(false); // before the proxy goes away
+      // DPI goes through SetDPIEnabled: it starts or stops the engine and
+      // marks the snapshot at once (a plain settings save only restarts a
+      // running engine, and stale snapshots would flip the level back).
+      if (!!next.dpi?.enabled !== now.dpi) await Service.SetDPIEnabled(!!next.dpi?.enabled);
       await Service.SaveSettings(next);
       if (fakeSniAfter) await Service.SetFakeSNI(true); // after the proxy is back
       const fakeSni = { ...settings.fakeSni, enabled: fakeSniAfter ?? (fakeSniOff ? false : now.fakeSni) };
       useGhost.getState().setSettings({ ...next, fakeSni } as Settings);
     } catch (e) {
       setError(describeError(e));
+      // Part of it may have applied: show what Go really has.
+      const fresh = await Service.GetSettings().catch(() => null);
+      if (fresh) useGhost.getState().setSettings(fresh);
     } finally {
       setBusy(false);
+      setPending(null);
     }
   };
 
@@ -83,7 +94,9 @@ export function ProtectionLevels({ onOpenFull, disabled }: { onOpenFull: () => v
       </div>
       {/* What the chosen level does, always in view (hover hints go unseen). */}
       <div id={descId} data-testid="level-description" className={css.levelNote}>
-        {current === "custom" ? (
+        {pending ? (
+          t("simple.level.applying", { level: t(`simple.level.${pending}`) })
+        ) : current === "custom" ? (
           <>
             {summary} ·{" "}
             <button className={css.link} onClick={onOpenFull}>{t("simple.level.editInFull")}</button>

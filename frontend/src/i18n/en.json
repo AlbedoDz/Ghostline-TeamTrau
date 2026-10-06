@@ -79,7 +79,8 @@
         "none": "DNS only"
       },
       "editInFull": "change in the Full interface ›",
-      "fakeSniOff": "Fake SNI needs the proxy and will be turned off. Continue?"
+      "fakeSniOff": "Fake SNI needs the proxy and will be turned off. Continue?",
+      "applying": "Applying “{{level}}”…"
     }
   },
   "nav": {

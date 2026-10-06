@@ -79,7 +79,8 @@
         "none": "chỉ DNS"
       },
       "editInFull": "chỉnh ở giao diện Đầy đủ ›",
-      "fakeSniOff": "Fake SNI cần proxy và sẽ bị tắt. Tiếp tục?"
+      "fakeSniOff": "Fake SNI cần proxy và sẽ bị tắt. Tiếp tục?",
+      "applying": "Đang áp dụng “{{level}}”…"
     }
   },
   "nav": {

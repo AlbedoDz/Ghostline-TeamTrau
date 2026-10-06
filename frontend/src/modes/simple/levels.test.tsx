@@ -1,5 +1,5 @@
 import { beforeAll, beforeEach, expect, test, vi } from "vitest";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { SimpleView } from "./SimpleView";
 import { useGhost } from "../../app/store";
 import { initI18n } from "../../i18n";
@@ -9,6 +9,7 @@ const svc = vi.hoisted(() => ({
   Connect: vi.fn(() => Promise.resolve()),
   SaveSettings: vi.fn(() => Promise.resolve()),
   SetFakeSNI: vi.fn(() => Promise.resolve()),
+  SetDPIEnabled: vi.fn(() => Promise.resolve()),
   GetSettings: vi.fn(() => Promise.resolve(null)),
   DPIStrategies: vi.fn(() => Promise.resolve([])),
 }));
@@ -123,11 +124,35 @@ test("turning the proxy off while Fake SNI runs asks first, and custom turns Fak
 
 test("an error is shown and the level stays", async () => {
   useGhost.getState().setSettings(settings());
-  svc.SaveSettings.mockRejectedValueOnce(new Error("DPI_BLACKLIST_EMPTY"));
+  svc.SetDPIEnabled.mockRejectedValueOnce(new Error("DPI_START_FAILED"));
   render(<SimpleView onOpenLogs={() => {}} />);
   fireEvent.click(screen.getByRole("radio", { name: "DNS + vượt DPI" }));
   expect(await screen.findByRole("alert")).toBeInTheDocument();
   expect(screen.getByRole("radio", { name: "Chỉ DNS" })).toHaveAttribute("aria-checked", "true");
+});
+
+test("DPI is switched through SetDPIEnabled, which really starts the engine", async () => {
+  useGhost.getState().setSettings(settings());
+  let finish: (v?: any) => void = () => {};
+  svc.SetDPIEnabled.mockImplementationOnce(() => new Promise((r) => (finish = r)));
+  render(<SimpleView onOpenLogs={() => {}} />);
+  fireEvent.click(screen.getByRole("radio", { name: "DNS + vượt DPI" }));
+  // While the engine starts, the chosen level shows at once and says so.
+  expect(await screen.findByRole("radio", { name: "DNS + vượt DPI" })).toHaveAttribute("aria-checked", "true");
+  expect(screen.getByTestId("level-description")).toHaveTextContent(/đang áp dụng/i);
+  // A snapshot from before the switch must not flip it back.
+  act(() => useGhost.getState().setSnapshot({ status: "protected", warnings: [], servers: [], blockedSites: [], reasons: [], dpi: { enabled: false, running: false } } as any));
+  expect(screen.getByRole("radio", { name: "DNS + vượt DPI" })).toHaveAttribute("aria-checked", "true");
+  finish();
+  await waitFor(() => expect(svc.SaveSettings).toHaveBeenCalled());
+  expect(svc.SetDPIEnabled).toHaveBeenCalledWith(true);
+  expect(svc.SetDPIEnabled.mock.invocationCallOrder[0]).toBeLessThan(svc.SaveSettings.mock.invocationCallOrder[0]);
+  await waitFor(() => expect(screen.getByTestId("level-description")).toHaveTextContent("Thêm vượt DPI"));
+  expect(screen.getByRole("radio", { name: "DNS + vượt DPI" })).toHaveAttribute("aria-checked", "true");
+
+  fireEvent.click(screen.getByRole("radio", { name: "Tối đa" }));
+  await waitFor(() => expect(svc.SaveSettings).toHaveBeenCalledTimes(2));
+  expect(svc.SetDPIEnabled, "already on: not switched again").toHaveBeenCalledTimes(1);
 });
 
 test("a line under the levels describes the current one", async () => {
