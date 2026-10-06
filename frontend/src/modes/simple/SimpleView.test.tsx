@@ -198,3 +198,9 @@ describe("disconnect while LAN devices use this PC's DNS", () => {
     confirm.mockRestore();
   });
 });
+
+test("connecting: the server step shows how many servers were checked", () => {
+  useGhost.getState().setSnapshot(snap({ status: "connecting", step: 2, pickDone: 120, pickTotal: 900 }));
+  render(<SimpleView onOpenLogs={() => {}} />);
+  expect(screen.getByText("chọn máy chủ 120/900").closest("[data-step]")).toHaveAttribute("data-step", "current");
+});

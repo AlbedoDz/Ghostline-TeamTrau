@@ -61,7 +61,10 @@ export function SimpleView({
       return (
         <span key={n} data-step={state} className={css[state]}>
           <span className={css.mark}>{state === "done" ? "✓ " : state === "current" ? "› " : "  "}</span>
-          <span>{t(`step.${n}`)}</span>
+          <span>
+            {t(`step.${n}`)}
+            {n === 2 && state === "current" && snap.pickTotal ? ` ${snap.pickDone}/${snap.pickTotal}` : ""}
+          </span>
         </span>
       );
     }),

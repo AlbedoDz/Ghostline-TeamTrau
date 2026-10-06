@@ -70,7 +70,7 @@ So mã hiện ra với dòng tương ứng trong file `SHA256SUMS` trên trang R
 Khi mở lần đầu, Ghostline ở giao diện **Đơn giản**.
 
 1. Bấm **nút nguồn tròn ở giữa**.
-2. Ghostline lần lượt: kiểm tra hệ thống → chọn máy chủ → bật engine → chụp DNS gốc → bật lưới an toàn → đặt DNS → xác minh không rò rỉ. Lần đầu mất khoảng 10–25 giây vì phải quét máy chủ; các lần sau chỉ vài giây.
+2. Ghostline lần lượt: kiểm tra hệ thống → chọn máy chủ → bật engine → chụp DNS gốc → bật lưới an toàn → đặt DNS → xác minh không rò rỉ. Lần đầu trên một mạng, app kiểm tra toàn bộ máy chủ (khoảng 900) để chọn những cái nhanh nhất, mất khoảng 30–60 giây; bước này hiện tiến độ (ví dụ *chọn máy chủ 120/900*). Trong 24 giờ sau, cùng mạng đó, app dùng lại kết quả nên kết nối chỉ vài giây.
 3. Khi vòng tròn sáng xanh và hiện **[ ĐÃ BẢO VỆ ]** là xong: mọi truy vấn DNS của máy đã được mã hoá.
 
 Muốn huỷ khi đang kết nối: bấm nút nguồn lần nữa. Muốn tắt bảo vệ: bấm nút nguồn khi đang ở trạng thái Đã bảo vệ, DNS được trả về như cũ.
