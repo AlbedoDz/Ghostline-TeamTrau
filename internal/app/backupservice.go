@@ -9,6 +9,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"time"
 
@@ -83,10 +84,14 @@ func ExportTo(p store.Paths, path, appVersion string) error {
 }
 
 func (s *Service) currentBackupData() (backup.Data, error) {
-	d := backup.Data{Settings: s.x.Settings.Get()}
 	s.rmu.Lock()
-	d.Rules = s.rf
-	s.rmu.Unlock()
+	defer s.rmu.Unlock()
+	return s.currentBackupDataLocked()
+}
+
+// currentBackupDataLocked is currentBackupData for callers holding rmu.
+func (s *Service) currentBackupDataLocked() (backup.Data, error) {
+	d := backup.Data{Settings: s.x.Settings.Get(), Rules: s.rf}
 	var err error
 	if d.Custom, err = s.x.LoadCustom(); err != nil {
 		return d, err
@@ -170,6 +175,12 @@ func (s *Service) PreviewImport() (ImportPreview, error) {
 // refused unless Ghostline is disconnected. Files are written atomically;
 // on any failure every file is restored.
 func (s *Service) ApplyImport(token string, c backup.Choices) error {
+	// Hold the connect lock for the whole import: a Connect that starts
+	// meanwhile waits and then reads the imported files, never half of them.
+	if !s.o.opMu.TryLock() {
+		return appErr(CodeImportWhileConnected, nil)
+	}
+	defer s.o.opMu.Unlock()
 	if st := s.o.Snapshot().Status; st != StatusDisconnected && st != StatusError {
 		return appErr(CodeImportWhileConnected, nil)
 	}
@@ -179,20 +190,40 @@ func (s *Service) ApplyImport(token string, c backup.Choices) error {
 	if t == nil || t.token != token || s.clock().After(t.expires) {
 		return appErr(CodeImportExpired, nil)
 	}
-	cur, err := s.currentBackupData()
+	// Hold the rules lock from read to reload so no rules save lands in
+	// between and is lost, or overwrites the import.
+	s.rmu.Lock()
+	refresh, err := s.applyImportLocked(t, c)
+	s.rmu.Unlock()
 	if err != nil {
 		return err
+	}
+	s.mu.Lock()
+	s.imp = nil
+	s.mu.Unlock()
+	if refresh && s.x.Fetcher != nil {
+		_ = s.RefreshList("") // download the subscribed lists
+	}
+	return nil
+}
+
+// applyImportLocked writes and reloads the import; callers hold rmu. It
+// reports whether the rules changed.
+func (s *Service) applyImportLocked(t *importTicket, c backup.Choices) (bool, error) {
+	cur, err := s.currentBackupDataLocked()
+	if err != nil {
+		return false, err
 	}
 	target, changed, err := t.plan.Result(cur, c)
 	switch {
 	case errors.Is(err, backup.ErrSNIUnconfirmed):
-		return appErr(CodeImportInvalid, err, "detail", "sni_unconfirmed")
+		return false, appErr(CodeImportInvalid, err, "detail", "sni_unconfirmed")
 	case err != nil:
-		return appErr(CodeImportInvalid, err, "detail", err.Error())
+		return false, appErr(CodeImportInvalid, err, "detail", err.Error())
 	}
 	ws, err := s.importWrites(target, changed)
 	if err != nil {
-		return err
+		return false, err
 	}
 	if err := backup.Apply(ws); err != nil {
 		var we *backup.WriteError
@@ -200,13 +231,10 @@ func (s *Service) ApplyImport(token string, c backup.Choices) error {
 		if errors.As(err, &we) {
 			file = filepath.Base(we.Path)
 		}
-		return appErr(CodeImportWriteFailed, err, "file", file)
+		return false, appErr(CodeImportWriteFailed, err, "file", file)
 	}
-	s.mu.Lock()
-	s.imp = nil
-	s.mu.Unlock()
-	s.reloadAfterImport(cur, target, changed)
-	return nil
+	s.reloadAfterImportLocked(cur, target, changed)
+	return slices.Contains(changed, backup.SecRules), nil
 }
 
 func (s *Service) autoHostlistPath() string {
@@ -259,8 +287,9 @@ func (s *Service) importWrites(d backup.Data, changed []string) ([]backup.Write,
 	return ws, nil
 }
 
-// reloadAfterImport brings the running app in line with the written files.
-func (s *Service) reloadAfterImport(old, d backup.Data, changed []string) {
+// reloadAfterImportLocked brings the running app in line with the written
+// files; callers hold rmu.
+func (s *Service) reloadAfterImportLocked(old, d backup.Data, changed []string) {
 	for _, name := range changed {
 		switch name {
 		case backup.SecSettings:
@@ -269,13 +298,8 @@ func (s *Service) reloadAfterImport(old, d backup.Data, changed []string) {
 				s.x.OnSettingsChanged(old.Settings, d.Settings)
 			}
 		case backup.SecRules:
-			s.rmu.Lock()
 			s.rf = d.Rules
 			s.recompileLocked("")
-			s.rmu.Unlock()
-			if s.x.Fetcher != nil {
-				_ = s.RefreshList("") // download the subscribed lists
-			}
 		case backup.SecCustom:
 			_ = s.x.SaveCustom(d.Custom) // same content; reloads the catalog
 		}

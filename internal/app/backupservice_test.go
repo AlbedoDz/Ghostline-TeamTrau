@@ -175,3 +175,30 @@ func TestLoadBackupData_FromDisk(t *testing.T) {
 	require.NotEmpty(t, d.Custom)
 	var _ []model.Server = d.Custom
 }
+
+func TestApplyImport_RefusedWhileAConnectIsRunning(t *testing.T) {
+	a, b := newTools(t), newTools(t)
+	p := importInto(t, b, exportFrom(t, a))
+	b.o.opMu.Lock() // a connect/disconnect/autotune is in progress
+	err := b.svc.ApplyImport(p.Token, backup.Choices{Sections: []string{"rules"}})
+	b.o.opMu.Unlock()
+	require.Equal(t, CodeImportWhileConnected, code(t, err))
+	require.NoError(t, b.svc.ApplyImport(p.Token, backup.Choices{Sections: []string{"rules"}}))
+}
+
+func TestApplyImport_HoldsRulesLockAcrossWrite(t *testing.T) {
+	a, b := newTools(t), newTools(t)
+	p := importInto(t, b, exportFrom(t, a))
+	b.svc.rmu.Lock() // a rules save is in progress
+	done := make(chan error, 1)
+	go func() { done <- b.svc.ApplyImport(p.Token, backup.Choices{Sections: []string{"rules"}}) }()
+	select {
+	case <-done:
+		b.svc.rmu.Unlock()
+		t.Fatal("import wrote rules while a rules save held the lock")
+	case <-time.After(150 * time.Millisecond):
+	}
+	b.svc.rmu.Unlock()
+	require.NoError(t, <-done)
+	require.Equal(t, []string{"a.com"}, patternsOf(b.svc.GetRules().Rules))
+}
