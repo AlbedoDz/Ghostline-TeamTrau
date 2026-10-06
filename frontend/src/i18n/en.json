@@ -20,8 +20,10 @@
     "language": "language"
   },
   "mode": {
-    "simple": "SIMPLE",
-    "advanced": "ADVANCED"
+    "simple": "Simple",
+    "full": "Full",
+    "label": "interface",
+    "hint": "Simple: just the connect button. Full: every page and setting."
   },
   "status": {
     "disconnected": "UNPROTECTED",
@@ -368,7 +370,7 @@
     },
     "AUTOTUNE_NO_PRESET": {
       "message": "no working DPI bypass configuration found",
-      "action": "Try Mode 1–6 or custom arguments in Advanced mode"
+      "action": "Try Mode 1–6 or custom arguments in the Full interface"
     },
     "INTERNAL": {
       "message": "internal error at step {{step}}",

@@ -12,12 +12,16 @@ test("language toggle calls onLang with the other language", () => {
   expect(onLang).toHaveBeenCalledWith("en");
 });
 
-test("mode tabs call onMode", () => {
+test("the mode switch is a two-way control in the title bar", () => {
   const onMode = vi.fn();
-  render(<TitleBar mode="simple" onMode={onMode} lang="vi" onLang={() => {}} />);
-  fireEvent.click(screen.getByRole("tab", { name: /NÂNG CAO/ }));
-  expect(onMode).toHaveBeenCalledWith("advanced");
-  expect(screen.getByRole("tab", { name: /ĐƠN GIẢN/ })).toHaveAttribute("aria-selected", "true");
+  const { container } = render(<TitleBar mode="simple" onMode={onMode} lang="vi" onLang={() => {}} />);
+  const group = screen.getByRole("radiogroup", { name: "giao diện" });
+  expect(group.getAttribute("title")).toMatch(/Đơn giản: chỉ có nút kết nối/);
+  expect(screen.getByRole("radio", { name: "Đơn giản" })).toHaveAttribute("aria-checked", "true");
+  fireEvent.click(screen.getByRole("radio", { name: "Đầy đủ" }));
+  expect(onMode).toHaveBeenCalledWith("full");
+  expect(container.querySelector("[data-drag]")!.contains(group), "it sits in the title bar").toBe(true);
+  expect(container.querySelector('[role="tablist"]'), "no separate mode row").toBeNull();
 });
 
 test("drag region and no-drag buttons", () => {

@@ -21,9 +21,9 @@ English · [Tiếng Việt](README.vi.md)
 Ghostline runs a local DNS server on `127.0.0.1` / `::1`, points every network adapter at it, and forwards your queries over **DoH, DoT, DoQ or DNSCrypt** to the fastest healthy resolver. When your network interferes with encrypted connections by inspecting packets (DPI), it can also run a DPI bypass engine: **zapret2** (recommended) or **GoodbyeDPI**. Above all, it is built to **always give your original DNS back**, even if the app crashes or the machine loses power.
 
 <p align="center">
-  <img src="docs/screenshots/simple-en.png" height="360" alt="Simple mode">
+  <img src="docs/screenshots/simple-en.png" height="360" alt="Simple interface">
   &nbsp;
-  <img src="docs/screenshots/overview-en.png" height="360" alt="Advanced mode">
+  <img src="docs/screenshots/overview-en.png" height="360" alt="Full interface">
 </p>
 
 ## Table of contents
@@ -59,7 +59,7 @@ Ghostline runs a local DNS server on `127.0.0.1` / `::1`, points every network a
 - **Diagnostic tools:** DNS lookup that compares sources and spots DNS poisoning, an advanced scanner that grades servers on latency, loss, DNSSEC, ad filtering and poisoning, a Cloudflare clean-IP finder that turns results into `ip=` rules, and a DNS stamp reader and builder.
 - **Backup and restore:** export settings, rules, lists and your servers to one file and import them on another PC. Private and machine-bound values are never exported, and an import never turns on Fake SNI or sharing on the LAN.
 - **Signed server list:** updated daily and verified with ed25519; the DNSCrypt list is checked with minisign.
-- **Simple and Advanced modes**, a tray icon, Vietnamese and English UI, and a neon-terminal look.
+- **Simple and Full interfaces**, a tray icon, Vietnamese and English UI, and a neon-terminal look.
 - **Installer or portable:** the portable build keeps all data in a `data\` folder next to the exe.
 - **Update notifications only:** Ghostline tells you about a new version and never updates itself silently.
 
@@ -112,7 +112,7 @@ Get-FileHash .\Ghostline-0.1.0-portable.zip -Algorithm SHA256
 > 📖 A detailed user guide covering every screen, unblocking sites and troubleshooting: **[docs/user-guide.md](docs/user-guide.md)** ([Tiếng Việt](docs/huong-dan-su-dung.md))
 
 1. Start Ghostline and press **Connect**. It picks a server, redirects DNS and verifies there is no leak.
-2. If some sites are still blocked, either turn on the **proxy** (Advanced → Proxy → enable proxy + use for this PC) so browsers get automatic fragmentation, or open **Advanced → DPI**, pick an engine (**zapret2** is recommended), turn it on and press **auto-tune**.
+2. If some sites are still blocked, either turn on the **proxy** (Full → Proxy → enable proxy + use for this PC) so browsers get automatic fragmentation, or open **Full → DPI bypass**, pick an engine (**zapret2** is recommended), turn it on and press **auto-tune**.
    To share with other devices, turn on **share on LAN** and scan the QR code on your phone (the network must be *Private*).
 3. Press **Disconnect** (or quit from the tray) to restore your original DNS.
 

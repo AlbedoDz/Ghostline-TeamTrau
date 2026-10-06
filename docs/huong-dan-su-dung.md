@@ -9,7 +9,7 @@ Hướng dẫn này dành cho người dùng Windows 10/11, không cần biết 
 1. [Ghostline làm gì?](#1-ghostline-làm-gì)
 2. [Cài đặt](#2-cài-đặt)
 3. [Bắt đầu nhanh: một nút bấm](#3-bắt-đầu-nhanh-một-nút-bấm)
-4. [Chế độ Nâng cao](#4-chế-độ-nâng-cao)
+4. [Giao diện Đầy đủ](#4-giao-diện-đầy-đủ)
    - [Tổng quan](#41-tổng-quan)
    - [Máy chủ](#42-máy-chủ)
    - [Vượt DPI](#43-vượt-dpi)
@@ -62,12 +62,12 @@ So mã hiện ra với dòng tương ứng trong file `SHA256SUMS` trên trang R
 
 ## 3. Bắt đầu nhanh: một nút bấm
 
-<p align="center"><img src="screenshots/simple-vi.png" width="320" alt="Chế độ Đơn giản"></p>
-<a href="videos/clips/connect-vi.mp4"><img src="videos/clips/connect-vi.webp" width="640" alt="Kết nối ở chế độ Đơn giản"></a>
+<p align="center"><img src="screenshots/simple-vi.png" width="320" alt="Giao diện Đơn giản"></p>
+<a href="videos/clips/connect-vi.mp4"><img src="videos/clips/connect-vi.webp" width="640" alt="Kết nối ở giao diện Đơn giản"></a>
 
 *Ảnh động được tua nhanh, không có tiếng; bấm vào để xem video có lồng tiếng.*
 
-Khi mở lần đầu, Ghostline ở chế độ **ĐƠN GIẢN**.
+Khi mở lần đầu, Ghostline ở giao diện **Đơn giản**.
 
 1. Bấm **nút nguồn tròn ở giữa**.
 2. Ghostline lần lượt: kiểm tra hệ thống → chọn máy chủ → bật engine → chụp DNS gốc → bật lưới an toàn → đặt DNS → xác minh không rò rỉ. Lần đầu mất khoảng 10–25 giây vì phải quét máy chủ; các lần sau chỉ vài giây.
@@ -98,9 +98,9 @@ Muốn huỷ khi đang kết nối: bấm nút nguồn lần nữa. Muốn tắt
 | SUY GIẢM | Máy chủ phản hồi chậm hoặc không phản hồi; Ghostline đang tự tìm máy chủ khác. Mạng vẫn dùng được |
 | LỖI | Không kết nối được. **DNS của máy không bị thay đổi**. Đọc thông báo bên dưới để biết cách xử lý (xem [phần 7](#7-xử-lý-sự-cố)) |
 
-## 4. Chế độ Nâng cao
+## 4. Giao diện Đầy đủ
 
-Bấm **NÂNG CAO** ở góc trên bên trái để mở giao diện đầy đủ. Bấm **ĐƠN GIẢN** để quay lại. Thanh bên trái luôn có trạng thái hiện tại và nút **⏻ KẾT NỐI / NGẮT KẾT NỐI**.
+Bấm **Đầy đủ** trên công tắc **Đơn giản | Đầy đủ** ở thanh trên cùng để xem mọi trang và cài đặt. Bấm **Đơn giản** để quay lại. Thanh bên trái luôn có trạng thái hiện tại và nút **⏻ KẾT NỐI / NGẮT KẾT NỐI**.
 
 Thanh bên chia trang thành nhóm: **cơ bản** (tổng quan, máy chủ, vượt DPI), **nâng cao** (proxy, rules, DNS server) và **chẩn đoán** (công cụ), cuối cùng là cài đặt. **Fake SNI** là một tab của trang **proxy**, còn **nhật ký** là tab đầu tiên của trang **công cụ**.
 

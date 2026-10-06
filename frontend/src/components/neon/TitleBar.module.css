@@ -38,17 +38,24 @@
   color: var(--green) !important;
 }
 
-.tabs {
+/* Simple / Full: a two-way switch, clearly clickable. */
+.modes {
   display: flex;
-  gap: 14px;
-  padding: 9px 14px;
-  font-size: 11px;
+  border: 1px solid var(--line-strong);
 }
 
-.tabs button {
+.modes button {
+  padding: 1px 12px;
   color: var(--dim);
+  letter-spacing: 0.06em;
 }
 
-.tabs .on {
+.modes button:hover:not(.on) {
+  color: var(--text-strong);
+}
+
+.modes .on {
+  background: rgba(0, 255, 163, 0.16);
   color: var(--green);
+  font-weight: 700;
 }

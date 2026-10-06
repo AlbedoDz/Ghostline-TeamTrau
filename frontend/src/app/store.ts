@@ -17,7 +17,7 @@ import type {
   UpdateInfo,
 } from "./api";
 
-export type Mode = "simple" | "advanced";
+export type Mode = "simple" | "full";
 export type Page = "overview" | "servers" | "dpi" | "proxy" | "rules" | "dnsserver" | "fakesni" | "tools" | "logs" | "settings";
 export type ToolsTab = "logs" | "lookup" | "scanner" | "cfscan" | "stamp";
 export type ProxyTab = "proxy" | "fakesni";

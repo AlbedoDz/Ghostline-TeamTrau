@@ -13,8 +13,8 @@ export function FakeSniBanner() {
   const view = () => {
     const st = useGhost.getState();
     st.setPage("fakesni");
-    if (st.settings && st.settings.mode !== "advanced") st.setSettings({ ...st.settings, mode: "advanced" });
-    void Service.SetMode("advanced");
+    if (st.settings && st.settings.mode !== "full") st.setSettings({ ...st.settings, mode: "full" });
+    void Service.SetMode("full");
   };
   return (
     <Banner

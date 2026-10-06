@@ -21,9 +21,9 @@
 Ghostline chạy một DNS server cục bộ trên `127.0.0.1` / `::1`, trỏ mọi card mạng về đó, rồi chuyển tiếp truy vấn qua **DoH, DoT, DoQ hoặc DNSCrypt** tới máy chủ nhanh nhất còn hoạt động. Khi kết nối mã hoá bị can thiệp bằng cách soi gói tin (DPI), Ghostline có thể chạy thêm một engine vượt DPI: **zapret2** (khuyên dùng) hoặc **GoodbyeDPI**. Trên hết, Ghostline được thiết kế để **luôn trả lại DNS gốc của bạn**, kể cả khi app bị tắt đột ngột hay máy mất điện.
 
 <p align="center">
-  <img src="docs/screenshots/simple-vi.png" height="360" alt="Chế độ Đơn giản">
+  <img src="docs/screenshots/simple-vi.png" height="360" alt="Giao diện Đơn giản">
   &nbsp;
-  <img src="docs/screenshots/overview-vi.png" height="360" alt="Chế độ Nâng cao">
+  <img src="docs/screenshots/overview-vi.png" height="360" alt="Giao diện Đầy đủ">
 </p>
 
 ## Mục lục
@@ -58,7 +58,7 @@ Ghostline chạy một DNS server cục bộ trên `127.0.0.1` / `::1`, trỏ m�
 - **Công cụ chẩn đoán:** tra DNS so sánh nhiều nguồn và phát hiện DNS bị đầu độc, Scanner nâng cao chấm server theo độ trễ, mất gói, DNSSEC, lọc quảng cáo và đầu độc, công cụ tìm IP Cloudflare sạch rồi tạo rule `ip=`, và công cụ đọc/tạo stamp DNS.
 - **Sao lưu và khôi phục:** xuất cài đặt, rule, danh sách và server tự thêm ra một file rồi nhập trên máy khác. Thông tin riêng tư và gắn với máy không bao giờ được xuất, và khi nhập không bao giờ tự bật Fake SNI hay chia sẻ trong LAN.
 - **Danh sách máy chủ có chữ ký:** cập nhật mỗi ngày, xác minh bằng ed25519; danh sách DNSCrypt được kiểm tra bằng minisign.
-- **Chế độ Đơn giản và Nâng cao**, icon khay, giao diện tiếng Việt và tiếng Anh, phong cách neon-terminal.
+- **Giao diện Đơn giản và Đầy đủ**, icon khay, giao diện tiếng Việt và tiếng Anh, phong cách neon-terminal.
 - **Bản cài đặt hoặc portable:** bản portable lưu mọi dữ liệu trong thư mục `data\` cạnh file exe.
 - **Chỉ thông báo khi có bản mới:** không bao giờ tự cập nhật ngầm.
 
@@ -113,7 +113,7 @@ Get-FileHash .\Ghostline-0.1.0-portable.zip -Algorithm SHA256
 > 📖 Hướng dẫn chi tiết từng màn hình, cách xử lý khi không vào được trang và xử lý sự cố: **[docs/huong-dan-su-dung.md](docs/huong-dan-su-dung.md)**
 
 1. Mở Ghostline và bấm **Kết nối**. App tự chọn máy chủ, chuyển hướng DNS và kiểm tra rò rỉ.
-2. Nếu vẫn còn trang bị chặn, hoặc bật **proxy** (Nâng cao → Proxy → bật proxy + dùng cho máy này) để trình duyệt được fragment tự động, hoặc vào **Nâng cao → DPI**, chọn engine (khuyên dùng **zapret2**), bật lên rồi bấm **tự dò**.
+2. Nếu vẫn còn trang bị chặn, hoặc bật **proxy** (Đầy đủ → Proxy → bật proxy + dùng cho máy này) để trình duyệt được fragment tự động, hoặc vào **Đầy đủ → Vượt DPI**, chọn engine (khuyên dùng **zapret2**), bật lên rồi bấm **tự dò**.
    Muốn chia sẻ cho thiết bị khác, bật **chia sẻ LAN** rồi quét mã QR bằng điện thoại (mạng phải là *Private*).
 3. Bấm **Ngắt kết nối** (hoặc thoát từ icon khay) để trả lại DNS gốc.
 

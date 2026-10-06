@@ -9,7 +9,7 @@ This guide is for anyone running Windows 10/11; no technical background is neede
 1. [What Ghostline does](#1-what-ghostline-does)
 2. [Installing](#2-installing)
 3. [Quick start: one button](#3-quick-start-one-button)
-4. [Advanced mode](#4-advanced-mode)
+4. [Full interface](#4-full-interface)
    - [Overview](#41-overview)
    - [Servers](#42-servers)
    - [DPI bypass](#43-dpi-bypass)
@@ -62,12 +62,12 @@ Compare the result with the matching line in `SHA256SUMS` on the Releases page. 
 
 ## 3. Quick start: one button
 
-<p align="center"><img src="screenshots/simple-en.png" width="320" alt="Simple mode"></p>
-<a href="videos/clips/connect-en.mp4"><img src="videos/clips/connect-en.webp" width="640" alt="Connecting in Simple mode"></a>
+<p align="center"><img src="screenshots/simple-en.png" width="320" alt="Simple interface"></p>
+<a href="videos/clips/connect-en.mp4"><img src="videos/clips/connect-en.webp" width="640" alt="Connecting in the Simple interface"></a>
 
 *The preview plays sped up and silent; click it for the narrated video.*
 
-Ghostline opens in **SIMPLE** mode.
+Ghostline opens in the **Simple** interface.
 
 1. Click the **round power button** in the middle.
 2. Ghostline goes through: checking the system → choosing servers → starting the engine → saving original DNS → arming safety net → setting DNS → verifying no leaks. The first time takes about 10–25 seconds because it scans servers; after that it takes a few seconds.
@@ -98,9 +98,9 @@ To cancel while connecting, click the power button again. To turn protection off
 | DEGRADED | Servers are slow or not answering; Ghostline is finding new ones by itself. Browsing still works |
 | ERROR | Connecting failed. **Your DNS was not changed.** Read the message below it for what to do (see [section 7](#7-troubleshooting)) |
 
-## 4. Advanced mode
+## 4. Full interface
 
-Click **ADVANCED** at the top left for the full interface, and **SIMPLE** to go back. The left sidebar always shows the current status and a **⏻ CONNECT / DISCONNECT** button.
+Click **Full** in the **Simple | Full** switch at the top of the window for every page and setting, and **Simple** to go back. The left sidebar always shows the current status and a **⏻ CONNECT / DISCONNECT** button.
 
 The sidebar groups the pages: **basic** (overview, servers, DPI bypass), **advanced** (proxy, rules, DNS server) and **diagnostics** (tools), then settings. **Fake SNI** is a tab of the **proxy** page, and **logs** is the first tab of the **tools** page.
 
