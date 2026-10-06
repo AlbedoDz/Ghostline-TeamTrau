@@ -414,7 +414,7 @@ In **Settings › Backup and move to another PC**:
 - **import settings…** works only while disconnected. Ghostline shows what will change first, and asks before importing rules that redirect decrypted traffic (`sni=`, `connect=`). An import always turns off Fake SNI, the DNS server, sharing on the LAN and start with Windows, and lists from other sources are no longer trusted for Fake SNI: turn them on again on this PC if you need them. Proxy passwords must be typed again.
 - If writing fails halfway, every file is put back as it was. The files an import replaced are kept next to them as `*.bak-import`.
 
-`Ghostline.exe --export <file>` writes the same backup from the command line, for sending to someone who helps you.
+`Ghostline.exe --export <file>` writes the same backup from the command line, for sending to someone who helps you. Run it from Command Prompt or PowerShell to see the result; like Ghostline itself, it asks for administrator permission.
 
 ## 5. The tray icon
 

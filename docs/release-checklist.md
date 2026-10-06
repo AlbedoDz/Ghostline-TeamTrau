@@ -72,7 +72,7 @@ Chạy trên Windows 11 x64, terminal **admin**. Đánh dấu từng mục; mụ
 - [ ] **IP Cloudflare:** có ≥ 10 IP dùng được trong ≤ 60 giây; một rule `ip=` tạo từ kết quả mở được một trang thật nằm sau Cloudflare.
 - [ ] **Chuyển máy:** xuất trên máy A, nhập trên máy B cài mới → rule, server, ghim, vượt DPI giống nhau; Fake SNI, DNS server cho LAN và chia sẻ proxy vẫn tắt; mật khẩu proxy upstream phải nhập lại.
 - [ ] **Tường lửa và antivirus:** quét IP Cloudflare ở mặc định không làm Windows Defender Firewall hay antivirus cảnh báo.
-- [ ] **`Ghostline.exe --export x.json`** ghi được file sao lưu và không mở cửa sổ (ghi lại có hiện hộp thoại UAC không).
+- [ ] **`Ghostline.exe --export x.json`** chạy trong PowerShell: hỏi UAC, ghi được file, in "settings exported to …" (hoặc lỗi) ra console và không mở cửa sổ.
 
 ## Cần xác minh trên máy thật (reviewer không kiểm chứng được)
 

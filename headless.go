@@ -34,12 +34,15 @@ func runHeadless(mode cli.Mode) int {
 		logger = slog.New(slog.NewTextHandler(w, nil)).With("mode", modeName(mode.Kind))
 	}
 	if mode.Kind == cli.KindExport {
-		// Read-only: no state lock, no recovery.
+		// Read-only: no state lock, no recovery. A GUI exe has no console of
+		// its own: borrow the caller's so the result can be read.
+		winutil.AttachParentConsole()
 		if err := app.ExportTo(paths, mode.ExportPath, brand.Version); err != nil {
 			logger.Error("export failed", "err", err)
-			fmt.Fprintln(os.Stderr, err)
+			fmt.Fprintln(os.Stderr, "Ghostline: export failed:", err)
 			return 1
 		}
+		fmt.Fprintln(os.Stdout, "Ghostline: settings exported to", mode.ExportPath)
 		return 0
 	}
 	lock, err := winutil.NewNamedMutex(brand.StateMutex)
