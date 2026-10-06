@@ -67,9 +67,9 @@
       "max": "Maximum",
       "custom": "Custom",
       "hint": {
-        "dns": "Encrypted DNS only. For ISPs that block with DNS alone; the lightest.",
-        "dpi": "Recommended. Adds DPI bypass for every app, with the engine and strategy you chose.",
-        "max": "Adds the proxy for this PC (sets the Windows proxy): browsers get fragmented automatically on blocked sites.",
+        "dns": "Encrypted DNS only; the lightest, for ISPs that block with DNS alone.",
+        "dpi": "Adds DPI bypass for every app (recommended).",
+        "max": "Adds the proxy for this PC: browsers get fragmented automatically on blocked sites.",
         "custom": "Your own combination from the Full interface."
       },
       "part": {

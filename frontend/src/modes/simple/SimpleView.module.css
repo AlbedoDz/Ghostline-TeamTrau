@@ -144,6 +144,8 @@
   font-size: 11px;
   color: var(--dim);
   text-align: center;
+  max-width: 380px;
+  min-height: 2.8em; /* room for two lines, so the layout does not jump */
 }
 
 .levelError {

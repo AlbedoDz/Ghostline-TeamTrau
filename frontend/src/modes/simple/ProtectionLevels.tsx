@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Service, type Settings } from "../../app/api";
 import { useGhost } from "../../app/store";
@@ -15,6 +15,7 @@ export function ProtectionLevels({ onOpenFull, disabled }: { onOpenFull: () => v
   const settings = useGhost((s) => s.settings);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const descId = useId();
   if (!settings) return null;
   const current = levelOf(settings);
   const now = comboOf(settings);
@@ -65,7 +66,7 @@ export function ProtectionLevels({ onOpenFull, disabled }: { onOpenFull: () => v
 
   return (
     <div className={css.levels}>
-      <div className={css.levelRow} role="radiogroup" aria-label={t("simple.level.label")}>
+      <div className={css.levelRow} role="radiogroup" aria-label={t("simple.level.label")} aria-describedby={descId}>
         {LEVELS.map((l) => (
           <button
             key={l}
@@ -80,12 +81,17 @@ export function ProtectionLevels({ onOpenFull, disabled }: { onOpenFull: () => v
           </button>
         ))}
       </div>
-      {current === "custom" && (
-        <div className={css.levelNote}>
-          {summary} ·{" "}
-          <button className={css.link} onClick={onOpenFull}>{t("simple.level.editInFull")}</button>
-        </div>
-      )}
+      {/* What the chosen level does, always in view (hover hints go unseen). */}
+      <div id={descId} data-testid="level-description" className={css.levelNote}>
+        {current === "custom" ? (
+          <>
+            {summary} ·{" "}
+            <button className={css.link} onClick={onOpenFull}>{t("simple.level.editInFull")}</button>
+          </>
+        ) : (
+          t(`simple.level.hint.${current}`)
+        )}
+      </div>
       {error && <div className={css.levelError} role="alert">{error}</div>}
     </div>
   );

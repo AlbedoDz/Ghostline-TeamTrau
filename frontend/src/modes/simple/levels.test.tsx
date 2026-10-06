@@ -129,3 +129,13 @@ test("an error is shown and the level stays", async () => {
   expect(await screen.findByRole("alert")).toBeInTheDocument();
   expect(screen.getByRole("radio", { name: "Chỉ DNS" })).toHaveAttribute("aria-checked", "true");
 });
+
+test("a line under the levels describes the current one", async () => {
+  useGhost.getState().setSettings(settings());
+  render(<SimpleView onOpenLogs={() => {}} />);
+  const desc = screen.getByTestId("level-description");
+  expect(desc).toHaveTextContent("Chỉ mã hoá DNS");
+  fireEvent.click(screen.getByRole("radio", { name: "DNS + vượt DPI" }));
+  await waitFor(() => expect(desc).toHaveTextContent("Thêm vượt DPI cho mọi ứng dụng (khuyên dùng)"));
+  expect(screen.getByRole("radiogroup", { name: "mức bảo vệ" })).toHaveAttribute("aria-describedby", desc.id);
+});

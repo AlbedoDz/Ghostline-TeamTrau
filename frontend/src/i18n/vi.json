@@ -67,9 +67,9 @@
       "max": "Tối đa",
       "custom": "Tuỳ chỉnh",
       "hint": {
-        "dns": "Chỉ mã hoá DNS. Hợp khi nhà mạng chỉ chặn bằng DNS; nhẹ nhất.",
-        "dpi": "Khuyên dùng. Thêm vượt DPI cho mọi ứng dụng, dùng engine và chiến lược đang chọn.",
-        "max": "Thêm proxy cho máy này (đặt proxy hệ thống): trình duyệt tự được fragment khi gặp trang bị chặn.",
+        "dns": "Chỉ mã hoá DNS; nhẹ nhất, hợp khi nhà mạng chỉ chặn bằng DNS.",
+        "dpi": "Thêm vượt DPI cho mọi ứng dụng (khuyên dùng).",
+        "max": "Thêm proxy cho máy này: trình duyệt tự được fragment khi gặp trang bị chặn.",
         "custom": "Tổ hợp bạn tự chỉnh ở giao diện Đầy đủ."
       },
       "part": {
