@@ -8,6 +8,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"fmt"
 	"math/big"
 	"net"
 	"net/http"
@@ -213,4 +214,64 @@ func TestCreateCFRules_UpdatesExistingRuleInsteadOfShadowing(t *testing.T) {
 	require.Len(t, errs, 1, "a block rule for the same pattern would win")
 	require.Equal(t, 1, errs[0].Line)
 	require.True(t, h.svc.GetRules().Rules[2].Block)
+}
+
+func blockingDial(block chan struct{}) func(context.Context, string, string) (net.Conn, error) {
+	return func(ctx context.Context, _, _ string) (net.Conn, error) {
+		select {
+		case <-block:
+			return nil, net.ErrClosed
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		}
+	}
+}
+
+func TestRecheckCF_BusyCapAndCancel(t *testing.T) {
+	h := newCF(t, true)
+	block := make(chan struct{})
+	defer close(block)
+	h.svc.x.DialDirect = blockingDial(block)
+	require.NoError(t, h.svc.StartCFScan())
+	_, err := h.svc.RecheckCF([]string{"104.16.1.1"})
+	require.Equal(t, CodeToolBusy, code(t, err), "no recheck while a scan runs")
+	h.svc.CancelCFScan()
+	waitCF(t, h)
+
+	many := make([]string, 101)
+	for i := range many {
+		many[i] = fmt.Sprintf("104.16.%d.%d", i/200, 1+i%200)
+	}
+	_, err = h.svc.RecheckCF(many)
+	require.Error(t, err)
+
+	// A recheck can be cancelled like a scan.
+	done := make(chan error, 1)
+	go func() { _, err := h.svc.RecheckCF([]string{"104.16.1.1", "104.16.1.2"}); done <- err }()
+	require.Eventually(t, func() bool { return h.svc.GetCFView().Running }, 2*time.Second, 5*time.Millisecond)
+	h.svc.CancelCFScan()
+	select {
+	case <-done:
+	case <-time.After(2 * time.Second):
+		t.Fatal("recheck did not stop on cancel")
+	}
+}
+
+func TestCFScan_CancelKeepsCachedResults(t *testing.T) {
+	h := newCF(t, true)
+	old := cfscan.Result{IP: "104.16.50.50", OK: true, LatencyMs: 30, Colo: "SIN"}
+	c := cfscan.LoadCache(h.paths.CFScanCache)
+	c.Put("net1", time.Now().Add(-time.Hour), "speed.cloudflare.com", []cfscan.Result{old})
+	require.NoError(t, cfscan.SaveCache(h.paths.CFScanCache, c))
+
+	block := make(chan struct{})
+	defer close(block)
+	h.svc.x.DialDirect = blockingDial(block)
+	require.NoError(t, h.svc.StartCFScan())
+	h.svc.CancelCFScan()
+	waitCF(t, h)
+	e, ok := cfscan.LoadCache(h.paths.CFScanCache).Get("net1")
+	require.True(t, ok)
+	require.NotEmpty(t, e.Results)
+	require.Equal(t, "104.16.50.50", e.Results[0].IP, "a cancelled scan does not throw away the last full scan")
 }

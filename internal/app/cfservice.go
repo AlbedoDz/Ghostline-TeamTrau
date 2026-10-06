@@ -44,6 +44,9 @@ type cfJob struct {
 	results []cfscan.Result
 }
 
+// maxRecheck caps one "check again" (spec 3 §7.4 limits apply to it too).
+const maxRecheck = 100
+
 // speedTop is how many of the best IPs get a download test (spec 3 §7.3).
 const speedTop = 10
 
@@ -125,15 +128,34 @@ func (s *Service) StartCFScan() error {
 			cfscan.Sort(rs)
 		}
 		s.mu.Lock()
-		s.cf.results = slices.DeleteFunc(rs, func(r cfscan.Result) bool { return !r.OK })
+		s.cf.results = slices.DeleteFunc(slices.Clone(rs), func(r cfscan.Result) bool { return !r.OK })
 		s.mu.Unlock()
-		c := cfscan.LoadCache(s.x.Paths.CFScanCache)
-		c.Put(s.netKey(), time.Now(), st.Host, rs)
-		if err := cfscan.SaveCache(s.x.Paths.CFScanCache, c); err != nil {
+		// A cancelled scan only adds what it found to the last full scan.
+		if err := s.saveCFResults(st.Host, rs, ctx.Err() != nil); err != nil {
 			slog.Warn("tools: save clean-IP cache", "err", err)
 		}
 	}()
 	return nil
+}
+
+// saveCFResults stores rs as this network's scan. With merge, rs only
+// replaces the same IPs and the other cached results are kept.
+func (s *Service) saveCFResults(host string, rs []cfscan.Result, merge bool) error {
+	s.cfCacheMu.Lock()
+	defer s.cfCacheMu.Unlock()
+	c := cfscan.LoadCache(s.x.Paths.CFScanCache)
+	if merge {
+		e, _ := c.Get(s.netKey())
+		kept := slices.DeleteFunc(slices.Clone(e.Results), func(r cfscan.Result) bool {
+			return slices.ContainsFunc(rs, func(o cfscan.Result) bool { return o.IP == r.IP })
+		})
+		rs = append(kept, rs...)
+		if e.Host != "" {
+			host = e.Host
+		}
+	}
+	c.Put(s.netKey(), time.Now(), host, rs)
+	return cfscan.SaveCache(s.x.Paths.CFScanCache, c)
 }
 
 func (s *Service) cfLimiter() cfscan.Limiter {
@@ -183,34 +205,38 @@ func parseCFIPs(ips []string) ([]netip.Addr, error) {
 // RecheckCF probes the given IPs again and updates them in this network's
 // cache.
 func (s *Service) RecheckCF(ips []string) ([]cfscan.Result, error) {
+	if len(ips) > maxRecheck {
+		return nil, fmt.Errorf("choose at most %d IPs", maxRecheck)
+	}
 	addrs, err := parseCFIPs(ips)
 	if err != nil {
 		return nil, err
 	}
 	st := s.x.Settings.Get().Tools.CFScan
-	p := s.prober(st)
-	out := make([]cfscan.Result, len(addrs))
-	var wg sync.WaitGroup
-	for i, a := range addrs {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			out[i] = p.Probe(context.Background(), a)
-		}()
+	// It runs as the clean-IP job: one at a time, and Cancel stops it.
+	s.mu.Lock()
+	if s.cfCancel != nil {
+		s.mu.Unlock()
+		return nil, toolBusy("cfscan")
 	}
-	wg.Wait()
-	c := cfscan.LoadCache(s.x.Paths.CFScanCache)
-	e, _ := c.Get(s.netKey())
-	merged := slices.DeleteFunc(slices.Clone(e.Results), func(r cfscan.Result) bool {
-		return slices.ContainsFunc(out, func(o cfscan.Result) bool { return o.IP == r.IP })
-	})
-	merged = append(merged, out...)
-	host := e.Host
-	if host == "" {
-		host = st.Host
+	ctx, cancel := context.WithCancel(context.Background())
+	s.cfCancel = cancel
+	s.cf = cfJob{host: st.Host}
+	s.mu.Unlock()
+	defer func() {
+		s.mu.Lock()
+		s.cfCancel = nil
+		s.mu.Unlock()
+		cancel()
+	}()
+	out, err := cfscan.Scan(ctx, addrs, s.prober(st), cfscan.Options{Concurrency: 8, Limiter: s.cfLimiter()})
+	if err != nil && !errors.Is(err, cfscan.ErrNoNetwork) {
+		return nil, err
 	}
-	c.Put(s.netKey(), time.Now(), host, merged)
-	return out, cfscan.SaveCache(s.x.Paths.CFScanCache, c)
+	if out == nil {
+		out = []cfscan.Result{}
+	}
+	return out, s.saveCFResults(st.Host, out, true)
 }
 
 // CFSuggestDomains offers the domain patterns of the user's rules.
