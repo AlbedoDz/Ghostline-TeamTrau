@@ -130,9 +130,54 @@ func (c DNSChecker) Check(ctx context.Context, s model.Server) Result {
 		if !any {
 			return fail("empty")
 		}
+		if i == 1 {
+			r.Latency = lat // kept when another domain fails (see ForgiveBrokenDomains)
+		}
 	}
-	r.OK, r.Latency = true, lat
+	r.OK = true
 	return r
+}
+
+// ForgiveBrokenDomains finds the other test domains (after the first) that
+// failed on at least half of the servers which answered the first one: the
+// domain is at fault then (no address, a typo), not the servers. Those
+// servers count as passing. It returns the results and the broken domains.
+func ForgiveBrokenDomains(rs []Result, domains []string) ([]Result, []string) {
+	if len(domains) < 2 {
+		return rs, nil
+	}
+	failedOn := func(r Result, d string) bool { return strings.HasPrefix(r.Reason, d+": ") }
+	answeredFirst, fails := 0, map[string]int{}
+	for _, r := range rs {
+		ok := r.OK
+		for _, d := range domains[1:] {
+			if failedOn(r, d) {
+				fails[d]++
+				ok = true
+			}
+		}
+		if ok {
+			answeredFirst++
+		}
+	}
+	var broken []string
+	for _, d := range domains[1:] {
+		if answeredFirst >= 3 && fails[d]*2 >= answeredFirst {
+			broken = append(broken, d)
+		}
+	}
+	if len(broken) == 0 {
+		return rs, nil
+	}
+	out := slices.Clone(rs)
+	for i, r := range out {
+		for _, d := range broken {
+			if failedOn(r, d) {
+				out[i].OK, out[i].Reason = true, ""
+			}
+		}
+	}
+	return out, broken
 }
 
 func isTimeout(err error) bool {

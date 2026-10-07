@@ -12,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strings"
 	"time"
 
 	"github.com/hashcott/ghostline/internal/app"
@@ -181,6 +182,14 @@ func Run(o Options) error {
 		SetMITM:      pw.mitm.set,
 		MITMSelfTest: pw.mitm.selfTest,
 	})
+	// A test domain most servers fail on is ignored; say so until it is fixed.
+	picker.BrokenTestDomains = func(ds []string) {
+		if len(ds) == 0 {
+			orch.ClearWarning(app.CodeTestDomainBroken)
+			return
+		}
+		orch.AddWarning(app.AppError{Code: app.CodeTestDomainBroken, Params: map[string]any{"domains": strings.Join(ds, ", ")}})
+	}
 	if settingsReset {
 		orch.AddWarning(app.AppError{Code: app.CodeSettingsReset})
 	}
@@ -230,16 +239,17 @@ func Run(o Options) error {
 				ui.onLanguage() // relabels the tray's proxy item
 			}
 		},
-		Rules:        pw.holder,
-		RulesPath:    paths.Rules,
-		Fetcher:      pw.fetcher(),
-		FragCache:    pw.frag,
-		NetKey:       networkKey,
-		Proxy:        pw,
-		LANInfo:      pw.lanInfo,
-		Protect:      winutil.ProtectString,
-		TestUpstream: pw.testUpstream,
-		CheckUpdate:  checker.checkNow,
+		Rules:           pw.holder,
+		RulesPath:       paths.Rules,
+		Fetcher:         pw.fetcher(),
+		FragCache:       pw.frag,
+		CheckTestDomain: func(d string) error { return picker.CheckDomain(context.Background(), d) },
+		NetKey:          networkKey,
+		Proxy:           pw,
+		LANInfo:         pw.lanInfo,
+		Protect:         winutil.ProtectString,
+		TestUpstream:    pw.testUpstream,
+		CheckUpdate:     checker.checkNow,
 		CheckServer: func(ctx context.Context, id string) error {
 			_, err := picker.CheckOne(ctx, id)
 			return err

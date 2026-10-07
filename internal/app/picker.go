@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math/rand"
 	"slices"
@@ -43,6 +44,9 @@ type ScanPicker struct {
 	// Watch, when set, sees every full scan's results as they arrive and
 	// its end (running false), whoever started it: the UI shows them live.
 	Watch func(done, total int, r *scanner.Result, running bool)
+	// BrokenTestDomains, when set, hears after each scan which test domains
+	// failed on most servers (empty: none); those are ignored, see forgive.
+	BrokenTestDomains func(domains []string)
 
 	mu      sync.Mutex // guards Cache, Rand and running
 	running *fullScan  // the full scan in progress, shared by every caller
@@ -234,6 +238,7 @@ func (p *ScanPicker) check(ctx context.Context, s store.Settings, pool []model.S
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
+	got = p.forgive(got)
 	_ = p.save(got, false) // a pick still works if the cache cannot be written
 	if top := best(got, pool, s, exclude, want); len(top) > 0 {
 		return top, nil
@@ -306,6 +311,7 @@ func (p *ScanPicker) runFull(ctx context.Context, f *fullScan, pool []model.Serv
 			}
 		}})
 	err := ctx.Err()
+	rs = p.forgive(rs)
 	if saveErr := p.save(rs, err == nil); err == nil {
 		err = saveErr
 	}
@@ -322,6 +328,17 @@ func (p *ScanPicker) runFull(ctx context.Context, f *fullScan, pool []model.Serv
 // Watched reports whether full scans report themselves (see Watch).
 func (p *ScanPicker) Watched() bool { return p.Watch != nil }
 
+// forgive passes the servers that failed only on a broken test domain (one
+// most servers fail on: no address, a typo) and reports those domains, so a
+// bad setting cannot leave no server to pick.
+func (p *ScanPicker) forgive(rs []scanner.Result) []scanner.Result {
+	out, broken := scanner.ForgiveBrokenDomains(rs, store.TestDomains(p.Settings().TestDomain))
+	if p.BrokenTestDomains != nil {
+		p.BrokenTestDomains(broken)
+	}
+	return out
+}
+
 func (p *ScanPicker) save(rs []scanner.Result, full bool) error {
 	p.mu.Lock()
 	defer p.mu.Unlock()
@@ -331,6 +348,43 @@ func (p *ScanPicker) save(rs []scanner.Result, full bool) error {
 		p.Cache.MarkFull(key, now)
 	}
 	return p.SaveCache(p.Cache)
+}
+
+// ErrNoAddress: a test domain has no IPv4 address.
+var ErrNoAddress = errors.New("no IPv4 address")
+
+// CheckDomain asks up to three working servers for domain. It returns
+// ErrNoAddress when none gives an IPv4 address and one said there is none
+// (empty or NXDOMAIN); nil when it resolves, or when nothing could be asked
+// (offline: the setting is not refused for that).
+func (p *ScanPicker) CheckDomain(ctx context.Context, domain string) error {
+	dc, ok := p.Checker.(scanner.DNSChecker)
+	if !ok {
+		return nil
+	}
+	dc.Domains = func() []string { return []string{domain} }
+	s := p.Settings()
+	pool := p.scanPool(s)
+	rs, _, _ := p.ranking(pool)
+	ask := best(rs, pool, s, nil, 3)
+	for _, sv := range pool { // no ranking yet: the first allowed servers
+		if len(ask) < 3 && Eligible(s, sv) && !slices.ContainsFunc(ask, func(a model.Server) bool { return a.ID == sv.ID }) {
+			ask = append(ask, sv)
+		}
+	}
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+	said := false
+	for _, r := range scanner.Scan(ctx, ask, dc, scanner.Options{Workers: 3}) {
+		if r.OK {
+			return nil
+		}
+		said = said || r.Reason == "empty" || r.Reason == "rcode:NXDOMAIN"
+	}
+	if said {
+		return ErrNoAddress
+	}
+	return nil
 }
 
 // CheckOne re-tests one server and merges the result into the ranking.

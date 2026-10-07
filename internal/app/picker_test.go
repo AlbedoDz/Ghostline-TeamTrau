@@ -450,3 +450,25 @@ func TestPicker_WatchSeesEveryFullScan(t *testing.T) {
 	require.Equal(t, 1, ends)
 	require.True(t, p.Watched())
 }
+
+// Reported: a test domain without an address (steam.com) failed every
+// server, so nothing could be picked. The domain is ignored and reported.
+func TestPicker_BrokenTestDomainDoesNotFailEveryServer(t *testing.T) {
+	chk := checkerFunc(func(_ context.Context, s model.Server) scanner.Result {
+		return scanner.Result{ServerID: s.ID, Reason: "steam.com: empty", Latency: time.Duration(len(s.ID)) * time.Millisecond}
+	})
+	s := store.DefaultSettings()
+	s.TestDomain = "www.google.com\nsteam.com"
+	s.MaxUpstreams = 2
+	p, _ := newPicker(chk, s)
+	var reported []string
+	p.BrokenTestDomains = func(ds []string) { reported = ds }
+	got, err := p.Pick(context.Background(), nil)
+	require.NoError(t, err)
+	require.Len(t, got, 2)
+	require.Equal(t, []string{"steam.com"}, reported)
+}
+
+type checkerFunc func(context.Context, model.Server) scanner.Result
+
+func (f checkerFunc) Check(ctx context.Context, s model.Server) scanner.Result { return f(ctx, s) }

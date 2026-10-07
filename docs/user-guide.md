@@ -245,7 +245,7 @@ Records events: connecting, switching servers, GoodbyeDPI on/off, errors.
 | connect on launch | Connect as soon as the app opens |
 | close → minimise to tray | Clicking ✕ hides the window to the tray instead of quitting. Ghostline keeps protecting you in the background |
 | adapters | **auto**: protect every adapter in use (recommended). **manual**: protect only the adapters you pick |
-| test domain | The domains the server scan asks for, one per line (default `www.google.com`); a server must answer every one. Use 1–2 sites that always work and are not blocked on your network: each extra domain makes every scan slower and can drop good servers (at most 5). Applies from the next scan |
+| test domain | The domains the server scan asks for, one per line (default `www.google.com`); a server must answer every one. Use 1–2 sites that always work: each extra domain makes every scan slower (at most 5). A new domain is checked when you save it: one without an IPv4 address (for example `steam.com`; use `store.steampowered.com`) is refused. If a domain later fails on most servers, scans ignore it and a warning asks you to fix it. Applies from the next scan |
 | bootstrap | Plain DNS servers used only to look up the addresses of DoH servers at startup (default `1.1.1.1:53`, `8.8.8.8:53`). This is the only unencrypted DNS traffic, and it is only used to look up DoH server names |
 | max servers | How many servers to use in parallel (default 5). More is steadier but uses slightly more bandwidth |
 | update server list | Download a fresh server list daily (signature-checked) |

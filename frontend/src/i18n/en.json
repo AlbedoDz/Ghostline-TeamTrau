@@ -594,6 +594,14 @@
     "EXPORT_WRITE_FAILED": {
       "message": "Could not write the export file",
       "action": "Choose another folder"
+    },
+    "TEST_DOMAIN_BROKEN": {
+      "message": "The test domain {{domains}} fails on most servers (it may have no IPv4 address), so scans ignore it. Fix it in Settings › test domain.",
+      "action": ""
+    },
+    "TEST_DOMAIN_NO_ADDRESS": {
+      "message": "This test domain has no IPv4 address (A record), so every server would fail. Use a site with a real address, for example store.steampowered.com instead of steam.com",
+      "action": ""
     }
   },
   "tray": {

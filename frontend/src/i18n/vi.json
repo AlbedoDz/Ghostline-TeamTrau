@@ -594,6 +594,14 @@
     "EXPORT_WRITE_FAILED": {
       "message": "Không ghi được file xuất",
       "action": "Chọn thư mục khác"
+    },
+    "TEST_DOMAIN_BROKEN": {
+      "message": "Tên miền thử {{domains}} không trả lời được ở hầu hết máy chủ (có thể nó không có địa chỉ IPv4), nên đã bị bỏ qua khi quét. Hãy sửa ở Cài đặt › tên miền thử.",
+      "action": ""
+    },
+    "TEST_DOMAIN_NO_ADDRESS": {
+      "message": "Tên miền thử này không có địa chỉ IPv4 (bản ghi A) nên mọi máy chủ sẽ trượt. Hãy dùng trang có địa chỉ thật, ví dụ store.steampowered.com thay cho steam.com",
+      "action": ""
     }
   },
   "tray": {

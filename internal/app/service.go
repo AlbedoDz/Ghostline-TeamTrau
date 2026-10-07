@@ -105,16 +105,19 @@ type ServiceDeps struct {
 	OnSettingsChanged func(old, new store.Settings)
 
 	// Phase 2A.
-	Rules        *rules.Holder
-	RulesPath    string
-	Fetcher      *lists.Fetcher
-	MaxEntries   int // 0 = DefaultMaxEntries
-	FragCache    *store.FragCache
-	NetKey       func() string
-	Proxy        ProxyQuery
-	LANInfo      func() LANInfo
-	Protect      func(string) (string, error) // DPAPI
-	TestUpstream func(ctx context.Context, id string) error
+	Rules      *rules.Holder
+	RulesPath  string
+	Fetcher    *lists.Fetcher
+	MaxEntries int // 0 = DefaultMaxEntries
+	FragCache  *store.FragCache
+	NetKey     func() string
+	// CheckTestDomain, when set, checks that a new test domain has an IPv4
+	// address before it is saved.
+	CheckTestDomain func(domain string) error
+	Proxy           ProxyQuery
+	LANInfo         func() LANInfo
+	Protect         func(string) (string, error) // DPAPI
+	TestUpstream    func(ctx context.Context, id string) error
 	// CheckUpdate asks GitHub for the latest release now (manual check).
 	CheckUpdate func(ctx context.Context) (UpdateCheck, error)
 	// CheckServer re-tests one server and updates the cached scan.
@@ -234,6 +237,14 @@ func (s *Service) saveSettings(n store.Settings, owned bool) error {
 		return err
 	}
 	old := s.x.Settings.Get()
+	if s.x.CheckTestDomain != nil {
+		was := store.TestDomains(old.TestDomain)
+		for _, d := range store.TestDomains(n.TestDomain) {
+			if !slices.Contains(was, d) && s.x.CheckTestDomain(d) != nil {
+				return appErr(CodeTestDomainNoAddress, errors.New(d))
+			}
+		}
+	}
 	if !owned {
 		n.DNSServer, n.FakeSNI = old.DNSServer, old.FakeSNI
 	}
