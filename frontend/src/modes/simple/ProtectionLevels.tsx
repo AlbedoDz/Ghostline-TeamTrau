@@ -112,7 +112,7 @@ export function ProtectionLevels({ onOpenFull, disabled }: { onOpenFull: () => v
           t("simple.level.tuning")
         ) : pending ? (
           t("simple.level.applying", { level: t(`simple.level.${pending}`) })
-        ) : scan ? (
+        ) : scan && !disabled ? ( // while connecting, step 2 shows it
           t("simple.level.scanning", { done: scan.done, total: scan.total })
         ) : current === "custom" ? (
           <>

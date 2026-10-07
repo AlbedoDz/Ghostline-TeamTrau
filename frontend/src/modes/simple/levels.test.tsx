@@ -202,3 +202,12 @@ test("levels wait while auto-tune runs", () => {
   expect(screen.getByRole("radio", { name: "Tối đa" })).toBeDisabled();
   expect(screen.getByTestId("level-description")).toHaveTextContent("Đang tự dò vượt DPI");
 });
+
+test("while connecting, the scan shows once: in step 2, not under the levels", () => {
+  useGhost.getState().setSettings(settings({ dpi: true }));
+  useGhost.getState().setSnapshot({ status: "connecting", step: 2, pickDone: 410, pickTotal: 906, warnings: [], servers: [], blockedSites: [], reasons: [], dpi: { enabled: false } } as any);
+  useGhost.getState().setScan({ running: true, done: 417, total: 906 } as any);
+  render(<SimpleView onOpenLogs={() => {}} />);
+  expect(screen.getByText(/chọn máy chủ 410\/906/)).toBeInTheDocument();
+  expect(screen.getByTestId("level-description")).not.toHaveTextContent("Đang tìm máy chủ");
+});
