@@ -196,10 +196,10 @@ tasks:
       - wails3 tool sign --input "build/windows/nsis/{{.APP_NAME}}-installer.exe" {{if .SIGN_CERTIFICATE}}--certificate "{{.SIGN_CERTIFICATE}}"{{end}} {{if .SIGN_THUMBPRINT}}--thumbprint "{{.SIGN_THUMBPRINT}}"{{end}} {{if .TIMESTAMP_SERVER}}--timestamp "{{.TIMESTAMP_SERVER}}"{{end}}
 
   portable:
-    summary: Builds Ghostline-<version>-portable.zip (exe + "portable" marker)
+    summary: Builds Ghostline-<version>-portable.zip (exe + "portable" marker + build/windows/portable/*, the read-first notes)
     deps:
       - task: build
     vars:
       VERSION: '{{.VERSION | default "0.1.0"}}'
     cmds:
-      - powershell -NoProfile -Command "New-Item -ItemType Directory -Force -Path bin/portable | Out-Null; Copy-Item -Force bin/{{.APP_NAME}}.exe bin/portable/; New-Item -ItemType File -Force -Path bin/portable/portable | Out-Null; Compress-Archive -Force -Path bin/portable/* -DestinationPath bin/Ghostline-{{.VERSION}}-portable.zip"
+      - powershell -NoProfile -Command "New-Item -ItemType Directory -Force -Path bin/portable | Out-Null; Copy-Item -Force bin/{{.APP_NAME}}.exe bin/portable/; New-Item -ItemType File -Force -Path bin/portable/portable | Out-Null; Copy-Item -Force build/windows/portable/* bin/portable/; Compress-Archive -Force -Path bin/portable/* -DestinationPath bin/Ghostline-{{.VERSION}}-portable.zip"

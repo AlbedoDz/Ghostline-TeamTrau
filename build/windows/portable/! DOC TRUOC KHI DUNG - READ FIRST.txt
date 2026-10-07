@@ -1,0 +1,90 @@
+﻿GHOSTLINE PORTABLE - DOC TRUOC KHI DUNG / READ BEFORE USE
+==========================================================
+
+TIENG VIET
+----------
+
+1. Chạy Ghostline
+   - Chuột phải ghostline.exe → Run as administrator (cần quyền admin để đổi DNS).
+   - Giữ nguyên file "portable" cạnh ghostline.exe. Cài đặt và dữ liệu nằm trong
+     thư mục "data" bên cạnh.
+
+2. KHÔNG xoá hoặc di chuyển thư mục này khi đang kết nối
+   Trong lúc kết nối, DNS của Windows trỏ về Ghostline (127.0.0.1). Muốn xoá,
+   di chuyển hoặc đổi tên thư mục:
+   - Bấm Ngắt kết nối.
+   - Tắt "khởi động cùng Windows" (nếu đã bật).
+   - Thoát Ghostline từ khay hệ thống (góc phải thanh taskbar).
+   Sau đó mới xoá thư mục.
+
+3. Thêm thư mục này vào danh sách loại trừ của antivirus
+   Một số antivirus (kể cả Windows Defender) nhận nhầm ghostline.exe là virus,
+   tắt app và xoá file khi đang kết nối, làm máy mất mạng. Để tránh, mở
+   PowerShell bằng quyền admin và chạy (thay đường dẫn cho đúng):
+
+     Add-MpPreference -ExclusionPath "D:\Ghostline"
+
+   Với antivirus khác, tìm mục Exclusions / Loại trừ trong phần cài đặt.
+
+4. Nếu bị mất mạng
+   - Đợi khoảng 1 phút: tác vụ "Ghostline Network Guard" tự trả DNS về như cũ,
+     kể cả khi antivirus đã xoá ghostline.exe. Khởi động lại máy cũng được.
+   - Nếu còn ghostline.exe: mở PowerShell bằng quyền admin, chạy
+
+       & "D:\Ghostline\ghostline.exe" --restore
+
+   - Cách cuối cùng, làm bằng tay trong Windows:
+     Settings → Network & internet → Wi-Fi/Ethernet → mạng đang dùng
+     → DNS server assignment → Edit → Automatic (DHCP) → Save.
+     Nếu trình duyệt vẫn không vào được: Settings → Network & internet → Proxy
+     → tắt "Use a proxy server".
+
+5. Gỡ Ghostline portable
+   Làm như mục 2, rồi xoá cả thư mục.
+
+Hướng dẫn đầy đủ: https://github.com/hashcott/ghostline/blob/main/docs/huong-dan-su-dung.md
+
+
+ENGLISH
+-------
+
+1. Running Ghostline
+   - Right-click ghostline.exe → Run as administrator (needed to change DNS).
+   - Keep the "portable" file next to ghostline.exe. Settings and data live in
+     the "data" folder beside it.
+
+2. Do NOT delete or move this folder while connected
+   While connected, Windows DNS points at Ghostline (127.0.0.1). Before you
+   delete, move or rename this folder:
+   - Click Disconnect.
+   - Turn off "start with Windows" (if you turned it on).
+   - Quit Ghostline from the system tray.
+   Then delete the folder.
+
+3. Add this folder to your antivirus exclusions
+   Some antivirus products (Windows Defender included) mistake ghostline.exe
+   for malware, kill it and delete it while connected, which leaves the PC
+   offline. To prevent that, run in an administrator PowerShell (use your own
+   path):
+
+     Add-MpPreference -ExclusionPath "D:\Ghostline"
+
+   For other antivirus products, look for Exclusions in their settings.
+
+4. If you lose internet access
+   - Wait about a minute: the "Ghostline Network Guard" task restores your DNS,
+     even if an antivirus deleted ghostline.exe. Restarting the PC works too.
+   - If ghostline.exe is still there, run in an administrator PowerShell:
+
+       & "D:\Ghostline\ghostline.exe" --restore
+
+   - Last resort, by hand in Windows:
+     Settings → Network & internet → Wi-Fi/Ethernet → your network
+     → DNS server assignment → Edit → Automatic (DHCP) → Save.
+     If browsers still fail: Settings → Network & internet → Proxy
+     → turn off "Use a proxy server".
+
+5. Removing Ghostline portable
+   Do step 2, then delete the whole folder.
+
+Full guide: https://github.com/hashcott/ghostline/blob/main/docs/user-guide.md
