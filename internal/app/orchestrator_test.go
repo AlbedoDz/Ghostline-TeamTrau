@@ -235,7 +235,7 @@ func TestConnect_EmitsSteps(t *testing.T) {
 	h := newHarness(t)
 	require.NoError(t, h.o.Connect(context.Background()))
 	var steps []int
-	for _, s := range h.sink.states {
+	for _, s := range h.sink.snapshots() {
 		if s.Status == StatusConnecting && (len(steps) == 0 || steps[len(steps)-1] != s.Step) {
 			steps = append(steps, s.Step)
 		}
