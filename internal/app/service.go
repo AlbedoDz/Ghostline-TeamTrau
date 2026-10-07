@@ -83,6 +83,9 @@ type ServerRow struct {
 	Result *scanner.Result `json:"result,omitempty"`
 	InUse  bool            `json:"inUse"`
 	Pinned bool            `json:"pinned"`
+	// Auto: the settings let it be picked automatically (no-filter tags,
+	// custom or pinned).
+	Auto bool `json:"auto"`
 }
 
 // ServiceDeps wires the UI service.
@@ -160,7 +163,11 @@ type Service struct {
 }
 
 // NewService creates the UI service.
-func NewService(o *Orchestrator, x ServiceDeps) *Service { return &Service{o: o, x: x} }
+func NewService(o *Orchestrator, x ServiceDeps) *Service {
+	s := &Service{o: o, x: x}
+	o.refresh = func() { _ = s.ScanAll() }
+	return s
+}
 
 // GetSnapshot returns the current state.
 func (s *Service) GetSnapshot() Snapshot { return s.o.Snapshot() }
@@ -302,7 +309,7 @@ func (s *Service) ListServers() []ServerRow {
 	s.o.mu.Unlock()
 	var rows []ServerRow
 	for _, sv := range s.x.Catalog() {
-		row := ServerRow{Server: sv, InUse: inUse[sv.ID], Pinned: slices.Contains(st.Pinned, sv.ID)}
+		row := ServerRow{Server: sv, InUse: inUse[sv.ID], Pinned: slices.Contains(st.Pinned, sv.ID), Auto: Eligible(st, sv)}
 		if r, ok := results[sv.ID]; ok {
 			row.Result = &r
 		}
@@ -311,7 +318,8 @@ func (s *Service) ListServers() []ServerRow {
 	return rows
 }
 
-// ScanAll starts a full scan in the background; progress arrives as events.
+// ScanAll rebuilds the server ranking in the background (progress arrives as
+// events) and, when connected, switches to its best servers.
 func (s *Service) ScanAll() error {
 	s.mu.Lock()
 	if s.scanCancel != nil {
@@ -328,9 +336,12 @@ func (s *Service) ScanAll() error {
 			s.mu.Unlock()
 			cancel()
 		}()
-		_, _ = s.o.Rescan(ctx, func(done, total int, r scanner.Result) {
+		_, err := s.o.Rescan(ctx, func(done, total int, r scanner.Result) {
 			s.x.Bus.Emit(EventScan, ScanProgress{Done: done, Total: total, Result: &r, Running: true})
 		})
+		if err == nil {
+			s.o.ApplyBest(ctx)
+		}
 		s.x.Bus.Emit(EventScan, ScanProgress{Running: false})
 	}()
 	return nil

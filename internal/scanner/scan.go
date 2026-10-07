@@ -236,7 +236,9 @@ func Order(list []model.Server, everOK map[string]bool, r *rand.Rand) []model.Se
 // CacheEntry is one network's last scan.
 type CacheEntry struct {
 	ScannedAt time.Time `json:"scannedAt"`
-	Results   []Result  `json:"results"`
+	// FullAt is when a scan of the whole list last finished (zero: never).
+	FullAt  time.Time `json:"fullAt,omitempty"`
+	Results []Result  `json:"results"`
 }
 
 // Cache maps network keys to their last scan.
@@ -303,6 +305,14 @@ func (c *Cache) Merge(key string, now time.Time, rs []Result) {
 	}
 	e.ScannedAt = now
 	c.Entries[key] = e
+}
+
+// MarkFull records that a scan of the whole list finished now.
+func (c *Cache) MarkFull(key string, now time.Time) {
+	if e, ok := c.Entries[key]; ok {
+		e.FullAt = now
+		c.Entries[key] = e
+	}
 }
 
 // EverOK lists servers that were OK on any network.

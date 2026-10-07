@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"math/rand"
 	"slices"
@@ -21,7 +20,17 @@ type Scans interface {
 	Results() []scanner.Result
 }
 
-// ScanPicker picks servers from the cached or a fresh quick scan.
+// ScanPicker picks servers from one ranking per network: the last scan of
+// the whole list, kept in the scan cache.
+//
+//   - no ranking yet: scan the whole list, then take the fastest;
+//   - a ranking under a day old: take the fastest from it at once;
+//   - an older one: check its best servers in order until enough answer,
+//     and let the caller refresh the whole ranking in the background;
+//   - healing: the same check, skipping the servers that failed.
+//
+// Every server is scanned, but only those the settings allow (tags,
+// custom, pinned) are picked; pinned servers come first.
 type ScanPicker struct {
 	Catalog   func() []model.Server
 	Checker   scanner.Checker
@@ -36,55 +45,66 @@ type ScanPicker struct {
 }
 
 const (
-	cacheTTL    = 24 * time.Hour
-	quickBudget = 20 * time.Second
-	scanWorkers = 16
-	// fullBudget and fullWorkers bound the first scan on a network (no
-	// fresh cache): every server is checked so the fastest are chosen;
-	// later connects use the cache.
-	fullBudget   = 90 * time.Second
+	// rankTTL: a ranking older than this is checked before use and
+	// refreshed in the background.
+	rankTTL      = 24 * time.Hour
 	fullWorkers  = 32
+	fullBudget   = 90 * time.Second
+	checkWorkers = 16
+	checkBudget  = 20 * time.Second
 	defaultWants = 5
-	// candidates: a quick re-pick while connected collects this many times
-	// the servers it needs, then keeps the fastest; stopping at the first
-	// ones that answer would pick by luck, not by speed.
-	candidates = 4
+	// rankCoverage is the share of the list a ranking must have results
+	// for: one written before the list grew would hide the new servers.
+	rankCoverage = 0.9
 )
 
-func (p *ScanPicker) pool(s store.Settings) []model.Server {
+// scanPool is what a full scan checks: the whole list, or the pinned
+// servers with pinned-only on.
+func (p *ScanPicker) scanPool(s store.Settings) []model.Server {
 	all := p.Catalog()
-	if s.PinnedOnly {
-		var out []model.Server
-		for _, srv := range all {
-			if slices.Contains(s.Pinned, srv.ID) {
-				out = append(out, srv)
-			}
-		}
-		return out
+	if !s.PinnedOnly {
+		return all
 	}
-	return servers.Filter(all, s.IncludeTags)
+	return slices.DeleteFunc(all, func(sv model.Server) bool { return !slices.Contains(s.Pinned, sv.ID) })
 }
 
-func topOK(rs []scanner.Result, pool []model.Server, want int) []model.Server {
-	byID := make(map[string]model.Server, len(pool))
-	for _, s := range pool {
-		byID[s.ID] = s
+// Eligible reports whether the settings let sv be picked automatically.
+func Eligible(s store.Settings, sv model.Server) bool {
+	if slices.Contains(s.Pinned, sv.ID) {
+		return true
 	}
-	ok := slices.Clone(rs)
-	slices.SortStableFunc(ok, func(a, b scanner.Result) int { return int(a.Latency - b.Latency) })
+	return !s.PinnedOnly && len(servers.Filter([]model.Server{sv}, s.IncludeTags)) == 1
+}
+
+// best returns up to want working servers from rs: pinned first, then the
+// rest, each by latency; never an excluded or ineligible one.
+func best(rs []scanner.Result, pool []model.Server, s store.Settings, exclude []string, want int) []model.Server {
+	byID := make(map[string]model.Server, len(pool))
+	for _, sv := range pool {
+		if Eligible(s, sv) && !slices.Contains(exclude, sv.ID) {
+			byID[sv.ID] = sv
+		}
+	}
+	ok := slices.DeleteFunc(slices.Clone(rs), func(r scanner.Result) bool { _, found := byID[r.ServerID]; return !r.OK || !found })
+	pinned := func(r scanner.Result) bool { return slices.Contains(s.Pinned, r.ServerID) }
+	slices.SortStableFunc(ok, func(a, b scanner.Result) int {
+		if pa, pb := pinned(a), pinned(b); pa != pb {
+			if pa {
+				return -1
+			}
+			return 1
+		}
+		return int(a.Latency - b.Latency)
+	})
 	var out []model.Server
 	for _, r := range ok {
-		if s, found := byID[r.ServerID]; r.OK && found && len(out) < want {
-			out = append(out, s)
+		if len(out) == want {
+			break
 		}
+		out = append(out, byID[r.ServerID])
 	}
 	return out
 }
-
-// Pick implements Picker (spec §6.3).
-// cacheCoverage is the share of the list a fresh cache must have results
-// for to be used instead of scanning.
-const cacheCoverage = 0.9
 
 func covers(rs []scanner.Result, pool []model.Server) bool {
 	have := make(map[string]bool, len(rs))
@@ -97,170 +117,158 @@ func covers(rs []scanner.Result, pool []model.Server) bool {
 			n++
 		}
 	}
-	return len(pool) > 0 && float64(n) >= cacheCoverage*float64(len(pool))
+	return len(pool) > 0 && float64(n) >= rankCoverage*float64(len(pool))
 }
 
+func wants(s store.Settings) int {
+	if s.MaxUpstreams <= 0 {
+		return defaultWants
+	}
+	return s.MaxUpstreams
+}
+
+// ranking returns this network's ranking and whether it is complete and
+// recent.
+func (p *ScanPicker) ranking(pool []model.Server) (rs []scanner.Result, complete, fresh bool) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	e := p.Cache.Entries[p.NetKey()]
+	complete = covers(e.Results, pool)
+	fresh = complete && !e.FullAt.IsZero() && p.Now().Sub(e.FullAt) <= rankTTL
+	return slices.Clone(e.Results), complete, fresh
+}
+
+// Stale reports whether this network's ranking is missing, incomplete or
+// older than a day: the caller then refreshes it in the background.
+func (p *ScanPicker) Stale() bool {
+	_, _, fresh := p.ranking(p.scanPool(p.Settings()))
+	return !fresh
+}
+
+// Pick implements Picker (spec §6.3). onProgress reports a full scan.
 func (p *ScanPicker) Pick(ctx context.Context, onProgress func(done, total int)) ([]model.Server, error) {
-	return p.pick(ctx, onProgress, true, nil)
-}
-
-// PickFresh skips the cache and the excluded servers (used when healing).
-func (p *ScanPicker) PickFresh(ctx context.Context, exclude []string) ([]model.Server, error) {
-	return p.pick(ctx, nil, false, exclude)
-}
-
-func (p *ScanPicker) pick(ctx context.Context, onProgress func(done, total int), useCache bool, exclude []string) ([]model.Server, error) {
 	s := p.Settings()
-	want := s.MaxUpstreams
-	if want <= 0 {
-		want = defaultWants
+	pool := p.scanPool(s)
+	if s.PinnedOnly && len(pool) == 0 {
+		return nil, &NoPinnedError{}
 	}
-	notExcluded := func(list []model.Server) []model.Server {
-		return slices.DeleteFunc(list, func(sv model.Server) bool { return slices.Contains(exclude, sv.ID) })
-	}
-	if s.PinnedOnly {
-		pool := notExcluded(p.pool(s))
-		if len(pool) == 0 {
-			return nil, &NoPinnedError{}
+	rs, complete, fresh := p.ranking(pool)
+	switch {
+	case fresh:
+		if top := best(rs, pool, s, nil, wants(s)); len(top) > 0 {
+			return top, nil
 		}
-		top, err := p.pickFrom(ctx, pool, want, false, onProgress, nil)
-		var ns *NoServersError
-		if errors.As(err, &ns) {
-			return nil, &NoPinnedError{Checked: ns.Checked}
+		return p.check(ctx, s, pool, rs, nil) // nothing worked last time: look again
+	case complete:
+		return p.check(ctx, s, pool, rs, nil)
+	}
+	start := time.Now()
+	rs, err := p.full(ctx, pool, fullBudget, func(done, total int, _ scanner.Result) {
+		if onProgress != nil {
+			onProgress(done, total)
 		}
-		return top, err
-	}
-
-	// Pinned servers are preferred: check them all first (they are few)
-	// and use every one that passes before filling the remaining slots.
-	var pins []model.Server
-	for _, sv := range p.Catalog() {
-		if slices.Contains(s.Pinned, sv.ID) {
-			pins = append(pins, sv)
-		}
-	}
-	pins = notExcluded(pins)
-	var chosen []model.Server
-	var pinRes []scanner.Result
-	if len(pins) > 0 {
-		pinRes = scanner.Scan(ctx, pins, p.Checker, scanner.Options{Workers: scanWorkers, Budget: quickBudget})
-		if err := ctx.Err(); err != nil {
-			return nil, err
-		}
-		chosen = topOK(pinRes, pins, want)
-	}
-	if len(chosen) >= want {
-		return chosen, nil
-	}
-	rest := notExcluded(slices.DeleteFunc(p.pool(s), func(sv model.Server) bool { return slices.Contains(s.Pinned, sv.ID) }))
-	top, err := p.pickFrom(ctx, rest, want-len(chosen), useCache, onProgress, pinRes)
+	})
 	if err != nil {
-		if len(chosen) > 0 && ctx.Err() == nil {
-			return chosen, nil // the pinned servers that passed are enough
-		}
-		var ns *NoServersError
-		if errors.As(err, &ns) {
-			ns.Checked += len(pinRes)
-		}
 		return nil, err
 	}
-	return append(chosen, top...), nil
+	if top := best(rs, pool, s, nil, wants(s)); len(top) > 0 {
+		return top, nil
+	}
+	return nil, p.noServers(s, len(rs), time.Since(start))
 }
 
-// pickFrom returns the want fastest working servers of pool, from a fresh
-// cache when allowed or a quick scan. extra results (the pinned check) are
-// saved into the scan cache together with the scan.
-func (p *ScanPicker) pickFrom(ctx context.Context, pool []model.Server, want int, useCache bool, onProgress func(done, total int), extra []scanner.Result) ([]model.Server, error) {
-	key := p.NetKey()
-	now := p.Now()
+// PickFresh checks servers again, skipping the excluded ones (healing).
+func (p *ScanPicker) PickFresh(ctx context.Context, exclude []string) ([]model.Server, error) {
+	s := p.Settings()
+	pool := p.scanPool(s)
+	rs, _, _ := p.ranking(pool)
+	return p.check(ctx, s, pool, rs, exclude)
+}
 
-	p.mu.Lock()
-	if useCache {
-		// The cache stands in for a full scan only if it covers nearly the
-		// whole list: one written before the list grew (the DNSCrypt list
-		// arriving after a first connect) would hide every new server.
-		if rs, ok := p.Cache.Fresh(key, now, cacheTTL); ok && covers(rs, pool) {
-			if top := topOK(rs, pool, want); len(top) >= want {
-				p.mu.Unlock()
-				return top, nil
-			}
+// check tries the allowed servers, the ranking's best first, until enough
+// answer, and returns the fastest of those.
+func (p *ScanPicker) check(ctx context.Context, s store.Settings, pool []model.Server, rs []scanner.Result, exclude []string) ([]model.Server, error) {
+	want := wants(s)
+	latency := map[string]time.Duration{}
+	for _, r := range rs {
+		if r.OK {
+			latency[r.ServerID] = r.Latency
 		}
 	}
-	ordered := scanner.Order(pool, p.Cache.EverOK(), p.Rand)
+	var ranked, rest []model.Server
+	for _, sv := range pool {
+		switch _, ok := latency[sv.ID]; {
+		case !Eligible(s, sv) || slices.Contains(exclude, sv.ID):
+		case ok:
+			ranked = append(ranked, sv)
+		default:
+			rest = append(rest, sv)
+		}
+	}
+	slices.SortStableFunc(ranked, func(a, b model.Server) int { return int(latency[a.ID] - latency[b.ID]) })
+	p.mu.Lock()
+	p.Rand.Shuffle(len(rest), func(i, j int) { rest[i], rest[j] = rest[j], rest[i] })
 	p.mu.Unlock()
 
 	start := time.Now()
-	opt := scanner.Options{Workers: scanWorkers, Want: want * candidates, Budget: quickBudget}
-	if useCache { // connecting without a fresh cache: check them all
-		opt = scanner.Options{Workers: fullWorkers, Budget: fullBudget}
-	}
-	rs := scanner.Scan(ctx, ordered, p.Checker, scanner.Options{
-		Workers: opt.Workers, Want: opt.Want, Budget: opt.Budget,
-		OnProgress: func(done, total int, _ scanner.Result) {
-			if onProgress != nil {
-				onProgress(done, total)
-			}
-		},
-	})
+	got := scanner.Scan(ctx, append(ranked, rest...), p.Checker, scanner.Options{Workers: checkWorkers, Want: want, Budget: checkBudget})
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
-	p.mu.Lock()
-	p.Cache.Merge(key, now, append(slices.Clone(rs), extra...))
-	_ = p.SaveCache(p.Cache)
-	p.mu.Unlock()
-
-	top := topOK(rs, pool, want)
-	if len(top) == 0 {
-		return nil, &NoServersError{Checked: len(rs), Elapsed: time.Since(start)}
+	_ = p.save(got, false) // a pick still works if the cache cannot be written
+	if top := best(got, pool, s, exclude, want); len(top) > 0 {
+		return top, nil
 	}
-	return top, nil
+	return nil, p.noServers(s, len(got), time.Since(start))
 }
 
-// CheckOne re-tests one server and merges the result into the current
-// network's cached scan.
-func (p *ScanPicker) CheckOne(ctx context.Context, id string) (scanner.Result, error) {
-	var srv *model.Server
-	for _, sv := range p.Catalog() {
-		if sv.ID == id {
-			sv := sv
-			srv = &sv
-			break
-		}
+func (p *ScanPicker) noServers(s store.Settings, checked int, elapsed time.Duration) error {
+	if s.PinnedOnly {
+		return &NoPinnedError{Checked: checked}
 	}
-	if srv == nil {
-		return scanner.Result{}, fmt.Errorf("app: no server %q", id)
+	return &NoServersError{Checked: checked, Elapsed: elapsed}
+}
+
+// full scans pool and saves the results; a cancelled scan keeps what it
+// checked but does not count as a full one. budget bounds a scan someone
+// waits on to connect (0: none).
+func (p *ScanPicker) full(ctx context.Context, pool []model.Server, budget time.Duration, onProgress func(done, total int, r scanner.Result)) ([]scanner.Result, error) {
+	rs := scanner.Scan(ctx, pool, p.Checker, scanner.Options{Workers: fullWorkers, Budget: budget, OnProgress: onProgress})
+	err := ctx.Err()
+	if saveErr := p.save(rs, err == nil); err == nil {
+		err = saveErr
 	}
-	r := p.Checker.Check(ctx, *srv)
-	key := p.NetKey()
+	return rs, err
+}
+
+func (p *ScanPicker) save(rs []scanner.Result, full bool) error {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	p.Cache.Merge(key, p.Now(), []scanner.Result{r})
-	_ = p.SaveCache(p.Cache)
+	key, now := p.NetKey(), p.Now()
+	p.Cache.Merge(key, now, rs)
+	if full {
+		p.Cache.MarkFull(key, now)
+	}
+	return p.SaveCache(p.Cache)
+}
+
+// CheckOne re-tests one server and merges the result into the ranking.
+func (p *ScanPicker) CheckOne(ctx context.Context, id string) (scanner.Result, error) {
+	i := slices.IndexFunc(p.Catalog(), func(sv model.Server) bool { return sv.ID == id })
+	if i < 0 {
+		return scanner.Result{}, fmt.Errorf("app: no server %q", id)
+	}
+	r := p.Checker.Check(ctx, p.Catalog()[i])
+	_ = p.save([]scanner.Result{r}, false)
 	return r, nil
 }
 
-// Rescan checks every eligible server and caches the results.
+// Rescan scans the whole list again.
 func (p *ScanPicker) Rescan(ctx context.Context, onProgress func(done, total int, r scanner.Result)) ([]scanner.Result, error) {
-	s := p.Settings()
-	pool := p.Catalog()
-	if s.PinnedOnly {
-		pool = p.pool(s)
-	}
-	rs := scanner.Scan(ctx, pool, p.Checker, scanner.Options{Workers: fullWorkers, OnProgress: onProgress})
-	p.mu.Lock()
-	defer p.mu.Unlock()
-	// Merge, so a cancelled scan keeps what it checked and the rest of the
-	// last scan.
-	p.Cache.Merge(p.NetKey(), p.Now(), rs)
-	saveErr := p.SaveCache(p.Cache)
-	if err := ctx.Err(); err != nil {
-		return rs, err
-	}
-	return rs, saveErr
+	return p.full(ctx, p.scanPool(p.Settings()), 0, onProgress)
 }
 
-// Results returns the last scan for the current network, whatever its age.
+// Results returns the ranking for the current network, whatever its age.
 func (p *ScanPicker) Results() []scanner.Result {
 	p.mu.Lock()
 	defer p.mu.Unlock()

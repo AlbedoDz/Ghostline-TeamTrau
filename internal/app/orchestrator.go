@@ -36,6 +36,9 @@ type Orchestrator struct {
 	// engine, watchdog, recovery task and snapshot are kept until a restore
 	// succeeds.
 	dirty bool
+	// refresh rebuilds the server ranking in the background and applies it
+	// (set by the Service, which reports the scan's progress).
+	refresh func()
 	// v6 is whether the engine listens on [::1] for this connection.
 	v6 bool
 	// bgCtx is cancelled by Disconnect to stop autotune and healing.
@@ -176,7 +179,7 @@ func (o *Orchestrator) Connect(ctx context.Context) error {
 	}
 	cctx, cancel := context.WithCancel(ctx)
 	o.cancel = cancel
-	o.snap.Status, o.snap.Step, o.snap.Error, o.snap.BlockedSites = StatusConnecting, 0, nil, nil
+	o.snap.Status, o.snap.Step, o.snap.Error, o.snap.BlockedSites, o.snap.Probed = StatusConnecting, 0, nil, nil, false
 	o.mu.Unlock()
 	o.emit()
 	defer func() {

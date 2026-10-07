@@ -73,6 +73,9 @@ type Snapshot struct {
 	Queries      uint64     `json:"queries"`
 	DPI          DPIStatus  `json:"dpi"`
 	BlockedSites []string   `json:"blockedSites"`
+	// Probed: the test sites were checked after connecting (DPI bypass
+	// already running), so BlockedSites is final.
+	Probed bool `json:"probed"`
 	// Reasons lists why the connection is degraded: "upstreams", "proxy".
 	Reasons   []string        `json:"reasons"`
 	Proxy     ProxyStatus     `json:"proxy"`

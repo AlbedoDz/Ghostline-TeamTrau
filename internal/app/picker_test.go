@@ -56,27 +56,71 @@ func TestPicker_FreshCacheSkipsScan(t *testing.T) {
 	s := store.DefaultSettings()
 	s.MaxUpstreams = 2
 	p, _ := newPicker(chk, s)
-	p.Cache.Put("net1", p.Now().Add(-time.Hour), coveringCache([]scanner.Result{
+	putRanking(p, time.Hour, coveringCache([]scanner.Result{
 		{ServerID: "s03", OK: true, Latency: 10}, {ServerID: "s01", OK: true, Latency: 20}, {ServerID: "s02"}}))
 	got, err := p.Pick(context.Background(), nil)
 	require.NoError(t, err)
 	require.Equal(t, []string{"s03", "s01"}, []string{got[0].ID, got[1].ID})
 	require.Zero(t, chk.calls.Load())
+	require.False(t, p.Stale())
 }
 
-func TestPicker_StaleCacheQuickScansAndSaves(t *testing.T) {
+// putRanking stores rs as a full scan that finished age ago.
+func putRanking(p *ScanPicker, age time.Duration, rs []scanner.Result) {
+	at := p.Now().Add(-age)
+	for i := range rs {
+		rs[i].CheckedAt = at
+	}
+	p.Cache.Put("net1", at, rs)
+	p.Cache.MarkFull("net1", at)
+}
+
+func TestPicker_IncompleteRankingScansEverything(t *testing.T) {
 	chk := &fChecker{ok: map[string]time.Duration{"s05": 30, "s07": 10}}
 	s := store.DefaultSettings()
 	s.MaxUpstreams = 2
 	p, saves := newPicker(chk, s)
 	p.Cache.Put("net1", p.Now().Add(-25*time.Hour), []scanner.Result{{ServerID: "s01", OK: true}})
+	require.True(t, p.Stale())
 	got, err := p.Pick(context.Background(), nil)
 	require.NoError(t, err)
 	require.Equal(t, []string{"s07", "s05"}, []string{got[0].ID, got[1].ID})
+	require.Equal(t, int32(10), chk.calls.Load())
 	require.Equal(t, 1, *saves)
-	rs, ok := p.Cache.Fresh("net1", p.Now(), 24*time.Hour)
-	require.True(t, ok)
-	require.NotEmpty(t, rs)
+	require.False(t, p.Stale(), "a finished full scan is a fresh ranking")
+}
+
+// A ranking older than a day is used, but its best servers are checked
+// first; the caller then refreshes it in the background.
+func TestPicker_OldRankingChecksItsBestFirst(t *testing.T) {
+	chk := &fChecker{ok: map[string]time.Duration{"s01": 15, "s02": 10, "s05": 40}}
+	s := store.DefaultSettings()
+	s.MaxUpstreams = 2
+	p, _ := newPicker(chk, s)
+	putRanking(p, 25*time.Hour, coveringCache([]scanner.Result{
+		{ServerID: "s01", OK: true, Latency: 5}, {ServerID: "s02", OK: true, Latency: 6}, {ServerID: "s03", OK: true, Latency: 7}}))
+	require.True(t, p.Stale())
+	got, err := p.Pick(context.Background(), nil)
+	require.NoError(t, err)
+	require.Equal(t, []string{"s02", "s01"}, []string{got[0].ID, got[1].ID}, "the latency measured now")
+	require.True(t, p.Stale(), "a check is not a full scan")
+}
+
+// Servers with filtering are scanned, so every count shows the whole
+// list, but never picked automatically.
+func TestPicker_FilteringServersScannedNotPicked(t *testing.T) {
+	chk := &fChecker{ok: map[string]time.Duration{"ad": 1, "s01": 20, "s02": 30}}
+	s := store.DefaultSettings()
+	s.MaxUpstreams = 2
+	p, _ := newPicker(chk, s)
+	p.Catalog = func() []model.Server {
+		return append(catalog(3), model.Server{ID: "ad", Tags: []string{"adblock"}})
+	}
+	got, err := p.Pick(context.Background(), nil)
+	require.NoError(t, err)
+	require.Equal(t, []string{"s01", "s02"}, []string{got[0].ID, got[1].ID})
+	require.Len(t, p.Results(), 4)
+	require.False(t, Eligible(s, p.Catalog()[3]))
 }
 
 func TestPicker_PinnedOnly(t *testing.T) {
@@ -110,7 +154,7 @@ func TestPicker_RescanScansAllAndSaves(t *testing.T) {
 	require.Len(t, p.Results(), 10)
 }
 
-func TestPicker_PickFreshIgnoresCacheAndExcludes(t *testing.T) { // review I3
+func TestPicker_PickFreshChecksAgainAndExcludes(t *testing.T) { // review I3
 	chk := &fChecker{ok: map[string]time.Duration{"s01": 5, "s05": 30, "s07": 10}}
 	s := store.DefaultSettings()
 	s.MaxUpstreams = 2
@@ -130,8 +174,9 @@ func TestPicker_PinnedPreferredWhenNotPinnedOnly(t *testing.T) {
 	s.MaxUpstreams = 3
 	s.Pinned = []string{"s08", "s09", "s04"} // s04 is pinned but fails
 	p, _ := newPicker(chk, s)
-	p.Cache.Put("net1", p.Now().Add(-time.Hour), coveringCache([]scanner.Result{
-		{ServerID: "s01", OK: true, Latency: 5}, {ServerID: "s02", OK: true, Latency: 6}, {ServerID: "s03", OK: true, Latency: 7}}))
+	putRanking(p, time.Hour, coveringCache([]scanner.Result{
+		{ServerID: "s01", OK: true, Latency: 5}, {ServerID: "s02", OK: true, Latency: 6}, {ServerID: "s03", OK: true, Latency: 7},
+		{ServerID: "s08", OK: true, Latency: 40}, {ServerID: "s09", OK: true, Latency: 30}, {ServerID: "s04", Reason: "timeout"}}))
 	got, err := p.Pick(context.Background(), nil)
 	require.NoError(t, err)
 	var ids []string
@@ -139,7 +184,7 @@ func TestPicker_PinnedPreferredWhenNotPinnedOnly(t *testing.T) {
 		ids = append(ids, g.ID)
 	}
 	require.Equal(t, []string{"s09", "s08", "s01"}, ids) // pinned (by latency) first, then the fastest others
-	require.Equal(t, int32(3), chk.calls.Load())         // only the pinned were checked; the cache filled the rest
+	require.Zero(t, chk.calls.Load())
 }
 
 // Pinned servers outside the include tags are still used.
@@ -239,7 +284,7 @@ func TestPicker_FirstScanCoversEveryServerAndPicksFastest(t *testing.T) {
 	require.Equal(t, "s59", got2[0].ID)
 }
 
-func TestPicker_PickFreshStaysQuickButCollectsCandidates(t *testing.T) {
+func TestPicker_PickFreshStaysQuick(t *testing.T) {
 	chk := &fChecker{ok: map[string]time.Duration{}}
 	for i := 0; i < 200; i++ {
 		chk.ok[fmt.Sprintf("s%03d", i)] = time.Duration(100+i) * time.Millisecond
@@ -258,7 +303,7 @@ func TestPicker_PickFreshStaysQuickButCollectsCandidates(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, got, 5)
 	calls := int(chk.calls.Load())
-	require.GreaterOrEqual(t, calls, 20, "collects 4x what it needs")
+	require.GreaterOrEqual(t, calls, 5)
 	require.Less(t, calls, 200, "a swap while connected does not wait for a full scan")
 }
 
