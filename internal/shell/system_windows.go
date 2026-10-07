@@ -1,12 +1,14 @@
 package shell
 
 import (
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"net"
 	"net/netip"
 	"os"
 	"strconv"
+	"sync"
 	"time"
 	"unsafe"
 
@@ -95,7 +97,10 @@ func adaptersAddresses() *windows.IpAdapterAddresses {
 }
 
 // networkKey identifies the current network by the default gateway of the
-// first connected adapter and that adapter's hardware address.
+// first connected adapter: its address and the router's hardware address,
+// so two networks that both use 192.168.1.1 get their own server ranking.
+// When the router's address cannot be read (IPv6-only), the adapter's own
+// stands in.
 func networkKey() string {
 	first := adaptersAddresses()
 	if first == nil {
@@ -105,11 +110,54 @@ func networkKey() string {
 		if aa.OperStatus != 1 || aa.FirstGatewayAddress == nil {
 			continue
 		}
-		gw := aa.FirstGatewayAddress.Address.IP().String()
-		mac := net.HardwareAddr(aa.PhysicalAddress[:aa.PhysicalAddressLength]).String()
-		return scanner.NetworkKey(gw, mac)
+		gw := aa.FirstGatewayAddress.Address.IP()
+		for g := aa.FirstGatewayAddress; g != nil; g = g.Next {
+			if ip := g.Address.IP(); ip.To4() != nil {
+				gw = ip
+				break
+			}
+		}
+		if mac := gatewayMAC(gw); mac != "" {
+			return scanner.NetworkKey(gw.String(), mac)
+		}
+		return scanner.NetworkKey(gw.String(), net.HardwareAddr(aa.PhysicalAddress[:aa.PhysicalAddressLength]).String())
 	}
 	return scanner.NetworkKey("none", "none")
+}
+
+var (
+	procSendARP = windows.NewLazySystemDLL("iphlpapi.dll").NewProc("SendARP")
+	arpMu       sync.Mutex
+	arpCache    = map[string]arpEntry{}
+)
+
+type arpEntry struct {
+	mac string
+	at  time.Time
+}
+
+// gatewayMAC returns the hardware address of an IPv4 gateway ("" when
+// unknown), remembered for a minute: the key is read on every pick.
+func gatewayMAC(ip net.IP) string {
+	ip4 := ip.To4()
+	if ip4 == nil {
+		return ""
+	}
+	arpMu.Lock()
+	defer arpMu.Unlock()
+	if e, ok := arpCache[ip4.String()]; ok && time.Since(e.at) < time.Minute {
+		return e.mac
+	}
+	var mac [8]byte
+	n := uint32(len(mac))
+	dest := binary.LittleEndian.Uint32(ip4) // IPAddr is in network order
+	r, _, _ := procSendARP.Call(uintptr(dest), 0, uintptr(unsafe.Pointer(&mac[0])), uintptr(unsafe.Pointer(&n)))
+	out := ""
+	if r == 0 && n >= 6 && n <= 8 {
+		out = net.HardwareAddr(mac[:n]).String()
+	}
+	arpCache[ip4.String()] = arpEntry{mac: out, at: time.Now()}
+	return out
 }
 
 // liveAdapters lists the DNS servers (static or DHCP) and gateway of every
