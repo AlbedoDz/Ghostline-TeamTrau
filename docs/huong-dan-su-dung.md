@@ -70,7 +70,7 @@ So mã hiện ra với dòng tương ứng trong file `SHA256SUMS` trên trang R
 Khi mở lần đầu, Ghostline ở giao diện **Đơn giản**.
 
 1. Bấm **nút nguồn tròn ở giữa**.
-2. Ghostline lần lượt: kiểm tra hệ thống → chọn máy chủ → bật engine → chụp DNS gốc → bật lưới an toàn → đặt DNS → xác minh không rò rỉ. Lần đầu trên một mạng, app kiểm tra toàn bộ máy chủ không lọc nội dung (khoảng 700; máy chủ bạn ghim hoặc tự thêm luôn được tính) để chọn những cái nhanh nhất, mất khoảng 30–60 giây; bước này hiện tiến độ (ví dụ *chọn máy chủ 120/730*). Trong 24 giờ sau, cùng mạng đó, app dùng lại kết quả nên kết nối chỉ vài giây.
+2. Ghostline lần lượt: kiểm tra hệ thống → chọn máy chủ → bật engine → chụp DNS gốc → bật lưới an toàn → đặt DNS → xác minh không rò rỉ. Để chọn máy chủ, Ghostline giữ một bảng xếp hạng toàn bộ máy chủ cho mỗi mạng. Lần đầu trên một mạng, app quét hết danh sách (khoảng 900 máy chủ, 30–60 giây; bước này hiện tiến độ, ví dụ *chọn máy chủ 120/906*) rồi lấy những máy chủ nhanh nhất không lọc nội dung, máy chủ đã ghim được ưu tiên. Những lần sau app kết nối trong vài giây nhờ bảng xếp hạng. Khi bảng xếp hạng cũ hơn một ngày, app kiểm tra nhanh các máy chủ đứng đầu trước khi dùng và quét lại cả bảng ở nền sau khi đã kết nối.
 3. Khi vòng tròn sáng xanh và hiện **[ ĐÃ BẢO VỆ ]** là xong: mọi truy vấn DNS của máy đã được mã hoá.
 
 Muốn huỷ khi đang kết nối: bấm nút nguồn lần nữa. Muốn tắt bảo vệ: bấm nút nguồn khi đang ở trạng thái Đã bảo vệ, DNS được trả về như cũ.
@@ -79,7 +79,7 @@ Muốn huỷ khi đang kết nối: bấm nút nguồn lần nữa. Muốn tắt
 
 *Ảnh động được tua nhanh, không có tiếng; bấm vào để xem video có lồng tiếng.*
 
-**Lần kết nối đầu tiên: tự dò.** Lần đầu bấm kết nối sau khi cài, Ghostline thêm một bước vào danh sách: kiểm tra các trang mẫu qua DNS mã hoá của nó, và nếu vẫn còn trang bị chặn thì tự dò vượt DPI trên các trang đó, kèm tiến độ (ví dụ *tự dò vượt DPI với trang mẫu 12/900*). Tìm được chiến lược thì vượt DPI tự bật và mức chuyển sang **DNS + vượt DPI**; không trang nào bị chặn thì giữ **Chỉ DNS**. Bước này chỉ chạy một lần; ngắt kết nối giữa chừng thì lần kết nối sau chạy lại.
+**Lần kết nối đầu tiên: tự dò.** Lần đầu bấm kết nối sau khi cài, Ghostline thêm một bước vào danh sách: khi vượt DPI (nếu bật) đã chạy, app kiểm tra các trang mẫu, và nếu vẫn còn trang bị chặn thì tự dò vượt DPI trên các trang đó, kèm cách đang thử (ví dụ *tự dò vượt DPI: thử cách 2/4*). Tìm được chiến lược thì vượt DPI tự bật và mức chuyển sang **DNS + vượt DPI**; không trang nào bị chặn thì giữ nguyên mức. Bước này chỉ chạy một lần; ngắt kết nối giữa chừng thì lần kết nối sau chạy lại. Trong lúc tự dò, các nút mức tạm khoá.
 
 **Mức bảo vệ.** Dưới dòng trạng thái, chọn Ghostline làm tới đâu. Đổi được bất cứ lúc nào, kể cả khi đang kết nối:
 
@@ -89,6 +89,8 @@ Muốn huỷ khi đang kết nối: bấm nút nguồn lần nữa. Muốn tắt
 | **DNS + vượt DPI** *(khuyên dùng)* | Thêm vượt DPI cho mọi ứng dụng | Đổi DNS rồi mà trang vẫn bị chặn |
 | **Tối đa** | Thêm proxy cho máy này (đặt proxy hệ thống của Windows); trình duyệt tự được fragment khi gặp trang bị chặn | Vượt DPI vẫn chưa đủ với vài trang |
 | **Tuỳ chỉnh** | Tổ hợp bạn tự chỉnh ở giao diện Đầy đủ | Sáng lên khi cài đặt ở đó không khớp mức nào |
+
+Chọn một mức cũng là tìm máy chủ tốt nhất: app quét lại toàn bộ danh sách (dòng dưới các mức hiện *Đang tìm máy chủ tốt nhất 120/906…*) và, khi đang kết nối, chuyển sang những máy chủ nhanh nhất mà không ngắt kết nối. Bấm lại mức đang chọn để tìm lại.
 
 Mỗi mức chỉ đổi các công tắc trên; engine, chiến lược, máy chủ, rules và các cài đặt khác giữ nguyên. Khi chuyển từ **Tuỳ chỉnh** sang một mức, Ghostline ghi nhớ tổ hợp của bạn, bấm **Tuỳ chỉnh** để lấy lại. Fake SNI cần proxy: chọn mức không có proxy sẽ hỏi trước khi tắt Fake SNI, và **Tuỳ chỉnh** bật lại nó.
 
@@ -144,7 +146,8 @@ Thanh bên chia trang thành nhóm: **cơ bản** (tổng quan, máy chủ, vư�
 
 Danh sách toàn bộ máy chủ DNS mã hoá mà Ghostline biết (vài trăm máy chủ), được cập nhật mỗi ngày từ danh sách có chữ ký số.
 
-- **⟳ quét toàn bộ:** đo lại độ trễ của mọi máy chủ và loại các máy chủ trả kết quả sai (bị đầu độc). Ghostline tự quét khi cần; bạn chỉ bấm khi đổi sang mạng khác hoặc thấy chậm.
+- **⟳ quét toàn bộ:** đo lại độ trễ của mọi máy chủ, loại các máy chủ trả kết quả sai (bị đầu độc) và, khi đang kết nối, chuyển sang những máy chủ nhanh nhất mà không ngắt kết nối. Ghostline cũng tự làm việc này khi bảng xếp hạng cũ hơn một ngày hoặc khi bạn vào mạng khác. Máy chủ có lọc nội dung (`adblock`, `family`) vẫn được đo nhưng ghi *không tự chọn*: app không bao giờ tự chọn chúng; muốn dùng thì ghim.
+- **"Đạt" nghĩa là gì:** máy chủ trả lời đúng tên miền thử 2 lần trong 3 giây, bằng IP công cộng. "Đạt" không phát hiện được máy chủ chặn riêng vài trang, nhà mạng trả IP công cộng giả, hay lỗi DNSSEC; muốn kiểm tra kỹ hơn, dùng **Công cụ › Scanner**. Tên miền thử đổi ở **Cài đặt**.
 - **Lọc:** chọn giao thức (`doh`, `dot`, `doq`, `dnscrypt`) hoặc loại máy chủ:
   - `no-filter`: không chặn gì.
   - `adblock`: chặn quảng cáo và theo dõi.
@@ -242,7 +245,7 @@ Ghi lại các sự kiện: kết nối, đổi máy chủ, bật/tắt GoodbyeD
 | tự kết nối khi mở | Bấm kết nối ngay khi app mở |
 | đóng → thu xuống khay | Bấm ✕ thì ẩn xuống khay thay vì thoát. Ghostline vẫn bảo vệ ở chế độ nền |
 | card mạng | **tự động**: bảo vệ mọi card mạng đang dùng (khuyến nghị). **chọn tay**: chỉ bảo vệ các card bạn chọn |
-| tên miền thử | Domain dùng để kiểm tra máy chủ có trả lời đúng không |
+| tên miền thử | Các tên miền bộ quét máy chủ hỏi, mỗi dòng một tên (mặc định `www.google.com`); máy chủ phải trả lời đúng tất cả. Nên dùng 1–2 trang luôn mở được: mỗi tên miền thêm làm mọi lượt quét lâu hơn (tối đa 5). Tên miền mới được kiểm tra khi lưu: tên miền không có địa chỉ IPv4 (ví dụ `steam.com`; hãy dùng `store.steampowered.com`) sẽ bị từ chối. Nếu sau này một tên miền trượt ở hầu hết máy chủ, lượt quét bỏ qua nó và hiện cảnh báo nhờ bạn sửa. Áp dụng từ lần quét sau |
 | bootstrap | DNS thường dùng để tìm địa chỉ của các máy chủ DoH lúc khởi động (mặc định `1.1.1.1:53`, `8.8.8.8:53`). Đây là lưu lượng DNS không mã hoá duy nhất, và chỉ dùng để tra tên máy chủ DoH |
 | số máy chủ tối đa | Số máy chủ dùng song song (mặc định 5). Nhiều hơn thì ổn định hơn nhưng tốn băng thông hơn một chút |
 | cập nhật danh sách máy chủ | Tải danh sách máy chủ mới mỗi ngày (có kiểm tra chữ ký) |

@@ -80,11 +80,17 @@
       },
       "editInFull": "chỉnh ở giao diện Đầy đủ ›",
       "fakeSniOff": "Fake SNI cần proxy và sẽ bị tắt. Tiếp tục?",
-      "applying": "Đang áp dụng “{{level}}”…"
+      "applying": "Đang áp dụng “{{level}}”…",
+      "scanning": "Đang tìm máy chủ tốt nhất {{done}}/{{total}}…",
+      "tuning": "Đang tự dò vượt DPI…"
     },
     "firstRun": {
       "probe": "kiểm tra trang mẫu…",
-      "tune": "tự dò vượt DPI với trang mẫu {{index}}/{{total}}"
+      "tune": "tự dò vượt DPI: thử cách {{index}}/{{total}}"
+    },
+    "stepHint": {
+      "scan": "lần đầu trên mạng này sẽ chậm (đo mọi máy chủ), lần sau chỉ vài giây",
+      "firstRun": "chỉ chạy ở lần kết nối đầu tiên"
     }
   },
   "nav": {
@@ -161,7 +167,11 @@
       "copyIP": "⧉ sao chép IP",
       "remove": "✕ xoá",
       "useOnlyConfirm": "Chỉ dùng {{name}} và bỏ ghim {{count}} máy chủ khác?"
-    }
+    },
+    "notAuto": "không tự chọn",
+    "notAutoHint": "Máy chủ có lọc (chặn quảng cáo hoặc nội dung): app không tự chọn. Ghim nếu muốn dùng.",
+    "passRule": "Đạt = trả lời đúng {{domain}} (tên miền đầu 2 lần) trong vài giây, bằng IP công cộng. Chưa phát hiện được: máy chủ chặn riêng vài trang, nhà mạng trả IP công cộng giả, DNSSEC. Muốn kiểm tra kỹ hơn, dùng Công cụ › Scanner.",
+    "changeDomain": "đổi tên miền thử ›"
   },
   "dpi": {
     "title": "VƯỢT DPI",
@@ -341,7 +351,9 @@
       "sniTitle": "File có rule chuyển hướng lưu lượng đã giải mã (sni= / connect=):",
       "sniAck": "Tôi hiểu các rule này chuyển hướng lưu lượng đã giải mã",
       "sniDrop": "nhập nhưng bỏ các rule này"
-    }
+    },
+    "testDomainHint": "Mỗi dòng một tên miền. Máy chủ đạt khi trả lời đúng mọi tên miền này, 2 lần với tên miền đầu, trong 3 giây (thêm 1 giây cho mỗi tên miền sau), bằng IP công cộng. Chọn trang luôn mở được. Áp dụng từ lần quét sau.",
+    "testDomainMany": "Không nên dùng nhiều tên miền: {{count}} tên miền làm mỗi lượt quét lâu hơn và dễ loại nhầm máy chủ tốt. Nên dùng 1–2 (tối đa 5)."
   },
   "errors": {
     "NOT_ADMIN": {
@@ -582,6 +594,14 @@
     "EXPORT_WRITE_FAILED": {
       "message": "Không ghi được file xuất",
       "action": "Chọn thư mục khác"
+    },
+    "TEST_DOMAIN_BROKEN": {
+      "message": "Tên miền thử {{domains}} không trả lời được ở hầu hết máy chủ (có thể nó không có địa chỉ IPv4), nên đã bị bỏ qua khi quét. Hãy sửa ở Cài đặt › tên miền thử.",
+      "action": ""
+    },
+    "TEST_DOMAIN_NO_ADDRESS": {
+      "message": "Tên miền thử này không có địa chỉ IPv4 (bản ghi A) nên mọi máy chủ sẽ trượt. Hãy dùng trang có địa chỉ thật, ví dụ store.steampowered.com thay cho steam.com",
+      "action": ""
     }
   },
   "tray": {

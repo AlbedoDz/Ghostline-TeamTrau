@@ -38,6 +38,34 @@ func (o *Orchestrator) afterConnect() {
 	if o.d.Prober != nil {
 		go o.probeBlocked(context.Background())
 	}
+	if st, ok := o.d.Picker.(interface{ Stale() bool }); ok && st.Stale() && o.refresh != nil {
+		go o.refresh() // connected from an old ranking: rebuild it
+	}
+}
+
+// ApplyBest switches a running connection to the best servers of the
+// current ranking (after a full scan, or on another network).
+func (o *Orchestrator) ApplyBest(ctx context.Context) {
+	ctx, cancel := o.background(ctx) // Disconnect does not wait for it
+	defer cancel()
+	o.opMu.Lock()
+	defer o.opMu.Unlock()
+	if !o.connected() {
+		return
+	}
+	picked, err := o.d.Picker.Pick(ctx, nil)
+	if err != nil {
+		return
+	}
+	o.mu.Lock()
+	same := len(picked) == len(o.servers)
+	for i := range picked {
+		same = same && picked[i].ID == o.servers[i].ID
+	}
+	o.mu.Unlock()
+	if !same {
+		o.swapTo(ctx, picked)
+	}
 }
 
 func errCode(err error) string {
@@ -105,7 +133,7 @@ func (o *Orchestrator) heal(ctx context.Context) {
 	var picked []model.Server
 	var err error
 	if fp, ok := o.d.Picker.(FreshPicker); ok {
-		// Bypass the scan cache and skip the servers that are failing now.
+		// Check again, skipping the servers that are failing now.
 		o.mu.Lock()
 		exclude := make([]string, 0, len(o.servers))
 		for _, s := range o.servers {
@@ -120,6 +148,11 @@ func (o *Orchestrator) heal(ctx context.Context) {
 		o.log("engine", CodeNoServers)
 		return
 	}
+	o.swapTo(ctx, picked)
+}
+
+// swapTo hot-swaps the engine to picked. Callers hold opMu.
+func (o *Orchestrator) swapTo(ctx context.Context, picked []model.Server) {
 	ups, err := o.buildUpstreams(picked)
 	if err != nil {
 		return
@@ -194,6 +227,14 @@ func (o *Orchestrator) OnNetworkChange(ctx context.Context) {
 		_ = o.d.DNS.Flush()
 		o.log("system", "ADAPTER_ADDED", "adapter", a.Alias)
 	}
+	// Another network has its own ranking: use it, or build one.
+	go func() {
+		if st, ok := o.d.Picker.(interface{ Stale() bool }); ok && st.Stale() && o.refresh != nil {
+			o.refresh()
+			return
+		}
+		o.ApplyBest(context.Background())
+	}()
 }
 
 // OnResume checks the engine after sleep and heals immediately on failure.
@@ -221,14 +262,14 @@ func (o *Orchestrator) probeBlocked(ctx context.Context) {
 		results[i] = o.d.Prober.ProbeAll(ctx, sites)
 	}
 	blocked := probe.DPIBlocked(results[0], results[1])
+	o.update(func(s *Snapshot) {
+		if s.Status == StatusProtected || s.Status == StatusDegraded {
+			s.BlockedSites, s.Probed = blocked, true
+		}
+	})
 	if len(blocked) == 0 {
 		return
 	}
-	o.update(func(s *Snapshot) {
-		if s.Status == StatusProtected || s.Status == StatusDegraded {
-			s.BlockedSites = blocked
-		}
-	})
 	o.log("dpi", "SITES_BLOCKED", "count", len(blocked))
 }
 

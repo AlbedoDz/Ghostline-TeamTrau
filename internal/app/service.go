@@ -83,6 +83,9 @@ type ServerRow struct {
 	Result *scanner.Result `json:"result,omitempty"`
 	InUse  bool            `json:"inUse"`
 	Pinned bool            `json:"pinned"`
+	// Auto: the settings let it be picked automatically (no-filter tags,
+	// custom or pinned).
+	Auto bool `json:"auto"`
 }
 
 // ServiceDeps wires the UI service.
@@ -102,16 +105,19 @@ type ServiceDeps struct {
 	OnSettingsChanged func(old, new store.Settings)
 
 	// Phase 2A.
-	Rules        *rules.Holder
-	RulesPath    string
-	Fetcher      *lists.Fetcher
-	MaxEntries   int // 0 = DefaultMaxEntries
-	FragCache    *store.FragCache
-	NetKey       func() string
-	Proxy        ProxyQuery
-	LANInfo      func() LANInfo
-	Protect      func(string) (string, error) // DPAPI
-	TestUpstream func(ctx context.Context, id string) error
+	Rules      *rules.Holder
+	RulesPath  string
+	Fetcher    *lists.Fetcher
+	MaxEntries int // 0 = DefaultMaxEntries
+	FragCache  *store.FragCache
+	NetKey     func() string
+	// CheckTestDomain, when set, checks that a new test domain has an IPv4
+	// address before it is saved.
+	CheckTestDomain func(domain string) error
+	Proxy           ProxyQuery
+	LANInfo         func() LANInfo
+	Protect         func(string) (string, error) // DPAPI
+	TestUpstream    func(ctx context.Context, id string) error
 	// CheckUpdate asks GitHub for the latest release now (manual check).
 	CheckUpdate func(ctx context.Context) (UpdateCheck, error)
 	// CheckServer re-tests one server and updates the cached scan.
@@ -160,7 +166,11 @@ type Service struct {
 }
 
 // NewService creates the UI service.
-func NewService(o *Orchestrator, x ServiceDeps) *Service { return &Service{o: o, x: x} }
+func NewService(o *Orchestrator, x ServiceDeps) *Service {
+	s := &Service{o: o, x: x}
+	o.refresh = func() { _ = s.ScanAll() }
+	return s
+}
 
 // GetSnapshot returns the current state.
 func (s *Service) GetSnapshot() Snapshot { return s.o.Snapshot() }
@@ -195,6 +205,9 @@ func (s *Service) validateSettings(n store.Settings) error {
 	if n.MaxUpstreams < 1 || n.MaxUpstreams > 10 {
 		return fmt.Errorf("settings: maxUpstreams must be 1..10")
 	}
+	if err := store.ValidateTestDomains(n.TestDomain); err != nil {
+		return err
+	}
 	if len(n.Bootstrap) == 0 {
 		return fmt.Errorf("settings: bootstrap list is empty")
 	}
@@ -219,10 +232,19 @@ func (s *Service) validateSettings(n store.Settings) error {
 }
 
 func (s *Service) saveSettings(n store.Settings, owned bool) error {
+	n.TestDomain = strings.Join(store.TestDomains(n.TestDomain), "\n")
 	if err := s.validateSettings(n); err != nil {
 		return err
 	}
 	old := s.x.Settings.Get()
+	if s.x.CheckTestDomain != nil {
+		was := store.TestDomains(old.TestDomain)
+		for _, d := range store.TestDomains(n.TestDomain) {
+			if !slices.Contains(was, d) && s.x.CheckTestDomain(d) != nil {
+				return appErr(CodeTestDomainNoAddress, errors.New(d))
+			}
+		}
+	}
 	if !owned {
 		n.DNSServer, n.FakeSNI = old.DNSServer, old.FakeSNI
 	}
@@ -302,7 +324,7 @@ func (s *Service) ListServers() []ServerRow {
 	s.o.mu.Unlock()
 	var rows []ServerRow
 	for _, sv := range s.x.Catalog() {
-		row := ServerRow{Server: sv, InUse: inUse[sv.ID], Pinned: slices.Contains(st.Pinned, sv.ID)}
+		row := ServerRow{Server: sv, InUse: inUse[sv.ID], Pinned: slices.Contains(st.Pinned, sv.ID), Auto: Eligible(st, sv)}
 		if r, ok := results[sv.ID]; ok {
 			row.Result = &r
 		}
@@ -311,7 +333,8 @@ func (s *Service) ListServers() []ServerRow {
 	return rows
 }
 
-// ScanAll starts a full scan in the background; progress arrives as events.
+// ScanAll rebuilds the server ranking in the background (progress arrives as
+// events) and, when connected, switches to its best servers.
 func (s *Service) ScanAll() error {
 	s.mu.Lock()
 	if s.scanCancel != nil {
@@ -328,10 +351,22 @@ func (s *Service) ScanAll() error {
 			s.mu.Unlock()
 			cancel()
 		}()
-		_, _ = s.o.Rescan(ctx, func(done, total int, r scanner.Result) {
-			s.x.Bus.Emit(EventScan, ScanProgress{Done: done, Total: total, Result: &r, Running: true})
-		})
-		s.x.Bus.Emit(EventScan, ScanProgress{Running: false})
+		// A picker that reports its own scans does so for this one too.
+		w, ok := s.o.d.Scans.(interface{ Watched() bool })
+		watched := ok && w.Watched()
+		var onProgress func(done, total int, r scanner.Result)
+		if !watched {
+			onProgress = func(done, total int, r scanner.Result) {
+				s.x.Bus.Emit(EventScan, ScanProgress{Done: done, Total: total, Result: &r, Running: true})
+			}
+		}
+		_, err := s.o.Rescan(ctx, onProgress)
+		if err == nil {
+			s.o.ApplyBest(ctx)
+		}
+		if !watched {
+			s.x.Bus.Emit(EventScan, ScanProgress{Running: false})
+		}
 	}()
 	return nil
 }

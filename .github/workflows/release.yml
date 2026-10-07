@@ -8,7 +8,15 @@ permissions:
   contents: write
 
 jobs:
+  # The full CI (lint, tests, race tests, build) on the tagged commit.
+  ci:
+    uses: ./.github/workflows/ci.yml
+    permissions:
+      contents: read
+
+  # Builds and publishes only when CI passed.
   release:
+    needs: ci
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v7
@@ -27,12 +35,11 @@ jobs:
       - name: Frontend deps
         working-directory: frontend
         run: npm ci
-      - name: Test
+      - name: Bindings and frontend
         shell: pwsh
         run: |
           wails3 generate bindings -clean=true -ts -i
-          Push-Location frontend; npm run build; npm test; Pop-Location
-          go test ./...
+          Push-Location frontend; npm run build; Pop-Location
       - name: Package
         shell: pwsh
         run: |

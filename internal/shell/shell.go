@@ -12,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strings"
 	"time"
 
 	"github.com/hashcott/ghostline/internal/app"
@@ -122,7 +123,7 @@ func Run(o Options) error {
 	})
 	picker := &app.ScanPicker{
 		Catalog: cat.get,
-		Checker: scanner.DNSChecker{Build: build.Build, TestDomain: box.Get().TestDomain, Timeout: 3 * time.Second},
+		Checker: scanner.DNSChecker{Build: build.Build, Domains: func() []string { return store.TestDomains(box.Get().TestDomain) }, Timeout: 3 * time.Second},
 		Cache:   cache,
 		SaveCache: func(c *scanner.Cache) error {
 			return scanner.SaveCache(paths.ScanCache, c)
@@ -136,6 +137,10 @@ func Run(o Options) error {
 	var wapp *application.App
 	em := &emitter{}
 	bus := app.NewBus(em)
+	// Every full scan (connect, level change, scan all) shows live in the UI.
+	picker.Watch = func(done, total int, r *scanner.Result, running bool) {
+		bus.Emit(app.EventScan, app.ScanProgress{Done: done, Total: total, Result: r, Running: running})
+	}
 	eng := engine.New(bus.Query)
 	pw := newProxyWiring(box, eng, paths, o.Executable, bus, log)
 	cw := newCertWiring(paths)
@@ -177,6 +182,14 @@ func Run(o Options) error {
 		SetMITM:      pw.mitm.set,
 		MITMSelfTest: pw.mitm.selfTest,
 	})
+	// A test domain most servers fail on is ignored; say so until it is fixed.
+	picker.BrokenTestDomains = func(ds []string) {
+		if len(ds) == 0 {
+			orch.ClearWarning(app.CodeTestDomainBroken)
+			return
+		}
+		orch.AddWarning(app.AppError{Code: app.CodeTestDomainBroken, Params: map[string]any{"domains": strings.Join(ds, ", ")}})
+	}
 	if settingsReset {
 		orch.AddWarning(app.AppError{Code: app.CodeSettingsReset})
 	}
@@ -219,23 +232,24 @@ func Run(o Options) error {
 			if old.Language != n.Language {
 				ui.onLanguage()
 			}
-			if !slices.Equal(old.Bootstrap, n.Bootstrap) || old.TestDomain != n.TestDomain {
-				picker.Checker = scanner.DNSChecker{Build: build.Build, TestDomain: n.TestDomain, Timeout: 3 * time.Second}
+			if !slices.Equal(old.Bootstrap, n.Bootstrap) {
+				picker.Checker = scanner.DNSChecker{Build: build.Build, Domains: func() []string { return store.TestDomains(box.Get().TestDomain) }, Timeout: 3 * time.Second}
 			}
 			if old.Proxy.Enabled != n.Proxy.Enabled {
 				ui.onLanguage() // relabels the tray's proxy item
 			}
 		},
-		Rules:        pw.holder,
-		RulesPath:    paths.Rules,
-		Fetcher:      pw.fetcher(),
-		FragCache:    pw.frag,
-		NetKey:       networkKey,
-		Proxy:        pw,
-		LANInfo:      pw.lanInfo,
-		Protect:      winutil.ProtectString,
-		TestUpstream: pw.testUpstream,
-		CheckUpdate:  checker.checkNow,
+		Rules:           pw.holder,
+		RulesPath:       paths.Rules,
+		Fetcher:         pw.fetcher(),
+		FragCache:       pw.frag,
+		CheckTestDomain: func(d string) error { return picker.CheckDomain(context.Background(), d) },
+		NetKey:          networkKey,
+		Proxy:           pw,
+		LANInfo:         pw.lanInfo,
+		Protect:         winutil.ProtectString,
+		TestUpstream:    pw.testUpstream,
+		CheckUpdate:     checker.checkNow,
 		CheckServer: func(ctx context.Context, id string) error {
 			_, err := picker.CheckOne(ctx, id)
 			return err

@@ -80,11 +80,17 @@
       },
       "editInFull": "change in the Full interface ›",
       "fakeSniOff": "Fake SNI needs the proxy and will be turned off. Continue?",
-      "applying": "Applying “{{level}}”…"
+      "applying": "Applying “{{level}}”…",
+      "scanning": "Finding the best servers {{done}}/{{total}}…",
+      "tuning": "Auto-tuning DPI bypass…"
     },
     "firstRun": {
       "probe": "checking the test sites…",
-      "tune": "auto-tuning DPI bypass on the test sites {{index}}/{{total}}"
+      "tune": "auto-tuning DPI bypass: trying {{index}}/{{total}}"
+    },
+    "stepHint": {
+      "scan": "slow the first time on this network (measuring every server); a few seconds after that",
+      "firstRun": "only on the first connect"
     }
   },
   "nav": {
@@ -161,7 +167,11 @@
       "copyIP": "⧉ copy IP",
       "remove": "✕ remove",
       "useOnlyConfirm": "Use only {{name}} and unpin {{count}} other servers?"
-    }
+    },
+    "notAuto": "not picked",
+    "notAutoHint": "A filtering server (blocks ads or content): never picked automatically. Pin it to use it.",
+    "passRule": "Pass = answers {{domain}} correctly (the first one twice) within a few seconds, with a public IP. Not detected: a server that blocks only some sites, an ISP that returns fake public IPs, DNSSEC. For a closer look, use Tools › Scanner.",
+    "changeDomain": "change the test domain ›"
   },
   "dpi": {
     "title": "DPI BYPASS",
@@ -341,7 +351,9 @@
       "sniTitle": "The file has rules that redirect decrypted traffic (sni= / connect=):",
       "sniAck": "I understand these rules redirect decrypted traffic",
       "sniDrop": "import but drop these rules"
-    }
+    },
+    "testDomainHint": "One domain per line. A server passes when it answers every one correctly, the first one twice, within 3 seconds (1 more second for each other domain), with a public IP. Pick sites that always work. Applies from the next scan.",
+    "testDomainMany": "Many domains are not recommended: {{count}} domains make every scan slower and can drop good servers. Use 1–2 (at most 5)."
   },
   "errors": {
     "NOT_ADMIN": {
@@ -582,6 +594,14 @@
     "EXPORT_WRITE_FAILED": {
       "message": "Could not write the export file",
       "action": "Choose another folder"
+    },
+    "TEST_DOMAIN_BROKEN": {
+      "message": "The test domain {{domains}} fails on most servers (it may have no IPv4 address), so scans ignore it. Fix it in Settings › test domain.",
+      "action": ""
+    },
+    "TEST_DOMAIN_NO_ADDRESS": {
+      "message": "This test domain has no IPv4 address (A record), so every server would fail. Use a site with a real address, for example store.steampowered.com instead of steam.com",
+      "action": ""
     }
   },
   "tray": {

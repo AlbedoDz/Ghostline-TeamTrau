@@ -31,6 +31,7 @@ const rank = (r: ServerRow) => (!r.result ? 3e12 : r.result.ok ? ms(r.result.lat
 export function Servers() {
   const { t } = useTranslation();
   const scan = useGhost((s) => s.scan);
+  const scanResults = useGhost((s) => s.scanResults);
   const settings = useGhost((s) => s.settings);
   const servers = useGhost((s) => s.snapshot.servers);
   const [rows, setRows] = useState<ServerRow[]>([]);
@@ -45,15 +46,29 @@ export function Servers() {
   const connected = status === "protected" || status === "degraded";
   const [adding, setAdding] = useState(false);
 
-  const load = useCallback(() => void Service.ListServers().then((r) => setRows(r ?? [])), []);
-  useEffect(load, [load, scan === null, servers?.length]);
+  const load = useCallback(
+    () =>
+      void Service.ListServers().then((r) => {
+        setRows(r ?? []);
+        // Go's list now has the scan's results; keep live ones only mid-scan.
+        if (!useGhost.getState().scan) useGhost.getState().clearScanResults();
+      }),
+    [],
+  );
+  // Each result shows as soon as it arrives, not when the scan ends.
+  const live = useMemo(
+    () => (Object.keys(scanResults).length ? rows.map((r) => (scanResults[r.server.id] ? { ...r, result: scanResults[r.server.id] } : r)) : rows),
+    [rows, scanResults],
+  );
+  // Reload when the scan ends or the servers in use change.
+  useEffect(load, [load, scan === null, servers?.join("|")]);
 
   const toggle = (list: string[], v: string, set: (l: string[]) => void) =>
     set(list.includes(v) ? list.filter((x) => x !== v) : [...list, v]);
 
   const visible = useMemo(
     () =>
-      rows.filter((r) => {
+      live.filter((r) => {
         if (!protocols.includes(String(r.server.protocol))) return false;
         const rtags = r.server.tags ?? [];
         if (r.server.source !== "custom" && rtags.length > 0 && !rtags.some((x) => tags.includes(x))) return false;
@@ -61,9 +76,9 @@ export function Servers() {
         if (showPinned && !r.pinned) return false;
         return matches(r, query);
       }),
-    [rows, protocols, tags, onlyOk, query, showPinned],
+    [live, protocols, tags, onlyOk, query, showPinned],
   );
-  const okCount = rows.filter((r) => r.result?.ok).length;
+  const okCount = live.filter((r) => r.result?.ok).length;
 
   const pinnedIds = rows.filter((r) => r.pinned).map((r) => r.server.id);
   const afterPinChange = () => {
@@ -117,7 +132,7 @@ export function Servers() {
   };
 
   const onScan = () => (scan?.running ? void Service.CancelScan() : void Service.ScanAll());
-  const lastScan = rows.map((r) => r.result?.checkedAt).filter(Boolean).sort().pop();
+  const lastScan = live.map((r) => r.result?.checkedAt).filter(Boolean).sort().pop();
 
   return (
     <div className={css.page}>
@@ -183,6 +198,11 @@ export function Servers() {
           </span>
         )}
       </div>
+      {/* What "pass" means, and what it cannot catch. */}
+      <div className={css.passRule} data-testid="pass-rule">
+        {t("servers.passRule", { domain: (settings?.testDomain || "www.google.com").split(/[\s,]+/).filter(Boolean).join(", ") })}{" "}
+        <button className={css.linkBtn} onClick={() => useGhost.getState().setPage("settings")}>{t("servers.changeDomain")}</button>
+      </div>
       {pinsChanged && connected && (
         <div className={css.row}>
           <span className={css.warn}>{t("servers.pinsChanged")}</span>
@@ -242,14 +262,14 @@ export function Servers() {
           {
             key: "state",
             label: t("servers.state"),
-            width: "120px",
+            width: "150px",
             render: (r) =>
               r.inUse ? (
                 <span className={css.ok}>● {t("servers.inUse")}</span>
               ) : !r.result ? (
                 <span className={css.dim}>{t("servers.notChecked")}</span>
               ) : r.result.ok ? (
-                t("servers.pass")
+                r.auto ? t("servers.pass") : <span className={css.dim} title={t("servers.notAutoHint")}>{t("servers.pass")} · {t("servers.notAuto")}</span>
               ) : (
                 <span className={css.bad}>✕ {r.result.reason}</span>
               ),

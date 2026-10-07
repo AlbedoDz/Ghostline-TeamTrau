@@ -181,3 +181,33 @@ test("search ignores the base64 inside sdns:// stamps", async () => {
   fireEvent.change(box, { target: { value: "sdns" } });
   expect(screen.getByText("Circl Doh")).toBeInTheDocument();
 });
+
+test("the page says what a pass means, with the test domain, and links to change it", async () => {
+  useGhost.getState().setSettings({ ...structuredClone(settings), testDomain: "cloudflare.com\nyoutube.com" } as any);
+  const rs = structuredClone(rows) as any[];
+  rs.push({ server: { id: "ad", name: "AdGuard", protocol: "doh", address: "https://dns.adguard.com/dns-query", tags: ["adblock"], source: "builtin" }, result: { serverId: "ad", ok: true, latency: 9e6 }, inUse: false, pinned: false, auto: false });
+  rs.forEach((r) => (r.auto ??= true));
+  svc.ListServers.mockResolvedValue(rs);
+  render(<Servers />);
+  const rule = screen.getByTestId("pass-rule");
+  expect(rule).toHaveTextContent("Đạt = trả lời đúng cloudflare.com, youtube.com (tên miền đầu 2 lần)");
+  expect(rule).toHaveTextContent("Chưa phát hiện được");
+  expect(within(await rowOf("AdGuard")).getByText(/không tự chọn/)).toBeInTheDocument();
+  expect(within(await rowOf("Quad9")).queryByText(/không tự chọn/)).toBeNull();
+  fireEvent.click(within(rule).getByRole("button", { name: /đổi tên miền thử/ }));
+  expect(useGhost.getState().page).toBe("settings");
+});
+
+test("scan results show row by row while the scan runs", async () => {
+  const rs = structuredClone(rows) as any[];
+  rs[2].result = undefined;
+  svc.ListServers.mockResolvedValue(rs);
+  render(<Servers />);
+  expect(within(await rowOf("My DoH")).getByText("chưa kiểm tra")).toBeInTheDocument();
+  act(() => useGhost.getState().setScan({ running: true, done: 1, total: 3, result: { serverId: "my", ok: true, latency: 7e6 } } as any));
+  expect(within(await rowOf("My DoH")).getByText("7 ms")).toBeInTheDocument();
+  act(() => useGhost.getState().setScan({ running: true, done: 2, total: 3, result: { serverId: "q9", ok: false, reason: "timeout" } } as any));
+  expect(within(await rowOf("Quad9")).getByText(/timeout/)).toBeInTheDocument();
+  expect(within(await rowOf("My DoH")).getByText("7 ms"), "earlier results stay").toBeInTheDocument();
+  expect(svc.ListServers, "loaded on open and when the scan starts, not per result").toHaveBeenCalledTimes(2);
+});

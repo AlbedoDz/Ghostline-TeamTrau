@@ -67,6 +67,8 @@ Chạy trên Windows 11 x64, terminal **admin**. Đánh dấu từng mục; mụ
 
 ## Kiểm tra thủ công giai đoạn 3 (spec 3 §13)
 
+- [ ] **Bảng xếp hạng máy chủ:** cài mới, Connect → bước 2 quét khoảng 900 máy chủ; Ngắt rồi Connect lại ≤ 5 giây; trang Máy chủ và bước 2 cùng một tổng số; máy chủ `adblock`/`family` ghi *không tự chọn*. Chọn một mức khi đang kết nối → dòng mô tả hiện tiến độ, xong thì máy chủ đang dùng đổi mà không ngắt kết nối.
+- [ ] **Hai mạng cùng gateway** (ví dụ hai router đều `192.168.1.1`): mỗi mạng có bảng xếp hạng riêng (mạng thứ hai quét lại từ đầu).
 - [ ] **Danh sách DNSCrypt nhúng sẵn:** chạy `go run ./tools/fetchdnscrypt` (tải và kiểm tra chữ ký minisign), `go test ./lists/` phải qua, rồi commit `lists/dnscrypt/`.
 - [ ] **Dải IP Cloudflare:** chạy `go run ./tools/gencfranges`, xem lại diff của `internal/cfscan/ranges_v4.txt` rồi commit.
 - [ ] **Lookup đầu độc:** trên mạng Viettel, VNPT, FPT, tra một tên miền bị chặn qua DNS nhà mạng và qua Ghostline → thẻ **Bị đầu độc DNS**.

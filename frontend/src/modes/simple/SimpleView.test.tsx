@@ -204,3 +204,13 @@ test("connecting: the server step shows how many servers were checked", () => {
   render(<SimpleView onOpenLogs={() => {}} />);
   expect(screen.getByText("chọn máy chủ 120/900").closest("[data-step]")).toHaveAttribute("data-step", "current");
 });
+
+test("connecting: a first scan says it is slow only this time", () => {
+  useGhost.getState().setSnapshot(snap({ status: "connecting", step: 2, pickDone: 170, pickTotal: 906 }));
+  const { rerender } = render(<SimpleView onOpenLogs={() => {}} />);
+  expect(screen.getByText(/chọn máy chủ 170\/906/)).toBeInTheDocument();
+  expect(screen.getByTestId("step-hint")).toHaveTextContent("lần đầu trên mạng này sẽ chậm (đo mọi máy chủ), lần sau chỉ vài giây");
+  act(() => useGhost.getState().setSnapshot(snap({ status: "connecting", step: 2 })));
+  rerender(<SimpleView onOpenLogs={() => {}} />);
+  expect(screen.queryByTestId("step-hint"), "from the ranking: nothing to explain").toBeNull();
+});

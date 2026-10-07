@@ -31,14 +31,20 @@ const (
 	CodeSysProxyExisting  = "SYSPROXY_EXISTING"
 	CodeSysProxyFailed    = "SYSPROXY_FAILED"
 	CodeSysProxyTakenOver = "SYSPROXY_TAKEN_OVER"
-	CodeSysProxyRestore   = "SYSPROXY_RESTORE_FAILED"
-	CodeRulesParse        = "RULES_PARSE"
-	CodeListFetch         = "LIST_FETCH_FAILED"
-	CodeListUnsupported   = "LIST_UNSUPPORTED_FORMAT"
-	CodeListTooLarge      = "LIST_TOO_LARGE"
-	CodeUpstreamProxy     = "UPSTREAM_PROXY_FAILED"
-	CodeNoPinnedServers   = "NO_PINNED_SERVERS"
-	CodeDPIBlacklistEmpty = "DPI_BLACKLIST_EMPTY"
+	// CodeTestDomainBroken: a test domain failed on most servers and was
+	// ignored (params: domains).
+	CodeTestDomainBroken = "TEST_DOMAIN_BROKEN"
+	// CodeTestDomainNoAddress: a new test domain has no IPv4 address, so
+	// every server would fail on it (the cause names the domain).
+	CodeTestDomainNoAddress = "TEST_DOMAIN_NO_ADDRESS"
+	CodeSysProxyRestore     = "SYSPROXY_RESTORE_FAILED"
+	CodeRulesParse          = "RULES_PARSE"
+	CodeListFetch           = "LIST_FETCH_FAILED"
+	CodeListUnsupported     = "LIST_UNSUPPORTED_FORMAT"
+	CodeListTooLarge        = "LIST_TOO_LARGE"
+	CodeUpstreamProxy       = "UPSTREAM_PROXY_FAILED"
+	CodeNoPinnedServers     = "NO_PINNED_SERVERS"
+	CodeDPIBlacklistEmpty   = "DPI_BLACKLIST_EMPTY"
 	// DPI engines (zapret2 spec §9.4).
 	CodeDPIFallback            = "DPI_FALLBACK"
 	CodeAutotuneEngineSwitched = "AUTOTUNE_ENGINE_SWITCHED"

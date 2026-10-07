@@ -70,7 +70,7 @@ Compare the result with the matching line in `SHA256SUMS` on the Releases page. 
 Ghostline opens in the **Simple** interface.
 
 1. Click the **round power button** in the middle.
-2. Ghostline goes through: checking the system → choosing servers → starting the engine → saving original DNS → arming safety net → setting DNS → verifying no leaks. The first time on a network it checks every server that does not filter content (about 700; servers you pinned or added are always included) to pick the fastest, which takes about 30–60 seconds; the step shows how far it is (for example *choosing servers 120/730*). For the next 24 hours on the same network it reuses that result and connects in a few seconds.
+2. Ghostline goes through: checking the system → choosing servers → starting the engine → saving original DNS → arming safety net → setting DNS → verifying no leaks. To choose servers, Ghostline keeps a ranking of every server for each network. The first time on a network it scans the whole list (about 900 servers, 30–60 seconds; the step shows how far it is, for example *choosing servers 120/906*) and takes the fastest that do not filter content, pinned servers first. After that it connects in a few seconds from the ranking. When the ranking is more than a day old, Ghostline checks its best servers before using them and rebuilds the ranking in the background once connected.
 3. When the ring glows green and shows **[ PROTECTED ]**, you're done: every DNS query on the machine is encrypted.
 
 To cancel while connecting, click the power button again. To turn protection off, click the power button while protected; your DNS goes back to what it was.
@@ -79,7 +79,7 @@ To cancel while connecting, click the power button again. To turn protection off
 
 *The preview plays sped up and silent; click it for the narrated video.*
 
-**First connect: auto-tune.** The first time you connect after installing, Ghostline adds one more step to the list: it checks the test sites through its encrypted DNS and, if some are still blocked, auto-tunes DPI bypass on them, showing its progress (for example *auto-tuning DPI bypass on the test sites 12/900*). When it finds a working strategy, DPI bypass turns on and the level becomes **DNS + DPI bypass**; if nothing is blocked, the level stays **DNS only**. It runs once; if you disconnect before it finishes, it runs again on the next connect.
+**First connect: auto-tune.** The first time you connect after installing, Ghostline adds one more step to the list: once DPI bypass (if on) is running, it checks the test sites and, if some are still blocked, auto-tunes DPI bypass on them, showing which strategy it is trying (for example *auto-tuning DPI bypass: trying 2/4*). When it finds a working strategy, DPI bypass turns on and the level becomes **DNS + DPI bypass**; if nothing is blocked, the level stays as it is. It runs once; if you disconnect before it finishes, it runs again on the next connect. The levels wait while auto-tune runs.
 
 **Protection level.** Under the status, pick how much Ghostline does. You can change it any time, also while connected:
 
@@ -89,6 +89,8 @@ To cancel while connecting, click the power button again. To turn protection off
 | **DNS + DPI bypass** *(recommended)* | Adds DPI bypass for every app | Sites are still blocked after the DNS change |
 | **Maximum** | Adds the proxy for this PC (it sets the Windows proxy); browsers get fragmented automatically on blocked sites | DPI bypass is not enough for some sites |
 | **Custom** | Your own combination from the Full interface | Lit when what you set there matches no level |
+
+Choosing a level also looks for the best servers: Ghostline scans the whole list again (the line under the levels shows *Finding the best servers 120/906…*) and, when connected, switches to the fastest without disconnecting. Click the current level to look again.
 
 A level only changes these switches; your engine, strategy, servers, rules and other settings stay as they are. When you leave **Custom** for a level, Ghostline remembers your combination, and clicking **Custom** brings it back. Fake SNI needs the proxy: a level without the proxy asks before turning it off, and **Custom** turns it back on.
 
@@ -144,7 +146,8 @@ The sidebar groups the pages: **basic** (overview, servers, DPI bypass), **advan
 
 Every encrypted DNS server Ghostline knows about (several hundred), refreshed daily from a signed list.
 
-- **⟳ scan all:** re-measures every server's latency and drops servers that return wrong (poisoned) answers. Ghostline scans by itself when needed; click it after switching networks or when things feel slow.
+- **⟳ scan all:** re-measures every server's latency, drops servers that return wrong (poisoned) answers and, when connected, switches to the fastest without disconnecting. Ghostline also does this by itself when the ranking is more than a day old or you join another network. Servers that filter content (`adblock`, `family`) are measured too but marked *not picked*: Ghostline never chooses them by itself; pin one to use it.
+- **What "pass" means:** the server answered the test domain correctly twice within 3 seconds, with a public IP. A pass does not catch a server that blocks only some sites, an ISP that returns fake public IPs, or DNSSEC problems; use **Tools › Scanner** for a closer look. The test domain is set in **Settings**.
 - **filter:** pick protocols (`doh`, `dot`, `doq`, `dnscrypt`) or server types:
   - `no-filter`: blocks nothing.
   - `adblock`: blocks ads and trackers.
@@ -242,7 +245,7 @@ Records events: connecting, switching servers, GoodbyeDPI on/off, errors.
 | connect on launch | Connect as soon as the app opens |
 | close → minimise to tray | Clicking ✕ hides the window to the tray instead of quitting. Ghostline keeps protecting you in the background |
 | adapters | **auto**: protect every adapter in use (recommended). **manual**: protect only the adapters you pick |
-| test domain | The domain used to check that servers answer correctly |
+| test domain | The domains the server scan asks for, one per line (default `www.google.com`); a server must answer every one. Use 1–2 sites that always work: each extra domain makes every scan slower (at most 5). A new domain is checked when you save it: one without an IPv4 address (for example `steam.com`; use `store.steampowered.com`) is refused. If a domain later fails on most servers, scans ignore it and a warning asks you to fix it. Applies from the next scan |
 | bootstrap | Plain DNS servers used only to look up the addresses of DoH servers at startup (default `1.1.1.1:53`, `8.8.8.8:53`). This is the only unencrypted DNS traffic, and it is only used to look up DoH server names |
 | max servers | How many servers to use in parallel (default 5). More is steadier but uses slightly more bandwidth |
 | update server list | Download a fresh server list daily (signature-checked) |

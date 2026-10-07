@@ -269,3 +269,84 @@ func TestCache_FreshIsPerResult(t *testing.T) {
 	// Results() for the UI still lists both.
 	require.Len(t, c.Entries["net"].Results, 2)
 }
+
+// The test domain set in Settings applies to the next scan, not only after
+// a restart.
+func TestDNSChecker_DomainFollowsSettings(t *testing.T) {
+	var asked []string
+	c := checker(func(ctx context.Context, req *dns.Msg) (*dns.Msg, error) {
+		asked = append(asked, req.Question[0].Name)
+		return withA("142.250.1.1")(ctx, req)
+	})
+	domain := "example.com"
+	c.Domains = func() []string { return []string{domain} }
+	c.Check(context.Background(), model.Server{ID: "x"})
+	domain = "cloudflare.com"
+	c.Check(context.Background(), model.Server{ID: "x"})
+	require.Equal(t, []string{"example.com.", "example.com.", "cloudflare.com.", "cloudflare.com."}, asked)
+}
+
+// Every test domain must pass; the first is asked twice and timed.
+func TestDNSChecker_EveryTestDomainMustPass(t *testing.T) {
+	var asked []string
+	c := checker(func(ctx context.Context, req *dns.Msg) (*dns.Msg, error) {
+		name := req.Question[0].Name
+		asked = append(asked, name)
+		if name == "blocked.example." {
+			return withA("10.10.10.10")(ctx, req)
+		}
+		return withA("142.250.1.1")(ctx, req)
+	})
+	c.Domains = func() []string { return []string{"www.google.com", "youtube.com"} }
+	r := c.Check(context.Background(), model.Server{ID: "x"})
+	require.True(t, r.OK)
+	require.Equal(t, []string{"www.google.com.", "www.google.com.", "youtube.com."}, asked)
+
+	c.Domains = func() []string { return []string{"www.google.com", "blocked.example"} }
+	r = c.Check(context.Background(), model.Server{ID: "x"})
+	require.False(t, r.OK)
+	require.Equal(t, "blocked.example: poisoned", r.Reason)
+}
+
+// Reported: steam.com has no A record, so every server failed with
+// "steam.com: empty" and none could be picked.
+func TestForgiveBrokenDomains(t *testing.T) {
+	rs := []scanner.Result{
+		{ServerID: "a", Reason: "steam.com: empty", Latency: 10},
+		{ServerID: "b", Reason: "steam.com: empty", Latency: 20},
+		{ServerID: "c", Reason: "steam.com: empty", Latency: 30},
+		{ServerID: "d", OK: true, Latency: 40}, // a server that makes up answers
+		{ServerID: "e", Reason: "timeout"},
+	}
+	out, broken := scanner.ForgiveBrokenDomains(rs, []string{"www.google.com", "steam.com"})
+	require.Equal(t, []string{"steam.com"}, broken)
+	require.True(t, out[0].OK)
+	require.Equal(t, time.Duration(10), out[0].Latency, "the first domain's latency is kept")
+	require.False(t, out[4].OK)
+	require.False(t, rs[0].OK, "the input is not changed")
+
+	// A domain that only a few servers fail on is the servers' fault.
+	rs = []scanner.Result{
+		{ServerID: "a", OK: true}, {ServerID: "b", OK: true}, {ServerID: "c", OK: true},
+		{ServerID: "d", Reason: "youtube.com: poisoned"},
+	}
+	out, broken = scanner.ForgiveBrokenDomains(rs, []string{"www.google.com", "youtube.com"})
+	require.Empty(t, broken)
+	require.False(t, out[3].OK)
+}
+
+func TestDNSChecker_KeepsLatencyWhenAnotherDomainFails(t *testing.T) {
+	c := checker(func(ctx context.Context, req *dns.Msg) (*dns.Msg, error) {
+		if req.Question[0].Name == "steam.com." {
+			return new(dns.Msg).SetReply(req), nil
+		}
+		time.Sleep(20 * time.Millisecond) // a measurable latency
+		return withA("142.250.1.1")(ctx, req)
+	})
+	c.Timeout = time.Second
+	c.Domains = func() []string { return []string{"www.google.com", "steam.com"} }
+	r := c.Check(context.Background(), model.Server{ID: "x"})
+	require.False(t, r.OK)
+	require.Equal(t, "steam.com: empty", r.Reason)
+	require.Positive(t, r.Latency)
+}

@@ -166,3 +166,12 @@ test("dpi shows it is starting while connected", () => {
   render(<Dpi />);
   expect(screen.getByText(/đang khởi động/)).toBeInTheDocument();
 });
+
+test("settings: several test domains are allowed, with a warning past two", () => {
+  render(<Settings />);
+  const box = screen.getByRole("textbox", { name: "tên miền thử" });
+  fireEvent.change(box, { target: { value: "www.google.com\nyoutube.com" } });
+  expect(screen.queryByRole("status")).toBeNull();
+  fireEvent.change(box, { target: { value: "www.google.com\nyoutube.com\ndiscord.com" } });
+  expect(screen.getByRole("status")).toHaveTextContent("Không nên dùng nhiều tên miền: 3 tên miền");
+});
