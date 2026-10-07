@@ -245,7 +245,7 @@ Ghi lại các sự kiện: kết nối, đổi máy chủ, bật/tắt GoodbyeD
 | tự kết nối khi mở | Bấm kết nối ngay khi app mở |
 | đóng → thu xuống khay | Bấm ✕ thì ẩn xuống khay thay vì thoát. Ghostline vẫn bảo vệ ở chế độ nền |
 | card mạng | **tự động**: bảo vệ mọi card mạng đang dùng (khuyến nghị). **chọn tay**: chỉ bảo vệ các card bạn chọn |
-| tên miền thử | Tên miền bộ quét máy chủ hỏi (mặc định `www.google.com`). Chọn trang luôn mở được và không bị chặn ở mạng của bạn; áp dụng từ lần quét sau |
+| tên miền thử | Các tên miền bộ quét máy chủ hỏi, mỗi dòng một tên (mặc định `www.google.com`); máy chủ phải trả lời đúng tất cả. Nên dùng 1–2 trang luôn mở được và không bị chặn ở mạng của bạn: mỗi tên miền thêm làm mọi lượt quét lâu hơn và dễ loại nhầm máy chủ tốt (tối đa 5). Áp dụng từ lần quét sau |
 | bootstrap | DNS thường dùng để tìm địa chỉ của các máy chủ DoH lúc khởi động (mặc định `1.1.1.1:53`, `8.8.8.8:53`). Đây là lưu lượng DNS không mã hoá duy nhất, và chỉ dùng để tra tên máy chủ DoH |
 | số máy chủ tối đa | Số máy chủ dùng song song (mặc định 5). Nhiều hơn thì ổn định hơn nhưng tốn băng thông hơn một chút |
 | cập nhật danh sách máy chủ | Tải danh sách máy chủ mới mỗi ngày (có kiểm tra chữ ký) |

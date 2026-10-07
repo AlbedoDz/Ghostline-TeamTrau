@@ -183,14 +183,14 @@ test("search ignores the base64 inside sdns:// stamps", async () => {
 });
 
 test("the page says what a pass means, with the test domain, and links to change it", async () => {
-  useGhost.getState().setSettings({ ...structuredClone(settings), testDomain: "cloudflare.com" } as any);
+  useGhost.getState().setSettings({ ...structuredClone(settings), testDomain: "cloudflare.com\nyoutube.com" } as any);
   const rs = structuredClone(rows) as any[];
   rs.push({ server: { id: "ad", name: "AdGuard", protocol: "doh", address: "https://dns.adguard.com/dns-query", tags: ["adblock"], source: "builtin" }, result: { serverId: "ad", ok: true, latency: 9e6 }, inUse: false, pinned: false, auto: false });
   rs.forEach((r) => (r.auto ??= true));
   svc.ListServers.mockResolvedValue(rs);
   render(<Servers />);
   const rule = screen.getByTestId("pass-rule");
-  expect(rule).toHaveTextContent("Đạt = trả lời đúng cloudflare.com 2 lần trong 3 giây");
+  expect(rule).toHaveTextContent("Đạt = trả lời đúng cloudflare.com, youtube.com (tên miền đầu 2 lần)");
   expect(rule).toHaveTextContent("Chưa phát hiện được");
   expect(within(await rowOf("AdGuard")).getByText(/không tự chọn/)).toBeInTheDocument();
   expect(within(await rowOf("Quad9")).queryByText(/không tự chọn/)).toBeNull();

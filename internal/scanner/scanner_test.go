@@ -279,9 +279,31 @@ func TestDNSChecker_DomainFollowsSettings(t *testing.T) {
 		return withA("142.250.1.1")(ctx, req)
 	})
 	domain := "example.com"
-	c.Domain = func() string { return domain }
+	c.Domains = func() []string { return []string{domain} }
 	c.Check(context.Background(), model.Server{ID: "x"})
 	domain = "cloudflare.com"
 	c.Check(context.Background(), model.Server{ID: "x"})
 	require.Equal(t, []string{"example.com.", "example.com.", "cloudflare.com.", "cloudflare.com."}, asked)
+}
+
+// Every test domain must pass; the first is asked twice and timed.
+func TestDNSChecker_EveryTestDomainMustPass(t *testing.T) {
+	var asked []string
+	c := checker(func(ctx context.Context, req *dns.Msg) (*dns.Msg, error) {
+		name := req.Question[0].Name
+		asked = append(asked, name)
+		if name == "blocked.example." {
+			return withA("10.10.10.10")(ctx, req)
+		}
+		return withA("142.250.1.1")(ctx, req)
+	})
+	c.Domains = func() []string { return []string{"www.google.com", "youtube.com"} }
+	r := c.Check(context.Background(), model.Server{ID: "x"})
+	require.True(t, r.OK)
+	require.Equal(t, []string{"www.google.com.", "www.google.com.", "youtube.com."}, asked)
+
+	c.Domains = func() []string { return []string{"www.google.com", "blocked.example"} }
+	r = c.Check(context.Background(), model.Server{ID: "x"})
+	require.False(t, r.OK)
+	require.Equal(t, "blocked.example: poisoned", r.Reason)
 }

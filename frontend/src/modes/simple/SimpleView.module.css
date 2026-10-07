@@ -62,6 +62,23 @@
   display: grid;
   gap: 8px;
   padding: 0 14px 14px;
+  /* As tall as the connect steps in every state, so the power button and
+     the levels never move when the panel below changes. */
+  min-height: 204px;
+  align-content: start;
+}
+
+.steps {
+  line-height: 1.55;
+}
+.stepHint {
+  display: block;
+  padding-left: 2ch;
+  font-size: 11px;
+  color: var(--dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .done {

@@ -55,18 +55,26 @@ export function SimpleView({
   const lastLatency = latency.length ? latency[latency.length - 1] : snap.latencyMs;
   const blocked = snap.blockedSites ?? [];
 
+  // The slow steps say why, in one dim line under them.
+  const hintLine = (text: string) => (
+    <span key="hint" data-testid="step-hint" className={css.stepHint}>
+      {text}
+    </span>
+  );
   const stepLines = (current: number, extra?: string) => [
-    ...[1, 2, 3, 4, 5, 6, 7].map((n) => {
+    ...[1, 2, 3, 4, 5, 6, 7].flatMap((n) => {
       const state = n < current ? "done" : n === current ? "current" : "todo";
-      return (
+      const scanning = n === 2 && state === "current" && !!snap.pickTotal;
+      return [
         <span key={n} data-step={state} className={css[state]}>
           <span className={css.mark}>{state === "done" ? "✓ " : state === "current" ? "› " : "  "}</span>
           <span>
             {t(`step.${n}`)}
-            {n === 2 && state === "current" && snap.pickTotal ? ` ${snap.pickDone}/${snap.pickTotal}` : ""}
+            {scanning ? ` ${snap.pickDone}/${snap.pickTotal}` : ""}
           </span>
-        </span>
-      );
+        </span>,
+        ...(scanning ? [hintLine(t("simple.stepHint.scan"))] : []),
+      ];
     }),
     ...(extra
       ? [
@@ -74,6 +82,7 @@ export function SimpleView({
             <span className={css.mark}>{"› "}</span>
             <span>{extra}</span>
           </span>,
+          hintLine(t("simple.stepHint.firstRun")),
         ]
       : []),
   ];
@@ -82,6 +91,7 @@ export function SimpleView({
   if (firstRun) {
     below = (
       <TerminalPanel
+        className={css.steps}
         lines={stepLines(
           8,
           firstRun === "tune" && autotune?.running
@@ -92,9 +102,7 @@ export function SimpleView({
     );
   } else if (status === "connecting") {
     below = (
-      <TerminalPanel
-        lines={stepLines(snap.step)}
-      />
+      <TerminalPanel className={css.steps} lines={stepLines(snap.step)} />
     );
   } else if (isConnected(status)) {
     below = (

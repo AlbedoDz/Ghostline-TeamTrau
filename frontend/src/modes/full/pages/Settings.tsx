@@ -21,6 +21,7 @@ export function Settings() {
   const [adapters, setAdapters] = useState<Adapter[]>([]);
   const [bootstrap, setBootstrap] = useState((settings?.bootstrap ?? []).join("\n"));
   const [testDomain, setTestDomain] = useState(settings?.testDomain ?? "");
+  const domainCount = new Set(testDomain.toLowerCase().split(/[\s,]+/).filter(Boolean)).size;
   const [confirmService, setConfirmService] = useState<string | null>(null);
   const [check, setCheck] = useState<{ busy?: boolean; text?: string; error?: boolean } | null>(null);
   const [certs, setCerts] = useState<Cert[]>([]);
@@ -130,7 +131,8 @@ export function Settings() {
           ))}
         <div className={css.setting}>
           <span>{t("settings.testDomain")}</span>
-          <input
+          <textarea
+            style={{ width: 200, minHeight: 40 }}
             aria-label={t("settings.testDomain")}
             aria-describedby="test-domain-hint"
             value={testDomain}
@@ -139,6 +141,11 @@ export function Settings() {
           />
         </div>
         <div id="test-domain-hint" className={css.passRule}>{t("settings.testDomainHint")}</div>
+        {domainCount > 2 && (
+          <div role="status" className={css.passRuleWarn}>
+            {t("settings.testDomainMany", { count: domainCount })}
+          </div>
+        )}
         <div className={css.setting}>
           <span>{t("settings.bootstrap")}</span>
           <textarea

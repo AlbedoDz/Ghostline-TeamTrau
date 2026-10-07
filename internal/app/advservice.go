@@ -16,6 +16,7 @@ import (
 	"github.com/hashcott/ghostline/internal/model"
 	"github.com/hashcott/ghostline/internal/scanner/advanced"
 	"github.com/hashcott/ghostline/internal/servers"
+	"github.com/hashcott/ghostline/internal/store"
 )
 
 // ServerFilter picks servers from the catalog; empty fields match all.
@@ -104,7 +105,7 @@ func (s *Service) StartAdvancedScan(req AdvScanRequest) (AdvScanStart, error) {
 	}
 	c := advanced.Checker{Build: s.x.BuildUpstream, Opt: advanced.Options{
 		Rounds: st.Tools.Scanner.Rounds, Timeout: time.Duration(st.Tools.Scanner.TimeoutMs) * time.Millisecond,
-		TestDomain: st.TestDomain, PoisonDomains: poison, MaxServers: maxN,
+		TestDomain: firstOr(store.TestDomains(st.TestDomain), "www.google.com"), PoisonDomains: poison, MaxServers: maxN,
 	}}
 
 	s.mu.Lock()
@@ -261,4 +262,12 @@ func csvSafe(v string) string {
 		return "'" + v
 	}
 	return v
+}
+
+// firstOr returns the first of ds, or def when there is none.
+func firstOr(ds []string, def string) string {
+	if len(ds) == 0 {
+		return def
+	}
+	return ds[0]
 }

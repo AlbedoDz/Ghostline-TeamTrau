@@ -200,7 +200,7 @@ export function Servers() {
       </div>
       {/* What "pass" means, and what it cannot catch. */}
       <div className={css.passRule} data-testid="pass-rule">
-        {t("servers.passRule", { domain: settings?.testDomain || "www.google.com" })}{" "}
+        {t("servers.passRule", { domain: (settings?.testDomain || "www.google.com").split(/[\s,]+/).filter(Boolean).join(", ") })}{" "}
         <button className={css.linkBtn} onClick={() => useGhost.getState().setPage("settings")}>{t("servers.changeDomain")}</button>
       </div>
       {pinsChanged && connected && (

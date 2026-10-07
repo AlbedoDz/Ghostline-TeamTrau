@@ -11,7 +11,6 @@ import (
 	"net/netip"
 	"os"
 	"path/filepath"
-	"regexp"
 	"slices"
 	"strings"
 	"sync"
@@ -203,8 +202,8 @@ func (s *Service) validateSettings(n store.Settings) error {
 	if n.MaxUpstreams < 1 || n.MaxUpstreams > 10 {
 		return fmt.Errorf("settings: maxUpstreams must be 1..10")
 	}
-	if !testDomainRe.MatchString(normDomain(n.TestDomain)) {
-		return fmt.Errorf("settings: test domain must be a domain name like www.google.com")
+	if err := store.ValidateTestDomains(n.TestDomain); err != nil {
+		return err
 	}
 	if len(n.Bootstrap) == 0 {
 		return fmt.Errorf("settings: bootstrap list is empty")
@@ -230,7 +229,7 @@ func (s *Service) validateSettings(n store.Settings) error {
 }
 
 func (s *Service) saveSettings(n store.Settings, owned bool) error {
-	n.TestDomain = normDomain(n.TestDomain)
+	n.TestDomain = strings.Join(store.TestDomains(n.TestDomain), "\n")
 	if err := s.validateSettings(n); err != nil {
 		return err
 	}
@@ -281,11 +280,6 @@ func (s *Service) saveSettings(n store.Settings, owned bool) error {
 	}
 	return nil
 }
-
-// testDomainRe matches a plain domain name with at least two labels.
-var testDomainRe = regexp.MustCompile(`^([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z][a-z0-9-]{0,61}[a-z0-9]$`)
-
-func normDomain(d string) string { return strings.ToLower(strings.TrimSpace(d)) }
 
 // SetMode switches between the simple and the full interface and resizes
 // the window.

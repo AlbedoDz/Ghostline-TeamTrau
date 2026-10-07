@@ -87,6 +87,10 @@
     "firstRun": {
       "probe": "checking the test sites…",
       "tune": "auto-tuning DPI bypass: trying {{index}}/{{total}}"
+    },
+    "stepHint": {
+      "scan": "slow the first time on this network (measuring every server); a few seconds after that",
+      "firstRun": "only on the first connect"
     }
   },
   "nav": {
@@ -166,7 +170,7 @@
     },
     "notAuto": "not picked",
     "notAutoHint": "A filtering server (blocks ads or content): never picked automatically. Pin it to use it.",
-    "passRule": "Pass = answers {{domain}} correctly twice within 3 seconds, with a public IP. Not detected: a server that blocks only some sites, an ISP that returns fake public IPs, DNSSEC. For a closer look, use Tools › Scanner.",
+    "passRule": "Pass = answers {{domain}} correctly (the first one twice) within a few seconds, with a public IP. Not detected: a server that blocks only some sites, an ISP that returns fake public IPs, DNSSEC. For a closer look, use Tools › Scanner.",
     "changeDomain": "change the test domain ›"
   },
   "dpi": {
@@ -348,7 +352,8 @@
       "sniAck": "I understand these rules redirect decrypted traffic",
       "sniDrop": "import but drop these rules"
     },
-    "testDomainHint": "The server scan asks for this domain: a server passes when it answers correctly twice within 3 seconds, with a public IP. Pick a site that always works and is not blocked on your network. Applies from the next scan."
+    "testDomainHint": "One domain per line. A server passes when it answers every one correctly, the first one twice, within 3 seconds (1 more second for each other domain), with a public IP. Pick sites that always work. Applies from the next scan.",
+    "testDomainMany": "Many domains are not recommended: {{count}} domains make every scan slower and can drop good servers. Use 1–2 (at most 5)."
   },
   "errors": {
     "NOT_ADMIN": {

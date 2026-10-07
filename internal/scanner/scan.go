@@ -63,9 +63,10 @@ func IsPublicIP(a netip.Addr) bool {
 type DNSChecker struct {
 	Build      func(model.Server) (upstream.Upstream, error)
 	TestDomain string
-	// Domain, when set, gives the test domain at each check (the setting
-	// can change while the app runs); TestDomain is used otherwise.
-	Domain  func() string
+	// Domains, when set, gives the test domains at each check (the setting
+	// can change while the app runs); TestDomain is used otherwise. Every
+	// one must pass; the first is asked twice and timed.
+	Domains func() []string
 	Timeout time.Duration
 	Now     func() time.Time
 }
@@ -85,22 +86,34 @@ func (c DNSChecker) Check(ctx context.Context, s model.Server) Result {
 	defer u.Close()
 	var lat time.Duration
 	// One budget covers both queries (spec: 3s per server).
-	qctx, cancel := context.WithTimeout(ctx, c.Timeout)
-	defer cancel()
-	domain := c.TestDomain
-	if c.Domain != nil {
-		domain = c.Domain()
+	domains := []string{c.TestDomain}
+	if c.Domains != nil {
+		if ds := c.Domains(); len(ds) > 0 {
+			domains = ds
+		}
 	}
-	for i := 0; i < 2; i++ {
-		resp, d, err := Exchange(qctx, u, domain, dns.TypeA, false)
-		lat = d
-		if err != nil {
-			r.Reason = Classify(err, qctx.Err())
+	// The first domain twice (the second is timed), then one query for each
+	// other; each other domain adds a second to the budget.
+	qctx, cancel := context.WithTimeout(ctx, c.Timeout+time.Duration(len(domains)-1)*time.Second)
+	defer cancel()
+	queries := append([]string{domains[0]}, domains...)
+	for i, domain := range queries {
+		fail := func(reason string) Result {
+			if i >= 2 {
+				reason = domain + ": " + reason
+			}
+			r.Reason = reason
 			return r
 		}
+		resp, d, err := Exchange(qctx, u, domain, dns.TypeA, false)
+		if i == 1 {
+			lat = d
+		}
+		if err != nil {
+			return fail(Classify(err, qctx.Err()))
+		}
 		if resp.Rcode != dns.RcodeSuccess {
-			r.Reason = "rcode:" + dns.RcodeToString[resp.Rcode]
-			return r
+			return fail("rcode:" + dns.RcodeToString[resp.Rcode])
 		}
 		var any bool
 		for _, rr := range resp.Answer {
@@ -111,13 +124,11 @@ func (c DNSChecker) Check(ctx context.Context, s model.Server) Result {
 			any = true
 			ip, _ := netip.AddrFromSlice(a.A.To4())
 			if !IsPublicIP(ip) {
-				r.Reason = "poisoned"
-				return r
+				return fail("poisoned")
 			}
 		}
 		if !any {
-			r.Reason = "empty"
-			return r
+			return fail("empty")
 		}
 	}
 	r.OK, r.Latency = true, lat
