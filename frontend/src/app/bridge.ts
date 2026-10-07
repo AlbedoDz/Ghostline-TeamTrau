@@ -12,7 +12,12 @@ export function startBridge(): () => void {
     Events.On("log", (ev: any) => useGhost.getState().pushLog(ev.data)),
     Events.On("query", (ev: any) => useGhost.getState().pushQuery(ev.data)),
     Events.On("scan:progress", (ev: any) => useGhost.getState().setScan(ev.data.running ? ev.data : null)),
-    Events.On("dpi:autotune", (ev: any) => useGhost.getState().setAutotune(ev.data)),
+    Events.On("dpi:autotune", (ev: any) => {
+      useGhost.getState().setAutotune(ev.data);
+      // Auto-tune saves the strategy it found: keep the UI's copy current,
+      // or the next save from it would put the old one back.
+      if (!ev.data?.running) void Service.GetSettings().then((st) => st && useGhost.getState().setSettings(st));
+    }),
     Events.On("update", (ev: any) => useGhost.getState().setUpdate(ev.data)),
     Events.On("proxy:stats", (ev: any) => useGhost.getState().setProxyStats(ev.data)),
     Events.On("proxy:conn", (ev: any) => useGhost.getState().pushProxyConn(ev.data)),

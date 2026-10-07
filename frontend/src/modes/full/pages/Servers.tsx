@@ -242,14 +242,14 @@ export function Servers() {
           {
             key: "state",
             label: t("servers.state"),
-            width: "120px",
+            width: "150px",
             render: (r) =>
               r.inUse ? (
                 <span className={css.ok}>● {t("servers.inUse")}</span>
               ) : !r.result ? (
                 <span className={css.dim}>{t("servers.notChecked")}</span>
               ) : r.result.ok ? (
-                t("servers.pass")
+                r.auto ? t("servers.pass") : <span className={css.dim} title={t("servers.notAutoHint")}>{t("servers.pass")} · {t("servers.notAuto")}</span>
               ) : (
                 <span className={css.bad}>✕ {r.result.reason}</span>
               ),

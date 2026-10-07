@@ -80,11 +80,13 @@
       },
       "editInFull": "change in the Full interface ›",
       "fakeSniOff": "Fake SNI needs the proxy and will be turned off. Continue?",
-      "applying": "Applying “{{level}}”…"
+      "applying": "Applying “{{level}}”…",
+      "scanning": "Finding the best servers {{done}}/{{total}}…",
+      "tuning": "Auto-tuning DPI bypass…"
     },
     "firstRun": {
       "probe": "checking the test sites…",
-      "tune": "auto-tuning DPI bypass on the test sites {{index}}/{{total}}"
+      "tune": "auto-tuning DPI bypass: trying {{index}}/{{total}}"
     }
   },
   "nav": {
@@ -161,7 +163,9 @@
       "copyIP": "⧉ copy IP",
       "remove": "✕ remove",
       "useOnlyConfirm": "Use only {{name}} and unpin {{count}} other servers?"
-    }
+    },
+    "notAuto": "not picked",
+    "notAutoHint": "A filtering server (blocks ads or content): never picked automatically. Pin it to use it."
   },
   "dpi": {
     "title": "DPI BYPASS",

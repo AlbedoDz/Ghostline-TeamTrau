@@ -13,6 +13,7 @@ const svc = vi.hoisted(() => ({
   MarkNetworkChecked: vi.fn(() => Promise.resolve()),
   GetSettings: vi.fn(() => Promise.resolve(null)),
   DPIStrategies: vi.fn(() => Promise.resolve([])),
+  ScanAll: vi.fn(() => Promise.resolve()),
 }));
 vi.mock("../../app/api", () => ({ Service: svc }));
 vi.mock("@wailsio/runtime", () => ({ Browser: { OpenURL: vi.fn() } }));
@@ -93,12 +94,12 @@ test("leaving custom remembers it, and custom brings it back", async () => {
   expect(lastSaved().proxy).toMatchObject({ enabled: true, systemProxy: false });
 });
 
-test("custom with nothing remembered opens the full interface", () => {
+test("custom with nothing remembered opens the full interface", async () => {
   useGhost.getState().setSettings(settings());
   const onOpenFull = vi.fn();
   render(<SimpleView onOpenLogs={() => {}} onOpenFull={onOpenFull} />);
   fireEvent.click(screen.getByRole("radio", { name: "Tuỳ chỉnh" }));
-  expect(onOpenFull).toHaveBeenCalled();
+  await waitFor(() => expect(onOpenFull).toHaveBeenCalled());
   expect(svc.SaveSettings).not.toHaveBeenCalled();
 });
 
@@ -107,8 +108,9 @@ test("turning the proxy off while Fake SNI runs asks first, and custom turns Fak
   const confirm = vi.spyOn(window, "confirm").mockReturnValueOnce(false);
   render(<SimpleView onOpenLogs={() => {}} />);
   fireEvent.click(screen.getByRole("radio", { name: "Chỉ DNS" }));
-  expect(confirm).toHaveBeenCalled();
+  await waitFor(() => expect(confirm).toHaveBeenCalled());
   expect(svc.SaveSettings).not.toHaveBeenCalled();
+  await waitFor(() => expect(screen.getByRole("radio", { name: "Chỉ DNS" })).toBeEnabled());
 
   confirm.mockReturnValueOnce(true);
   fireEvent.click(screen.getByRole("radio", { name: "Chỉ DNS" }));
@@ -166,3 +168,37 @@ test("a line under the levels describes the current one", async () => {
   expect(screen.getByRole("radiogroup", { name: "mức bảo vệ" })).toHaveAttribute("aria-describedby", desc.id);
 });
 
+
+test("choosing a level finds the best servers; choosing it again looks again", async () => {
+  useGhost.getState().setSettings(settings());
+  render(<SimpleView onOpenLogs={() => {}} />);
+  fireEvent.click(screen.getByRole("radio", { name: "DNS + vượt DPI" }));
+  await waitFor(() => expect(svc.ScanAll).toHaveBeenCalledTimes(1));
+  expect(svc.SaveSettings.mock.invocationCallOrder[0]).toBeLessThan(svc.ScanAll.mock.invocationCallOrder[0]);
+
+  act(() => useGhost.getState().setScan({ running: true, done: 120, total: 906 } as any));
+  expect(screen.getByTestId("level-description")).toHaveTextContent("Đang tìm máy chủ tốt nhất 120/906");
+
+  fireEvent.click(screen.getByRole("radio", { name: "DNS + vượt DPI" }));
+  await waitFor(() => expect(svc.ScanAll).toHaveBeenCalledTimes(2));
+  expect(svc.SaveSettings).toHaveBeenCalledTimes(1);
+});
+
+test("a level is built on Go's settings, so auto-tune's strategy is kept", async () => {
+  useGhost.getState().setSettings(settings());
+  const fromGo = settings({ dpi: true });
+  fromGo.dpi.zapret2 = { strategy: "z-fake" };
+  svc.GetSettings.mockResolvedValueOnce(fromGo);
+  render(<SimpleView onOpenLogs={() => {}} />);
+  fireEvent.click(screen.getByRole("radio", { name: "Tối đa" }));
+  await waitFor(() => expect(svc.SaveSettings).toHaveBeenCalled());
+  expect(lastSaved().dpi.zapret2.strategy).toBe("z-fake");
+});
+
+test("levels wait while auto-tune runs", () => {
+  useGhost.getState().setSettings(settings());
+  useGhost.getState().setAutotune({ running: true, index: 1, total: 4 } as any);
+  render(<SimpleView onOpenLogs={() => {}} />);
+  expect(screen.getByRole("radio", { name: "Tối đa" })).toBeDisabled();
+  expect(screen.getByTestId("level-description")).toHaveTextContent("Đang tự dò vượt DPI");
+});

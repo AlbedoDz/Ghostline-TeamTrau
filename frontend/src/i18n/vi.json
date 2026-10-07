@@ -80,11 +80,13 @@
       },
       "editInFull": "chỉnh ở giao diện Đầy đủ ›",
       "fakeSniOff": "Fake SNI cần proxy và sẽ bị tắt. Tiếp tục?",
-      "applying": "Đang áp dụng “{{level}}”…"
+      "applying": "Đang áp dụng “{{level}}”…",
+      "scanning": "Đang tìm máy chủ tốt nhất {{done}}/{{total}}…",
+      "tuning": "Đang tự dò vượt DPI…"
     },
     "firstRun": {
       "probe": "kiểm tra trang mẫu…",
-      "tune": "tự dò vượt DPI với trang mẫu {{index}}/{{total}}"
+      "tune": "tự dò vượt DPI: thử cách {{index}}/{{total}}"
     }
   },
   "nav": {
@@ -161,7 +163,9 @@
       "copyIP": "⧉ sao chép IP",
       "remove": "✕ xoá",
       "useOnlyConfirm": "Chỉ dùng {{name}} và bỏ ghim {{count}} máy chủ khác?"
-    }
+    },
+    "notAuto": "không tự chọn",
+    "notAutoHint": "Máy chủ có lọc (chặn quảng cáo hoặc nội dung): app không tự chọn. Ghim nếu muốn dùng."
   },
   "dpi": {
     "title": "VƯỢT DPI",
