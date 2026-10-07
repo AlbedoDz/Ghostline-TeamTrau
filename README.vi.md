@@ -66,13 +66,13 @@ Ghostline chạy một DNS server cục bộ trên `127.0.0.1` / `::1`, trỏ m�
 
 ## Video hướng dẫn
 
-Video khoảng 2 phút rưỡi có lồng tiếng: kết nối bằng một nút bấm, máy chủ, vượt DPI, proxy, rules, DNS server kèm cài đặt cho iPhone, và Fake SNI. Ảnh động bên dưới được tua nhanh, không có tiếng; bấm vào để xem bản đầy đủ có tiếng. Có cả [bản tiếng Anh](docs/videos/guide-en.mp4).
+Video hơn 3 phút có lồng tiếng: kết nối bằng một nút bấm, mức bảo vệ, máy chủ, vượt DPI, proxy, rules, DNS server kèm cài đặt cho iPhone, Fake SNI, công cụ chẩn đoán và sao lưu. Ảnh động bên dưới được tua nhanh, không có tiếng; bấm vào để xem bản đầy đủ có tiếng. Có cả [bản tiếng Anh](docs/videos/guide-en.mp4).
 
 <p align="center">
   <a href="docs/videos/guide-vi.mp4"><img src="docs/videos/guide-vi.webp" width="720" alt="Video hướng dẫn Ghostline (tua nhanh); bấm để xem bản đầy đủ"></a>
 </p>
 
-**Clip ngắn có lồng tiếng cho từng tính năng:** [Kết nối](docs/videos/clips/connect-vi.mp4) · [Máy chủ](docs/videos/clips/servers-vi.mp4) · [Vượt DPI](docs/videos/clips/dpi-vi.mp4) · [Proxy](docs/videos/clips/proxy-vi.mp4) · [Rules](docs/videos/clips/rules-vi.mp4) · [DNS server và iPhone](docs/videos/clips/dnsserver-vi.mp4) · [Fake SNI](docs/videos/clips/fakesni-vi.mp4) · [Ngắt kết nối](docs/videos/clips/disconnect-vi.mp4). [Hướng dẫn sử dụng](docs/huong-dan-su-dung.md) đặt mỗi clip cạnh các bước làm tương ứng.
+**Clip ngắn có lồng tiếng cho từng tính năng:** [Kết nối](docs/videos/clips/connect-vi.mp4) · [Mức bảo vệ](docs/videos/clips/levels-vi.mp4) · [Máy chủ](docs/videos/clips/servers-vi.mp4) · [Vượt DPI](docs/videos/clips/dpi-vi.mp4) · [Proxy](docs/videos/clips/proxy-vi.mp4) · [Rules](docs/videos/clips/rules-vi.mp4) · [DNS server và iPhone](docs/videos/clips/dnsserver-vi.mp4) · [Fake SNI](docs/videos/clips/fakesni-vi.mp4) · [Công cụ](docs/videos/clips/tools-vi.mp4) · [Tên miền thử và sao lưu](docs/videos/clips/backup-vi.mp4) · [Ngắt kết nối](docs/videos/clips/disconnect-vi.mp4). [Hướng dẫn sử dụng](docs/huong-dan-su-dung.md) đặt mỗi clip cạnh các bước làm tương ứng.
 
 ## Ảnh chụp màn hình
 
@@ -85,6 +85,8 @@ Video khoảng 2 phút rưỡi có lồng tiếng: kết nối bằng một nút
 | ![Nhật ký](docs/screenshots/logs-vi.png) | ![Cài đặt](docs/screenshots/settings-vi.png) |
 | **DNS server** | **Fake SNI** |
 | ![DNS server](docs/screenshots/dnsserver-vi.png) | ![Fake SNI](docs/screenshots/fakesni-vi.png) |
+| **Lookup** | **IP Cloudflare** |
+| ![Lookup](docs/screenshots/lookup-vi.png) | ![IP Cloudflare](docs/screenshots/cfscan-vi.png) |
 
 ## Cài đặt
 

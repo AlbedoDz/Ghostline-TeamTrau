@@ -92,6 +92,10 @@ To cancel while connecting, click the power button again. To turn protection off
 
 Choosing a level also looks for the best servers: Ghostline scans the whole list again (the line under the levels shows *Finding the best servers 120/906…*) and, when connected, switches to the fastest without disconnecting. Click the current level to look again.
 
+<a href="videos/clips/levels-en.mp4"><img src="videos/clips/levels-en.webp" width="640" alt="Choosing a protection level"></a>
+
+*The preview plays sped up and silent; click it for the narrated video.*
+
 A level only changes these switches; your engine, strategy, servers, rules and other settings stay as they are. When you leave **Custom** for a level, Ghostline remembers your combination, and clicking **Custom** brings it back. Fake SNI needs the proxy: a level without the proxy asks before turning it off, and **Custom** turns it back on.
 
 **The info panel below:**
@@ -402,6 +406,16 @@ Lists from other sources can carry `sni=` rules only after you mark them **trust
 
 The tools page has the logs (first tab, [section 4.4](#44-logs)) and four diagnostic tools.
 
+<a href="videos/clips/tools-en.mp4"><img src="videos/clips/tools-en.webp" width="640" alt="Lookup, Scanner, Cloudflare IP and Stamp"></a>
+
+*The preview plays sped up and silent; click it for the narrated video.*
+
+| Lookup | Cloudflare IP |
+| --- | --- |
+| ![Lookup](screenshots/lookup-en.png) | ![Cloudflare IP](screenshots/cfscan-en.png) |
+| **Scanner** | **Stamp** |
+| ![Scanner](screenshots/scanner-en.png) | ![Stamp](screenshots/stamp-en.png) |
+
 **Lookup** asks one domain through several sources at once and says whether the answers agree.
 
 1. Type a domain (a link pasted from the browser works too) and pick the record type. For **PTR**, type an IP.
@@ -429,6 +443,10 @@ An `ip=` rule only affects apps that use Ghostline's DNS or proxy, and only work
 ### 4.11. Backup and moving to another PC
 
 In **Settings › Backup and move to another PC**:
+
+<a href="videos/clips/backup-en.mp4"><img src="videos/clips/backup-en.webp" width="640" alt="The test domain and exporting settings"></a>
+
+*The preview plays sped up and silent; click it for the narrated video.*
 
 - **export settings…** saves a `.ghostline.json` file. Choose what goes in: settings, rules and lists, your servers, the DPI blacklist, the zapret2 learned list. It never contains your home Wi-Fi name, network adapters, proxy passwords, logs or certificates. Lists that point at a file on this PC are left out.
 - **import settings…** works only while disconnected. Ghostline shows what will change first, and asks before importing rules that redirect decrypted traffic (`sni=`, `connect=`). An import always turns off Fake SNI, the DNS server, sharing on the LAN and start with Windows, and lists from other sources are no longer trusted for Fake SNI: turn them on again on this PC if you need them. Proxy passwords must be typed again.

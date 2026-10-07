@@ -67,13 +67,13 @@ Ghostline runs a local DNS server on `127.0.0.1` / `::1`, points every network a
 
 ## Video
 
-A narrated walkthrough of about 2½ minutes: one-click connect, servers, DPI bypass, the proxy, rules, the DNS server with the iPhone setup, and Fake SNI. The preview below plays sped up and silent; click it for the full video with sound. A [Vietnamese version](docs/videos/guide-vi.mp4) is also available.
+A narrated walkthrough of a little over 3 minutes: one-click connect, protection levels, servers, DPI bypass, the proxy, rules, the DNS server with the iPhone setup, Fake SNI, the diagnostic tools and backup. The preview below plays sped up and silent; click it for the full video with sound. A [Vietnamese version](docs/videos/guide-vi.mp4) is also available.
 
 <p align="center">
   <a href="docs/videos/guide-en.mp4"><img src="docs/videos/guide-en.webp" width="720" alt="Ghostline video guide (sped up); click for the full video"></a>
 </p>
 
-**Short narrated clips, one per feature:** [Connect](docs/videos/clips/connect-en.mp4) · [Servers](docs/videos/clips/servers-en.mp4) · [DPI bypass](docs/videos/clips/dpi-en.mp4) · [Proxy](docs/videos/clips/proxy-en.mp4) · [Rules](docs/videos/clips/rules-en.mp4) · [DNS server and iPhone](docs/videos/clips/dnsserver-en.mp4) · [Fake SNI](docs/videos/clips/fakesni-en.mp4) · [Disconnect](docs/videos/clips/disconnect-en.mp4). The [user guide](docs/user-guide.md) shows each one next to its step-by-step instructions.
+**Short narrated clips, one per feature:** [Connect](docs/videos/clips/connect-en.mp4) · [Protection levels](docs/videos/clips/levels-en.mp4) · [Servers](docs/videos/clips/servers-en.mp4) · [DPI bypass](docs/videos/clips/dpi-en.mp4) · [Proxy](docs/videos/clips/proxy-en.mp4) · [Rules](docs/videos/clips/rules-en.mp4) · [DNS server and iPhone](docs/videos/clips/dnsserver-en.mp4) · [Fake SNI](docs/videos/clips/fakesni-en.mp4) · [Tools](docs/videos/clips/tools-en.mp4) · [Test domain and backup](docs/videos/clips/backup-en.mp4) · [Disconnect](docs/videos/clips/disconnect-en.mp4). The [user guide](docs/user-guide.md) shows each one next to its step-by-step instructions.
 
 ## Screenshots
 
@@ -86,6 +86,8 @@ A narrated walkthrough of about 2½ minutes: one-click connect, servers, DPI byp
 | ![Logs](docs/screenshots/logs-en.png) | ![Settings](docs/screenshots/settings-en.png) |
 | **DNS server** | **Fake SNI** |
 | ![DNS server](docs/screenshots/dnsserver-en.png) | ![Fake SNI](docs/screenshots/fakesni-en.png) |
+| **Lookup** | **Cloudflare IP** |
+| ![Lookup](docs/screenshots/lookup-en.png) | ![Cloudflare IP](docs/screenshots/cfscan-en.png) |
 
 ## Install
 

@@ -92,6 +92,10 @@ Muốn huỷ khi đang kết nối: bấm nút nguồn lần nữa. Muốn tắt
 
 Chọn một mức cũng là tìm máy chủ tốt nhất: app quét lại toàn bộ danh sách (dòng dưới các mức hiện *Đang tìm máy chủ tốt nhất 120/906…*) và, khi đang kết nối, chuyển sang những máy chủ nhanh nhất mà không ngắt kết nối. Bấm lại mức đang chọn để tìm lại.
 
+<a href="videos/clips/levels-vi.mp4"><img src="videos/clips/levels-vi.webp" width="640" alt="Chọn mức bảo vệ"></a>
+
+*Ảnh động được tua nhanh, không có tiếng; bấm vào để xem video có lồng tiếng.*
+
 Mỗi mức chỉ đổi các công tắc trên; engine, chiến lược, máy chủ, rules và các cài đặt khác giữ nguyên. Khi chuyển từ **Tuỳ chỉnh** sang một mức, Ghostline ghi nhớ tổ hợp của bạn, bấm **Tuỳ chỉnh** để lấy lại. Fake SNI cần proxy: chọn mức không có proxy sẽ hỏi trước khi tắt Fake SNI, và **Tuỳ chỉnh** bật lại nó.
 
 **Bảng thông tin bên dưới:**
@@ -402,6 +406,16 @@ Danh sách từ nguồn khác chỉ được dùng rule `sni=` sau khi bạn b�
 
 Trang công cụ gồm nhật ký (tab đầu tiên, [phần 4.4](#44-nhật-ký)) và bốn công cụ chẩn đoán.
 
+<a href="videos/clips/tools-vi.mp4"><img src="videos/clips/tools-vi.webp" width="640" alt="Lookup, Scanner, IP Cloudflare và Stamp"></a>
+
+*Ảnh động được tua nhanh, không có tiếng; bấm vào để xem video có lồng tiếng.*
+
+| Lookup | IP Cloudflare |
+| --- | --- |
+| ![Lookup](screenshots/lookup-vi.png) | ![IP Cloudflare](screenshots/cfscan-vi.png) |
+| **Scanner** | **Stamp** |
+| ![Scanner](screenshots/scanner-vi.png) | ![Stamp](screenshots/stamp-vi.png) |
+
 **Lookup** tra một tên miền qua nhiều nguồn cùng lúc và cho biết các câu trả lời có khớp nhau không.
 
 1. Gõ tên miền (dán link từ trình duyệt cũng được) và chọn loại bản ghi. Với **PTR**, gõ một IP.
@@ -429,6 +443,10 @@ Rule `ip=` chỉ có tác dụng với ứng dụng dùng DNS hoặc proxy của
 ### 4.11. Sao lưu và chuyển máy
 
 Trong **Cài đặt › Sao lưu và chuyển máy**:
+
+<a href="videos/clips/backup-vi.mp4"><img src="videos/clips/backup-vi.webp" width="640" alt="Tên miền thử và xuất cài đặt"></a>
+
+*Ảnh động được tua nhanh, không có tiếng; bấm vào để xem video có lồng tiếng.*
 
 - **xuất cài đặt…** lưu một file `.ghostline.json`. Chọn phần cần xuất: cài đặt, rule và danh sách, server tự thêm, danh sách đen vượt DPI, danh sách tự học của zapret2. File không bao giờ chứa tên Wi-Fi nhà, card mạng, mật khẩu proxy, nhật ký hay chứng chỉ. Danh sách trỏ tới một file trên máy này không được xuất.
 - **nhập cài đặt…** chỉ dùng được khi đã ngắt kết nối. Ghostline cho xem trước những gì sẽ thay đổi, và hỏi riêng trước khi nhập rule chuyển hướng lưu lượng đã giải mã (`sni=`, `connect=`). Khi nhập, Fake SNI, DNS server, chia sẻ trong LAN và khởi động cùng Windows luôn bị tắt, và danh sách từ nguồn khác không còn được tin cho Fake SNI: bật lại trên máy này nếu cần. Mật khẩu proxy phải nhập lại.
