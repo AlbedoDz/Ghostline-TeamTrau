@@ -54,5 +54,6 @@ func NewWindowsServices() Services { return winServices{} }
 
 func (winServices) Find(prefix string) ([]string, error) { return winutil.FindServices(prefix) }
 func (winServices) Running(name string) (bool, error)    { return winutil.ServiceRunning(name) }
+func (winServices) Active(name string) (bool, error)     { return winutil.ServiceActive(name) }
 func (winServices) Stop(name string) error               { return winutil.StopService(name, 5*time.Second) }
 func (winServices) Delete(name string) error             { return winutil.DeleteService(name) }

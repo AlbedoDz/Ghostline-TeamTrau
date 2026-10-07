@@ -18,6 +18,7 @@ var (
 	ErrHashMismatch  = errors.New("dpi: DPI engine files do not match the pinned hashes")
 	ErrStartFailed   = errors.New("dpi: DPI engine failed to start")
 	ErrBlockedByAV   = errors.New("dpi: DPI engine was blocked (antivirus?)")
+	ErrDriverInUse   = errors.New("dpi: the WinDivert driver is in use by another program")
 	ErrUnknownEngine = errors.New("dpi: unknown engine")
 )
 
@@ -92,6 +93,9 @@ type Runner interface {
 type Services interface {
 	Find(prefix string) ([]string, error)
 	Running(name string) (bool, error)
+	// Active reports whether a service exists and is not fully stopped
+	// (running, paused, or mid-transition). A missing service is not active.
+	Active(name string) (bool, error)
 	Stop(name string) error
 	Delete(name string) error
 }
@@ -150,6 +154,13 @@ func (m *Manager) Start(ctx context.Context, engine string, p Plan) (int, error)
 	}
 	if err := m.stopLocked(); err != nil {
 		return 0, fmt.Errorf("%w: cleanup: %v", ErrStartFailed, err)
+	}
+	// A WinDivert service still active after cleanup is held by another DPI
+	// tool the user runs outside Ghostline (a standalone GoodbyeDPI or zapret).
+	// An in-use kernel driver can't be claimed, so ask the user to close it
+	// instead of fighting over it and failing cryptically below.
+	if m.driverInUse() {
+		return 0, ErrDriverInUse
 	}
 	dir, pins := m.dir(engine), in.Engine.Files()
 	if err := verifyWith(dir, pins); err != nil {
@@ -266,6 +277,19 @@ func (m *Manager) stopLocked() error {
 		errs = append(errs, m.svc.Stop(n), m.svc.Delete(n))
 	}
 	return errors.Join(errs...)
+}
+
+// driverInUse reports whether a WinDivert service is still active after
+// stopLocked tried to remove it. stopLocked waits out our own just-killed
+// driver, so anything still active here is held by another live process.
+func (m *Manager) driverInUse() bool {
+	names, _ := m.svc.Find(driverService)
+	for _, n := range names {
+		if ok, _ := m.svc.Active(n); ok {
+			return true
+		}
+	}
+	return false
 }
 
 // Running reports whether the managed process is alive.

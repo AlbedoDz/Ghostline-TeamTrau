@@ -392,6 +392,10 @@
       "message": "Engine vượt DPI bị phần mềm diệt virus chặn",
       "action": "Thêm thư mục Ghostline vào danh sách loại trừ của antivirus (WinDivert hay bị báo nhầm)"
     },
+    "DPI_DRIVER_BUSY": {
+      "message": "Một chương trình khác đang dùng driver WinDivert",
+      "action": "Hãy tắt GoodbyeDPI hoặc zapret (goodbyedpi.exe / winws.exe / winws2.exe) đang chạy ngoài Ghostline rồi thử lại"
+    },
     "DPI_HASH_MISMATCH": {
       "message": "file engine vượt DPI đã bị thay đổi, Ghostline từ chối chạy",
       "action": "Cài lại Ghostline"

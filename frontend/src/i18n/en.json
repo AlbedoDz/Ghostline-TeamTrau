@@ -392,6 +392,10 @@
       "message": "The DPI bypass engine was blocked by antivirus",
       "action": "Exclude the Ghostline folder in your antivirus (WinDivert is often flagged falsely)"
     },
+    "DPI_DRIVER_BUSY": {
+      "message": "Another program is using the WinDivert driver",
+      "action": "Close GoodbyeDPI or zapret (goodbyedpi.exe / winws.exe / winws2.exe) running outside Ghostline, then try again"
+    },
     "DPI_HASH_MISMATCH": {
       "message": "The DPI bypass engine files were changed; Ghostline refuses to run them",
       "action": "Reinstall Ghostline"

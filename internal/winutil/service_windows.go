@@ -67,8 +67,34 @@ func ServiceRunning(name string) (bool, error) {
 	return st.CurrentState == windows.SERVICE_RUNNING, nil
 }
 
+// ServiceActive reports whether the named service exists and is not fully
+// stopped (running, paused, or mid-transition). A missing service is not
+// active. It needs only query rights, so it works without elevation.
+func ServiceActive(name string) (bool, error) {
+	scm, err := openSCM(windows.SC_MANAGER_CONNECT)
+	if err != nil {
+		return false, err
+	}
+	defer windows.CloseServiceHandle(scm)
+	p, _ := windows.UTF16PtrFromString(name)
+	h, err := windows.OpenService(scm, p, windows.SERVICE_QUERY_STATUS)
+	if errors.Is(err, windows.ERROR_SERVICE_DOES_NOT_EXIST) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	defer windows.CloseServiceHandle(h)
+	var st windows.SERVICE_STATUS
+	if err := windows.QueryServiceStatus(h, &st); err != nil {
+		return false, err
+	}
+	return st.CurrentState != windows.SERVICE_STOPPED, nil
+}
+
 // StopService stops a service and waits up to wait for it to stop. A missing
-// or already stopped service is not an error. Needs elevation.
+// or already stopped service is not an error. A service mid-transition is
+// waited out rather than failed. Needs elevation.
 func StopService(name string, wait time.Duration) error {
 	m, err := mgr.Connect()
 	if err != nil {
@@ -84,7 +110,14 @@ func StopService(name string, wait time.Duration) error {
 	}
 	defer s.Close()
 	st, err := s.Control(svc.Stop)
-	if err != nil && !errors.Is(err, windows.ERROR_SERVICE_NOT_ACTIVE) {
+	// ERROR_SERVICE_NOT_ACTIVE: already stopped. ERROR_SERVICE_CANNOT_ACCEPT_CTRL:
+	// the service is mid-transition — typically a leftover WinDivert driver
+	// auto-unloading (STOP_PENDING) after its process was killed. s.Control
+	// still returns the current state, so wait it out in the loop below instead
+	// of failing the engine start with "cannot accept control messages".
+	if err != nil &&
+		!errors.Is(err, windows.ERROR_SERVICE_NOT_ACTIVE) &&
+		!errors.Is(err, windows.ERROR_SERVICE_CANNOT_ACCEPT_CTRL) {
 		return err
 	}
 	deadline := time.Now().Add(wait)
