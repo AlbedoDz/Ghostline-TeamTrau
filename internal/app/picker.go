@@ -41,7 +41,23 @@ type ScanPicker struct {
 	Now       func() time.Time
 	Rand      *rand.Rand
 
-	mu sync.Mutex // guards Cache and Rand
+	mu      sync.Mutex // guards Cache, Rand and running
+	running *fullScan  // the full scan in progress, shared by every caller
+}
+
+// fullScan is one scan of the whole list. Callers that need one while it
+// runs wait for it instead of starting another; it stops early only when
+// every one of them has left.
+type fullScan struct {
+	done    chan struct{}
+	cancel  context.CancelFunc
+	rs      []scanner.Result
+	err     error
+	mu      sync.Mutex
+	waiters int
+	watch   map[int]func(done, total int, r scanner.Result)
+	next    int
+	at      [2]int // last progress, for a caller that joins late
 }
 
 const (
@@ -229,16 +245,69 @@ func (p *ScanPicker) noServers(s store.Settings, checked int, elapsed time.Durat
 	return &NoServersError{Checked: checked, Elapsed: elapsed}
 }
 
-// full scans pool and saves the results; a cancelled scan keeps what it
-// checked but does not count as a full one. budget bounds a scan someone
-// waits on to connect (0: none).
+// full scans pool and saves the results, or waits for the full scan
+// already running. A cancelled scan keeps what it checked but does not count
+// as a full one. budget bounds a scan someone waits on to connect (0: none).
 func (p *ScanPicker) full(ctx context.Context, pool []model.Server, budget time.Duration, onProgress func(done, total int, r scanner.Result)) ([]scanner.Result, error) {
-	rs := scanner.Scan(ctx, pool, p.Checker, scanner.Options{Workers: fullWorkers, Budget: budget, OnProgress: onProgress})
+	p.mu.Lock()
+	f := p.running
+	if f == nil {
+		sctx, cancel := context.WithCancel(context.Background())
+		f = &fullScan{done: make(chan struct{}), cancel: cancel, watch: map[int]func(int, int, scanner.Result){}}
+		p.running = f
+		go p.runFull(sctx, f, pool, budget)
+	}
+	f.mu.Lock()
+	f.waiters++
+	id := f.next
+	f.next++
+	if onProgress != nil {
+		f.watch[id] = onProgress
+		if f.at[1] > 0 {
+			onProgress(f.at[0], f.at[1], scanner.Result{})
+		}
+	}
+	f.mu.Unlock()
+	p.mu.Unlock()
+
+	select {
+	case <-f.done:
+		return f.rs, f.err
+	case <-ctx.Done():
+	}
+	f.mu.Lock()
+	delete(f.watch, id)
+	f.waiters--
+	last := f.waiters == 0
+	f.mu.Unlock()
+	if !last {
+		return nil, ctx.Err()
+	}
+	f.cancel() // nobody waits any more
+	<-f.done
+	return f.rs, ctx.Err()
+}
+
+func (p *ScanPicker) runFull(ctx context.Context, f *fullScan, pool []model.Server, budget time.Duration) {
+	defer f.cancel()
+	rs := scanner.Scan(ctx, pool, p.Checker, scanner.Options{Workers: fullWorkers, Budget: budget,
+		OnProgress: func(done, total int, r scanner.Result) {
+			f.mu.Lock()
+			defer f.mu.Unlock()
+			f.at = [2]int{done, total}
+			for _, w := range f.watch {
+				w(done, total, r)
+			}
+		}})
 	err := ctx.Err()
 	if saveErr := p.save(rs, err == nil); err == nil {
 		err = saveErr
 	}
-	return rs, err
+	p.mu.Lock()
+	p.running = nil
+	p.mu.Unlock()
+	f.rs, f.err = rs, err
+	close(f.done)
 }
 
 func (p *ScanPicker) save(rs []scanner.Result, full bool) error {

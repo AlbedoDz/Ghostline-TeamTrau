@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -368,4 +369,59 @@ func coveringCache(rs []scanner.Result) []scanner.Result {
 		}
 	}
 	return rs
+}
+
+// Reported: choosing a level started a full scan; connecting meanwhile ran
+// a second one. Connect now waits for the running scan and shows its
+// progress.
+func TestPicker_ConnectJoinsTheRunningFullScan(t *testing.T) {
+	chk := &fChecker{ok: map[string]time.Duration{}}
+	for i := 0; i < 60; i++ {
+		chk.ok[fmt.Sprintf("s%02d", i)] = time.Duration(100-i) * time.Millisecond
+	}
+	s := store.DefaultSettings()
+	s.MaxUpstreams = 2
+	p, saves := newPicker(slowChecker{chk}, s)
+	p.Catalog = func() []model.Server { return catalog(60) }
+
+	started := make(chan struct{})
+	var once sync.Once
+	rescanDone := make(chan error, 1)
+	go func() {
+		_, err := p.Rescan(context.Background(), func(int, int, scanner.Result) { once.Do(func() { close(started) }) })
+		rescanDone <- err
+	}()
+	<-started
+	var last [2]int
+	got, err := p.Pick(context.Background(), func(done, total int) { last = [2]int{done, total} })
+	require.NoError(t, err)
+	require.Equal(t, []string{"s59", "s58"}, []string{got[0].ID, got[1].ID})
+	require.NoError(t, <-rescanDone)
+	require.Equal(t, int32(60), chk.calls.Load(), "one scan, not two")
+	require.Equal(t, 1, *saves)
+	require.Equal(t, [2]int{60, 60}, last, "the joined scan's progress is shown")
+}
+
+// Leaving a shared scan does not stop it for the others.
+func TestPicker_CancelOneWaiterKeepsTheScanForTheOther(t *testing.T) {
+	chk := &fChecker{ok: map[string]time.Duration{"s01": 10}}
+	p, _ := newPicker(slowChecker{chk}, store.DefaultSettings())
+	p.Catalog = func() []model.Server { return catalog(320) }
+	ctx, cancel := context.WithCancel(context.Background())
+	started := make(chan struct{})
+	var once sync.Once
+	first := make(chan error, 1)
+	go func() {
+		_, err := p.Rescan(ctx, func(int, int, scanner.Result) { once.Do(func() { close(started) }) })
+		first <- err
+	}()
+	<-started
+	second := make(chan error, 1)
+	go func() { _, err := p.Rescan(context.Background(), nil); second <- err }()
+	time.Sleep(5 * time.Millisecond)
+	cancel()
+	require.ErrorIs(t, <-first, context.Canceled)
+	require.NoError(t, <-second)
+	require.Equal(t, int32(320), chk.calls.Load())
+	require.False(t, p.Stale())
 }
