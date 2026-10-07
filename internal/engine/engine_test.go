@@ -125,15 +125,12 @@ func TestEngine_NeverLogsToDefaultLogger(t *testing.T) { // review I11: domains 
 	prev := slog.Default()
 	slog.SetDefault(slog.New(slog.NewTextHandler(&buf, &slog.HandlerOptions{Level: slog.LevelDebug})))
 	defer slog.SetDefault(prev)
-	l, err := net.Listen("tcp", "127.0.0.1:0")
-	require.NoError(t, err)
-	addr := netip.MustParseAddrPort(l.Addr().String())
-	l.Close()
-	e := engine.New(nil)
-	require.NoError(t, e.Start(context.Background(), engine.Config{ListenV4: addr, Upstreams: []upstream.Upstream{errUp{}}}))
-	defer func() { _ = e.Stop(context.Background()) }()
-	c := &dns.Client{Net: "tcp", Timeout: 2 * time.Second}
-	_, _, _ = c.Exchange(new(dns.Msg).SetQuestion("secret-domain.example.", dns.TypeA), addr.String())
+	// Port 0: picking a free TCP port and binding UDP on it too was flaky
+	// on Windows, where some UDP ports are reserved.
+	e := start(t, nil, errUp{})
+	c := &dns.Client{Timeout: 2 * time.Second}
+	_, _, err := c.Exchange(new(dns.Msg).SetQuestion("secret-domain.example.", dns.TypeA), e.ListenAddr().String())
+	require.NoError(t, err, "the query must reach the engine, or the test proves nothing")
 	time.Sleep(50 * time.Millisecond)
 	require.NotContains(t, buf.String(), "secret")
 	require.NotContains(t, buf.String(), "c2VjcmV0")

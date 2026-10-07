@@ -258,18 +258,26 @@ func TestScan_AllWithProgress(t *testing.T) {
 }
 
 func TestScan_CancelFast(t *testing.T) {
-	var n atomic.Int32
+	// Once one server is done, every other query hangs and the scan is
+	// cancelled: it must stop at once and keep that result. (Hanging after a
+	// fixed number of queries was flaky: 8 servers in parallel could share
+	// them and none finish.)
+	var first atomic.Bool
 	c, _ := newChecker(func(name string, req *dns.Msg) (*dns.Msg, error) {
-		if n.Add(1) > 40 {
+		if first.Load() {
 			return nil, nil // block until cancelled
 		}
 		return honest(name, req)
 	})
 	c.Opt.Timeout = time.Minute
 	ctx, cancel := context.WithCancel(context.Background())
-	go func() { time.Sleep(200 * time.Millisecond); cancel() }()
+	defer cancel()
 	start := time.Now()
-	rs, err := advanced.Scan(ctx, servers(50), c, 8, nil)
+	rs, err := advanced.Scan(ctx, servers(50), c, 8, func(int, int, advanced.Result) {
+		if !first.Swap(true) {
+			cancel()
+		}
+	})
 	require.NoError(t, err)
 	require.Less(t, time.Since(start), 1200*time.Millisecond)
 	require.NotEmpty(t, rs)
