@@ -346,13 +346,22 @@ func (s *Service) ScanAll() error {
 			s.mu.Unlock()
 			cancel()
 		}()
-		_, err := s.o.Rescan(ctx, func(done, total int, r scanner.Result) {
-			s.x.Bus.Emit(EventScan, ScanProgress{Done: done, Total: total, Result: &r, Running: true})
-		})
+		// A picker that reports its own scans does so for this one too.
+		w, ok := s.o.d.Scans.(interface{ Watched() bool })
+		watched := ok && w.Watched()
+		var onProgress func(done, total int, r scanner.Result)
+		if !watched {
+			onProgress = func(done, total int, r scanner.Result) {
+				s.x.Bus.Emit(EventScan, ScanProgress{Done: done, Total: total, Result: &r, Running: true})
+			}
+		}
+		_, err := s.o.Rescan(ctx, onProgress)
 		if err == nil {
 			s.o.ApplyBest(ctx)
 		}
-		s.x.Bus.Emit(EventScan, ScanProgress{Running: false})
+		if !watched {
+			s.x.Bus.Emit(EventScan, ScanProgress{Running: false})
+		}
 	}()
 	return nil
 }

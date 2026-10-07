@@ -40,6 +40,9 @@ type ScanPicker struct {
 	Settings  func() store.Settings
 	Now       func() time.Time
 	Rand      *rand.Rand
+	// Watch, when set, sees every full scan's results as they arrive and
+	// its end (running false), whoever started it: the UI shows them live.
+	Watch func(done, total int, r *scanner.Result, running bool)
 
 	mu      sync.Mutex // guards Cache, Rand and running
 	running *fullScan  // the full scan in progress, shared by every caller
@@ -295,6 +298,9 @@ func (p *ScanPicker) runFull(ctx context.Context, f *fullScan, pool []model.Serv
 			f.mu.Lock()
 			defer f.mu.Unlock()
 			f.at = [2]int{done, total}
+			if p.Watch != nil {
+				p.Watch(done, total, &r, true)
+			}
 			for _, w := range f.watch {
 				w(done, total, r)
 			}
@@ -307,8 +313,14 @@ func (p *ScanPicker) runFull(ctx context.Context, f *fullScan, pool []model.Serv
 	p.running = nil
 	p.mu.Unlock()
 	f.rs, f.err = rs, err
+	if p.Watch != nil {
+		p.Watch(0, 0, nil, false)
+	}
 	close(f.done)
 }
+
+// Watched reports whether full scans report themselves (see Watch).
+func (p *ScanPicker) Watched() bool { return p.Watch != nil }
 
 func (p *ScanPicker) save(rs []scanner.Result, full bool) error {
 	p.mu.Lock()

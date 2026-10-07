@@ -197,3 +197,17 @@ test("the page says what a pass means, with the test domain, and links to change
   fireEvent.click(within(rule).getByRole("button", { name: /đổi tên miền thử/ }));
   expect(useGhost.getState().page).toBe("settings");
 });
+
+test("scan results show row by row while the scan runs", async () => {
+  const rs = structuredClone(rows) as any[];
+  rs[2].result = undefined;
+  svc.ListServers.mockResolvedValue(rs);
+  render(<Servers />);
+  expect(within(await rowOf("My DoH")).getByText("chưa kiểm tra")).toBeInTheDocument();
+  act(() => useGhost.getState().setScan({ running: true, done: 1, total: 3, result: { serverId: "my", ok: true, latency: 7e6 } } as any));
+  expect(within(await rowOf("My DoH")).getByText("7 ms")).toBeInTheDocument();
+  act(() => useGhost.getState().setScan({ running: true, done: 2, total: 3, result: { serverId: "q9", ok: false, reason: "timeout" } } as any));
+  expect(within(await rowOf("Quad9")).getByText(/timeout/)).toBeInTheDocument();
+  expect(within(await rowOf("My DoH")).getByText("7 ms"), "earlier results stay").toBeInTheDocument();
+  expect(svc.ListServers, "loaded on open and when the scan starts, not per result").toHaveBeenCalledTimes(2);
+});

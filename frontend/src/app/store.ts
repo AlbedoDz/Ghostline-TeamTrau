@@ -45,6 +45,9 @@ type State = {
   latency: number[];
   queries: number;
   scan: ScanProgress | null;
+  /** Results of the running (or last) full scan by server ID, as they arrive. */
+  scanResults: Record<string, NonNullable<ScanProgress["result"]>>;
+  clearScanResults: () => void;
   autotune: AutotuneProgress | null;
   update: UpdateInfo | null;
   page: Page;
@@ -96,6 +99,7 @@ const initial = {
   latency: [] as number[],
   queries: 0,
   scan: null,
+  scanResults: {} as Record<string, NonNullable<ScanProgress["result"]>>,
   autotune: null,
   update: null,
   page: "overview" as Page,
@@ -140,7 +144,13 @@ export const useGhost = create<State>((set) => ({
   pushQuery: (q) => set((s) => ({ queries500: tail(s.queries500, q, 500) })),
   clearQueries: () => set({ queries500: [] }),
   pushStats: (st) => set((s) => ({ latency: tail(s.latency, st.latencyMs, 60), queries: st.queries })),
-  setScan: (scan) => set({ scan }),
+  setScan: (scan) =>
+    set((st) => {
+      const r = scan?.result;
+      const fresh = scan && !st.scan ? {} : st.scanResults; // a new scan starts clean
+      return { scan, scanResults: r?.serverId ? { ...fresh, [r.serverId]: r } : fresh };
+    }),
+  clearScanResults: () => set({ scanResults: {} }),
   setAutotune: (autotune) => set({ autotune }),
   setUpdate: (update) => set({ update }),
   // Logs and Fake SNI are tabs of Tools and Proxy: links to them open the

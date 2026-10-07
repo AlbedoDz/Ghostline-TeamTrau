@@ -136,6 +136,10 @@ func Run(o Options) error {
 	var wapp *application.App
 	em := &emitter{}
 	bus := app.NewBus(em)
+	// Every full scan (connect, level change, scan all) shows live in the UI.
+	picker.Watch = func(done, total int, r *scanner.Result, running bool) {
+		bus.Emit(app.EventScan, app.ScanProgress{Done: done, Total: total, Result: r, Running: running})
+	}
 	eng := engine.New(bus.Query)
 	pw := newProxyWiring(box, eng, paths, o.Executable, bus, log)
 	cw := newCertWiring(paths)

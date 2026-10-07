@@ -425,3 +425,28 @@ func TestPicker_CancelOneWaiterKeepsTheScanForTheOther(t *testing.T) {
 	require.Equal(t, int32(320), chk.calls.Load())
 	require.False(t, p.Stale())
 }
+
+// A scan started by Connect shows live in the UI too, not only "scan all".
+func TestPicker_WatchSeesEveryFullScan(t *testing.T) {
+	chk := &fChecker{ok: map[string]time.Duration{"s01": 10}}
+	p, _ := newPicker(chk, store.DefaultSettings())
+	var mu sync.Mutex
+	var results, ends int
+	p.Watch = func(_, _ int, r *scanner.Result, running bool) {
+		mu.Lock()
+		defer mu.Unlock()
+		if running && r != nil && r.ServerID != "" {
+			results++
+		}
+		if !running {
+			ends++
+		}
+	}
+	_, err := p.Pick(context.Background(), nil)
+	require.NoError(t, err)
+	mu.Lock()
+	defer mu.Unlock()
+	require.Equal(t, 10, results)
+	require.Equal(t, 1, ends)
+	require.True(t, p.Watched())
+}
