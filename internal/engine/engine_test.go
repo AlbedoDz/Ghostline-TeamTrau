@@ -39,13 +39,21 @@ var _ upstream.Upstream = (*fakeUp)(nil)
 
 func start(t *testing.T, onQuery func(engine.QueryEvent), ups ...upstream.Upstream) *engine.Engine {
 	t.Helper()
-	e := engine.New(onQuery)
-	require.NoError(t, e.Start(context.Background(), engine.Config{
-		ListenV4:  netip.MustParseAddrPort("127.0.0.1:0"),
-		Upstreams: ups,
-	}))
-	t.Cleanup(func() { _ = e.Stop(context.Background()) })
-	return e
+	// Port 0 gives a free UDP port, and TCP must then bind the same one:
+	// Windows reserves some TCP ports, so try again on a refusal.
+	var err error
+	for range 10 {
+		e := engine.New(onQuery)
+		if err = e.Start(context.Background(), engine.Config{
+			ListenV4:  netip.MustParseAddrPort("127.0.0.1:0"),
+			Upstreams: ups,
+		}); err == nil {
+			t.Cleanup(func() { _ = e.Stop(context.Background()) })
+			return e
+		}
+	}
+	require.NoError(t, err)
+	return nil
 }
 
 func query(t *testing.T, e *engine.Engine, name string) *dns.Msg {

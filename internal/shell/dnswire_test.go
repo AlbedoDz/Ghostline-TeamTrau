@@ -27,8 +27,17 @@ func (deadUp) Close() error    { return nil }
 var _ upstream.Upstream = deadUp{}
 
 func TestDNSWiring_SelfTest(t *testing.T) {
-	eng := engine.New(nil)
-	require.NoError(t, eng.Start(context.Background(), engine.Config{ListenV4: netip.MustParseAddrPort("127.0.0.1:0"), Upstreams: []upstream.Upstream{deadUp{}}}))
+	// Port 0 picks a free UDP port and TCP must bind the same one, which
+	// Windows sometimes reserves: try again on a refusal.
+	var eng *engine.Engine
+	var err error
+	for range 10 {
+		eng = engine.New(nil)
+		if err = eng.Start(context.Background(), engine.Config{ListenV4: netip.MustParseAddrPort("127.0.0.1:0"), Upstreams: []upstream.Upstream{deadUp{}}}); err == nil {
+			break
+		}
+	}
+	require.NoError(t, err)
 	t.Cleanup(func() { _ = eng.Stop(context.Background()) })
 
 	cw := testCertWiring(t, certstore.NewFake(), t.TempDir())

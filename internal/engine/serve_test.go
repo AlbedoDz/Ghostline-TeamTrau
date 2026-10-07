@@ -11,6 +11,7 @@ import (
 	"net"
 	"net/http"
 	"net/netip"
+	"slices"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -115,13 +116,28 @@ func freePort(t *testing.T) uint16 {
 	return uint16(pc.LocalAddr().(*net.UDPAddr).Port)
 }
 
+// servePlain serves plain DNS on a free port. A port free for UDP may be
+// reserved for TCP on Windows, so it tries again with another one.
+func servePlain(t *testing.T, e *engine.Engine, l *lanCert) netip.AddrPort {
+	t.Helper()
+	for range 10 {
+		plain := netip.AddrPortFrom(netip.MustParseAddr("127.0.0.1"), freePort(t))
+		res, err := e.Serve(context.Background(), engine.ServeConfig{DoH: []netip.AddrPort{netip.MustParseAddrPort("127.0.0.1:0")}, Plain: []netip.AddrPort{plain}, Cert: l.cur.Load})
+		require.NoError(t, err)
+		if slices.Contains(res.Bound, plain) {
+			t.Cleanup(func() { _ = e.StopServe(context.Background()) })
+			return plain
+		}
+		require.NoError(t, e.StopServe(context.Background()))
+	}
+	t.Fatal("no free port for plain DNS")
+	return netip.AddrPort{}
+}
+
 func TestServe_PlainUDPTCP(t *testing.T) {
 	up := &fakeUp{ip: net.IPv4(192, 0, 2, 81), name: "fake1"}
 	e := start(t, nil, up)
-	l := newLANCert(t)
-	plain := netip.AddrPortFrom(netip.MustParseAddr("127.0.0.1"), freePort(t))
-	res := serve(t, e, engine.ServeConfig{DoH: []netip.AddrPort{netip.MustParseAddrPort("127.0.0.1:0")}, Plain: []netip.AddrPort{plain}, Cert: l.cur.Load})
-	require.Contains(t, res.Bound, plain)
+	plain := servePlain(t, e, newLANCert(t))
 	for _, netw := range []string{"udp", "tcp"} {
 		c := &dns.Client{Net: netw, Timeout: 2 * time.Second}
 		r, _, err := c.Exchange(new(dns.Msg).SetQuestion("example.com.", dns.TypeA), plain.String())
@@ -133,9 +149,7 @@ func TestServe_PlainUDPTCP(t *testing.T) {
 func TestServe_RefusesANY(t *testing.T) {
 	up := &fakeUp{ip: net.IPv4(192, 0, 2, 81), name: "fake1"}
 	e := start(t, nil, up)
-	l := newLANCert(t)
-	plain := netip.AddrPortFrom(netip.MustParseAddr("127.0.0.1"), freePort(t))
-	serve(t, e, engine.ServeConfig{DoH: []netip.AddrPort{netip.MustParseAddrPort("127.0.0.1:0")}, Plain: []netip.AddrPort{plain}, Cert: l.cur.Load})
+	plain := servePlain(t, e, newLANCert(t))
 	r, _, err := (&dns.Client{Timeout: 2 * time.Second}).Exchange(new(dns.Msg).SetQuestion("example.com.", dns.TypeANY), plain.String())
 	require.NoError(t, err)
 	require.Equal(t, dns.RcodeRefused, r.Rcode)
