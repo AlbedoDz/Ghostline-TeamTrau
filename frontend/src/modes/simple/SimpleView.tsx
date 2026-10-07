@@ -1,3 +1,4 @@
+import { useLayoutEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Service } from "../../app/api";
 import { confirmDisconnect } from "../../app/disconnect";
@@ -14,6 +15,30 @@ import { Warnings } from "../../components/Warnings";
 import { ProtectionLevels } from "./ProtectionLevels";
 import { useFirstRunTune } from "./useFirstRunTune";
 import css from "./SimpleView.module.css";
+
+/**
+ * useSmoothHeight follows an element's height so its wrapper can animate to
+ * it: when the panel under the levels grows (connect steps) or shrinks, the
+ * power button above glides instead of jumping.
+ */
+function useSmoothHeight<T extends HTMLElement>() {
+  const ref = useRef<T>(null);
+  const [height, setHeight] = useState<number>();
+  // Measured after every render, before paint (state changes here), and on
+  // resize (parts that update by themselves, like the error banners).
+  useLayoutEffect(() => {
+    const h = ref.current?.offsetHeight;
+    if (h !== undefined && h !== height) setHeight(h);
+  });
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(() => setHeight(el.offsetHeight));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  return [ref, height] as const;
+}
 
 export function SimpleView({
   onOpenLogs,
@@ -42,6 +67,7 @@ export function SimpleView({
     .find((h) => h !== "127.0.0.1" && h !== "::1");
   const label = `[ ${t(`status.${status}`)} ]`;
   const firstRun = useFirstRunTune(status);
+  const [bottomRef, bottomHeight] = useSmoothHeight<HTMLDivElement>();
   // The first-run tune shows as one more connect step, not as banners.
   const tuneBanners = !firstRun;
 
@@ -152,34 +178,37 @@ export function SimpleView({
         </div>
         <ProtectionLevels onOpenFull={onOpenFull} disabled={status === "connecting" || status === "disconnecting"} />
       </div>
-      <div className={css.bottom}>
-        <ConnectError onOpenServers={onOpenServers} onOpenLogs={onOpenLogs} />
-        {tuneBanners && isConnected(status) && autotune?.running && (
-          <Banner tone="warn">{t("simple.autotuning", { preset: tuneName, index: autotune.index, total: autotune.total })}</Banner>
-        )}
-        {tuneBanners && isConnected(status) && autotune && !autotune.running && !autotune.error && autotune.preset && (
-          <Banner tone="ok">{t("dpi.autotuneDone", { preset: tuneName, engine: autotune.engine === "goodbyedpi" ? "GoodbyeDPI" : autotune.engine })}</Banner>
-        )}
-        {isConnected(status) && autotune && !autotune.running && autotune.error && (
-          <Banner tone="err">{tCode(`errors.${autotune.error.code}.message`)}</Banner>
-        )}
-        {tuneBanners && isConnected(status) && blocked.length > 0 && !bannerDismissed && !autotune?.running && (
-          <Banner
-            tone="warn"
-            actions={[
-              { label: t("simple.autotune"), onClick: () => void Service.StartAutotune(), primary: true },
-              { label: t("common.dismiss"), onClick: () => dismissBanner(true) },
-            ]}
-          >
-            {t("simple.blocked", { count: blocked.length, total: settings?.probeSites?.length ?? blocked.length })}
-          </Banner>
-        )}
-        {below}
-        {update && (
-          <button className={css.update} onClick={() => void Browser.OpenURL(update.url)}>
-            {t("settings.update", { tag: update.tag })}
-          </button>
-        )}
+      {/* The wrapper animates to the panel's height (see useSmoothHeight). */}
+      <div className={css.bottomWrap} style={bottomHeight === undefined ? undefined : { height: bottomHeight }}>
+        <div ref={bottomRef} className={css.bottom}>
+          <ConnectError onOpenServers={onOpenServers} onOpenLogs={onOpenLogs} />
+          {tuneBanners && isConnected(status) && autotune?.running && (
+            <Banner tone="warn">{t("simple.autotuning", { preset: tuneName, index: autotune.index, total: autotune.total })}</Banner>
+          )}
+          {tuneBanners && isConnected(status) && autotune && !autotune.running && !autotune.error && autotune.preset && (
+            <Banner tone="ok">{t("dpi.autotuneDone", { preset: tuneName, engine: autotune.engine === "goodbyedpi" ? "GoodbyeDPI" : autotune.engine })}</Banner>
+          )}
+          {isConnected(status) && autotune && !autotune.running && autotune.error && (
+            <Banner tone="err">{tCode(`errors.${autotune.error.code}.message`)}</Banner>
+          )}
+          {tuneBanners && isConnected(status) && blocked.length > 0 && !bannerDismissed && !autotune?.running && (
+            <Banner
+              tone="warn"
+              actions={[
+                { label: t("simple.autotune"), onClick: () => void Service.StartAutotune(), primary: true },
+                { label: t("common.dismiss"), onClick: () => dismissBanner(true) },
+              ]}
+            >
+              {t("simple.blocked", { count: blocked.length, total: settings?.probeSites?.length ?? blocked.length })}
+            </Banner>
+          )}
+          {below}
+          {update && (
+            <button className={css.update} onClick={() => void Browser.OpenURL(update.url)}>
+              {t("settings.update", { tag: update.tag })}
+            </button>
+          )}
+        </div>
       </div>
     </section>
   );
