@@ -7,3 +7,4 @@
 *.woff2 binary
 lists/servers.json.sig -text
 lists/dnscrypt/* -text
+build/windows/portable/*.txt text eol=crlf
