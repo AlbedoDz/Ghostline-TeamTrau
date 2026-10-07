@@ -3,6 +3,7 @@
   display: flex;
   flex-direction: column;
   min-height: 0;
+  min-width: 0; /* a long line inside must wrap, not widen the window */
   padding-top: 4px;
 }
 
@@ -66,6 +67,8 @@
      the levels never move when the panel below changes. */
   min-height: 204px;
   align-content: start;
+  /* Never wider than the window, whatever a line inside wants. */
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .steps {
@@ -76,9 +79,8 @@
   padding-left: 2ch;
   font-size: 11px;
   color: var(--dim);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
 }
 
 .done {
