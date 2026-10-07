@@ -381,3 +381,16 @@ func TestStartAutotune_FinalEventNamesTheResult(t *testing.T) {
 		return !last.Running && last.Engine == "zapret2" && last.Preset == "z-split" && last.Error == nil
 	}, 2*time.Second, 10*time.Millisecond)
 }
+
+func TestSaveSettings_TestDomainMustBeADomain(t *testing.T) {
+	s := newSvc(t)
+	for _, bad := range []string{"", "  ", "google", "http://google.com", "a b.com"} {
+		st := s.box.Get()
+		st.TestDomain = bad
+		require.Error(t, s.svc.SaveSettings(st), bad)
+	}
+	st := s.box.Get()
+	st.TestDomain = " Cloudflare.com "
+	require.NoError(t, s.svc.SaveSettings(st))
+	require.Equal(t, "cloudflare.com", s.box.Get().TestDomain)
+}

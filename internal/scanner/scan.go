@@ -63,8 +63,11 @@ func IsPublicIP(a netip.Addr) bool {
 type DNSChecker struct {
 	Build      func(model.Server) (upstream.Upstream, error)
 	TestDomain string
-	Timeout    time.Duration
-	Now        func() time.Time
+	// Domain, when set, gives the test domain at each check (the setting
+	// can change while the app runs); TestDomain is used otherwise.
+	Domain  func() string
+	Timeout time.Duration
+	Now     func() time.Time
 }
 
 // Check implements Checker.
@@ -84,8 +87,12 @@ func (c DNSChecker) Check(ctx context.Context, s model.Server) Result {
 	// One budget covers both queries (spec: 3s per server).
 	qctx, cancel := context.WithTimeout(ctx, c.Timeout)
 	defer cancel()
+	domain := c.TestDomain
+	if c.Domain != nil {
+		domain = c.Domain()
+	}
 	for i := 0; i < 2; i++ {
-		resp, d, err := Exchange(qctx, u, c.TestDomain, dns.TypeA, false)
+		resp, d, err := Exchange(qctx, u, domain, dns.TypeA, false)
 		lat = d
 		if err != nil {
 			r.Reason = Classify(err, qctx.Err())

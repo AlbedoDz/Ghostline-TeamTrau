@@ -269,3 +269,19 @@ func TestCache_FreshIsPerResult(t *testing.T) {
 	// Results() for the UI still lists both.
 	require.Len(t, c.Entries["net"].Results, 2)
 }
+
+// The test domain set in Settings applies to the next scan, not only after
+// a restart.
+func TestDNSChecker_DomainFollowsSettings(t *testing.T) {
+	var asked []string
+	c := checker(func(ctx context.Context, req *dns.Msg) (*dns.Msg, error) {
+		asked = append(asked, req.Question[0].Name)
+		return withA("142.250.1.1")(ctx, req)
+	})
+	domain := "example.com"
+	c.Domain = func() string { return domain }
+	c.Check(context.Background(), model.Server{ID: "x"})
+	domain = "cloudflare.com"
+	c.Check(context.Background(), model.Server{ID: "x"})
+	require.Equal(t, []string{"example.com.", "example.com.", "cloudflare.com.", "cloudflare.com."}, asked)
+}

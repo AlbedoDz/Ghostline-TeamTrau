@@ -321,3 +321,19 @@
   gap: 6px;
   padding: 10px 16px 0;
 }
+
+/* A short explanation under a control. */
+.passRule {
+  color: var(--dim);
+  font-size: 11px;
+  line-height: 1.5;
+}
+.linkBtn {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--green);
+  font: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+}

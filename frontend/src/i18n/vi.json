@@ -165,7 +165,9 @@
       "useOnlyConfirm": "Chỉ dùng {{name}} và bỏ ghim {{count}} máy chủ khác?"
     },
     "notAuto": "không tự chọn",
-    "notAutoHint": "Máy chủ có lọc (chặn quảng cáo hoặc nội dung): app không tự chọn. Ghim nếu muốn dùng."
+    "notAutoHint": "Máy chủ có lọc (chặn quảng cáo hoặc nội dung): app không tự chọn. Ghim nếu muốn dùng.",
+    "passRule": "Đạt = trả lời đúng {{domain}} 2 lần trong 3 giây, bằng IP công cộng. Chưa phát hiện được: máy chủ chặn riêng vài trang, nhà mạng trả IP công cộng giả, DNSSEC. Muốn kiểm tra kỹ hơn, dùng Công cụ › Scanner.",
+    "changeDomain": "đổi tên miền thử ›"
   },
   "dpi": {
     "title": "VƯỢT DPI",
@@ -345,7 +347,8 @@
       "sniTitle": "File có rule chuyển hướng lưu lượng đã giải mã (sni= / connect=):",
       "sniAck": "Tôi hiểu các rule này chuyển hướng lưu lượng đã giải mã",
       "sniDrop": "nhập nhưng bỏ các rule này"
-    }
+    },
+    "testDomainHint": "Bộ quét máy chủ hỏi tên miền này: máy chủ đạt khi trả lời đúng 2 lần trong 3 giây, bằng IP công cộng. Chọn trang luôn mở được và không bị chặn ở mạng của bạn. Áp dụng từ lần quét sau."
   },
   "errors": {
     "NOT_ADMIN": {

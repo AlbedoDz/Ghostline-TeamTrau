@@ -165,7 +165,9 @@
       "useOnlyConfirm": "Use only {{name}} and unpin {{count}} other servers?"
     },
     "notAuto": "not picked",
-    "notAutoHint": "A filtering server (blocks ads or content): never picked automatically. Pin it to use it."
+    "notAutoHint": "A filtering server (blocks ads or content): never picked automatically. Pin it to use it.",
+    "passRule": "Pass = answers {{domain}} correctly twice within 3 seconds, with a public IP. Not detected: a server that blocks only some sites, an ISP that returns fake public IPs, DNSSEC. For a closer look, use Tools › Scanner.",
+    "changeDomain": "change the test domain ›"
   },
   "dpi": {
     "title": "DPI BYPASS",
@@ -345,7 +347,8 @@
       "sniTitle": "The file has rules that redirect decrypted traffic (sni= / connect=):",
       "sniAck": "I understand these rules redirect decrypted traffic",
       "sniDrop": "import but drop these rules"
-    }
+    },
+    "testDomainHint": "The server scan asks for this domain: a server passes when it answers correctly twice within 3 seconds, with a public IP. Pick a site that always works and is not blocked on your network. Applies from the next scan."
   },
   "errors": {
     "NOT_ADMIN": {

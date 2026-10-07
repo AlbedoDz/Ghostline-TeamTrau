@@ -122,7 +122,7 @@ func Run(o Options) error {
 	})
 	picker := &app.ScanPicker{
 		Catalog: cat.get,
-		Checker: scanner.DNSChecker{Build: build.Build, TestDomain: box.Get().TestDomain, Timeout: 3 * time.Second},
+		Checker: scanner.DNSChecker{Build: build.Build, Domain: func() string { return box.Get().TestDomain }, Timeout: 3 * time.Second},
 		Cache:   cache,
 		SaveCache: func(c *scanner.Cache) error {
 			return scanner.SaveCache(paths.ScanCache, c)
@@ -219,8 +219,8 @@ func Run(o Options) error {
 			if old.Language != n.Language {
 				ui.onLanguage()
 			}
-			if !slices.Equal(old.Bootstrap, n.Bootstrap) || old.TestDomain != n.TestDomain {
-				picker.Checker = scanner.DNSChecker{Build: build.Build, TestDomain: n.TestDomain, Timeout: 3 * time.Second}
+			if !slices.Equal(old.Bootstrap, n.Bootstrap) {
+				picker.Checker = scanner.DNSChecker{Build: build.Build, Domain: func() string { return box.Get().TestDomain }, Timeout: 3 * time.Second}
 			}
 			if old.Proxy.Enabled != n.Proxy.Enabled {
 				ui.onLanguage() // relabels the tray's proxy item

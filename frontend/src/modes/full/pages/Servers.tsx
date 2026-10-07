@@ -183,6 +183,11 @@ export function Servers() {
           </span>
         )}
       </div>
+      {/* What "pass" means, and what it cannot catch. */}
+      <div className={css.passRule} data-testid="pass-rule">
+        {t("servers.passRule", { domain: settings?.testDomain || "www.google.com" })}{" "}
+        <button className={css.linkBtn} onClick={() => useGhost.getState().setPage("settings")}>{t("servers.changeDomain")}</button>
+      </div>
       {pinsChanged && connected && (
         <div className={css.row}>
           <span className={css.warn}>{t("servers.pinsChanged")}</span>

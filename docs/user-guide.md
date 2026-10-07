@@ -147,6 +147,7 @@ The sidebar groups the pages: **basic** (overview, servers, DPI bypass), **advan
 Every encrypted DNS server Ghostline knows about (several hundred), refreshed daily from a signed list.
 
 - **⟳ scan all:** re-measures every server's latency, drops servers that return wrong (poisoned) answers and, when connected, switches to the fastest without disconnecting. Ghostline also does this by itself when the ranking is more than a day old or you join another network. Servers that filter content (`adblock`, `family`) are measured too but marked *not picked*: Ghostline never chooses them by itself; pin one to use it.
+- **What "pass" means:** the server answered the test domain correctly twice within 3 seconds, with a public IP. A pass does not catch a server that blocks only some sites, an ISP that returns fake public IPs, or DNSSEC problems; use **Tools › Scanner** for a closer look. The test domain is set in **Settings**.
 - **filter:** pick protocols (`doh`, `dot`, `doq`, `dnscrypt`) or server types:
   - `no-filter`: blocks nothing.
   - `adblock`: blocks ads and trackers.
@@ -244,7 +245,7 @@ Records events: connecting, switching servers, GoodbyeDPI on/off, errors.
 | connect on launch | Connect as soon as the app opens |
 | close → minimise to tray | Clicking ✕ hides the window to the tray instead of quitting. Ghostline keeps protecting you in the background |
 | adapters | **auto**: protect every adapter in use (recommended). **manual**: protect only the adapters you pick |
-| test domain | The domain used to check that servers answer correctly |
+| test domain | The domain the server scan asks for (default `www.google.com`). Pick a site that always works and is not blocked on your network; it applies from the next scan |
 | bootstrap | Plain DNS servers used only to look up the addresses of DoH servers at startup (default `1.1.1.1:53`, `8.8.8.8:53`). This is the only unencrypted DNS traffic, and it is only used to look up DoH server names |
 | max servers | How many servers to use in parallel (default 5). More is steadier but uses slightly more bandwidth |
 | update server list | Download a fresh server list daily (signature-checked) |

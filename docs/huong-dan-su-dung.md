@@ -147,6 +147,7 @@ Thanh bên chia trang thành nhóm: **cơ bản** (tổng quan, máy chủ, vư�
 Danh sách toàn bộ máy chủ DNS mã hoá mà Ghostline biết (vài trăm máy chủ), được cập nhật mỗi ngày từ danh sách có chữ ký số.
 
 - **⟳ quét toàn bộ:** đo lại độ trễ của mọi máy chủ, loại các máy chủ trả kết quả sai (bị đầu độc) và, khi đang kết nối, chuyển sang những máy chủ nhanh nhất mà không ngắt kết nối. Ghostline cũng tự làm việc này khi bảng xếp hạng cũ hơn một ngày hoặc khi bạn vào mạng khác. Máy chủ có lọc nội dung (`adblock`, `family`) vẫn được đo nhưng ghi *không tự chọn*: app không bao giờ tự chọn chúng; muốn dùng thì ghim.
+- **"Đạt" nghĩa là gì:** máy chủ trả lời đúng tên miền thử 2 lần trong 3 giây, bằng IP công cộng. "Đạt" không phát hiện được máy chủ chặn riêng vài trang, nhà mạng trả IP công cộng giả, hay lỗi DNSSEC; muốn kiểm tra kỹ hơn, dùng **Công cụ › Scanner**. Tên miền thử đổi ở **Cài đặt**.
 - **Lọc:** chọn giao thức (`doh`, `dot`, `doq`, `dnscrypt`) hoặc loại máy chủ:
   - `no-filter`: không chặn gì.
   - `adblock`: chặn quảng cáo và theo dõi.
@@ -244,7 +245,7 @@ Ghi lại các sự kiện: kết nối, đổi máy chủ, bật/tắt GoodbyeD
 | tự kết nối khi mở | Bấm kết nối ngay khi app mở |
 | đóng → thu xuống khay | Bấm ✕ thì ẩn xuống khay thay vì thoát. Ghostline vẫn bảo vệ ở chế độ nền |
 | card mạng | **tự động**: bảo vệ mọi card mạng đang dùng (khuyến nghị). **chọn tay**: chỉ bảo vệ các card bạn chọn |
-| tên miền thử | Domain dùng để kiểm tra máy chủ có trả lời đúng không |
+| tên miền thử | Tên miền bộ quét máy chủ hỏi (mặc định `www.google.com`). Chọn trang luôn mở được và không bị chặn ở mạng của bạn; áp dụng từ lần quét sau |
 | bootstrap | DNS thường dùng để tìm địa chỉ của các máy chủ DoH lúc khởi động (mặc định `1.1.1.1:53`, `8.8.8.8:53`). Đây là lưu lượng DNS không mã hoá duy nhất, và chỉ dùng để tra tên máy chủ DoH |
 | số máy chủ tối đa | Số máy chủ dùng song song (mặc định 5). Nhiều hơn thì ổn định hơn nhưng tốn băng thông hơn một chút |
 | cập nhật danh sách máy chủ | Tải danh sách máy chủ mới mỗi ngày (có kiểm tra chữ ký) |

@@ -130,8 +130,15 @@ export function Settings() {
           ))}
         <div className={css.setting}>
           <span>{t("settings.testDomain")}</span>
-          <input value={testDomain} onChange={(e) => setTestDomain(e.target.value)} onBlur={() => void save((s) => ({ ...s, testDomain }))} />
+          <input
+            aria-label={t("settings.testDomain")}
+            aria-describedby="test-domain-hint"
+            value={testDomain}
+            onChange={(e) => setTestDomain(e.target.value)}
+            onBlur={() => void save((s) => ({ ...s, testDomain }))}
+          />
         </div>
+        <div id="test-domain-hint" className={css.passRule}>{t("settings.testDomainHint")}</div>
         <div className={css.setting}>
           <span>{t("settings.bootstrap")}</span>
           <textarea
