@@ -2,6 +2,7 @@ package winutil
 
 import (
 	"errors"
+	"log/slog"
 	"strings"
 	"time"
 	"unsafe"
@@ -120,12 +121,19 @@ func StopService(name string, wait time.Duration) error {
 		!errors.Is(err, windows.ERROR_SERVICE_CANNOT_ACCEPT_CTRL) {
 		return err
 	}
+	if errors.Is(err, windows.ERROR_SERVICE_CANNOT_ACCEPT_CTRL) {
+		slog.Info("winutil: service is mid-transition; waiting for it to stop", "service", name, "state", st.State)
+	}
 	deadline := time.Now().Add(wait)
 	for st.State != svc.Stopped && time.Now().Before(deadline) {
 		time.Sleep(200 * time.Millisecond)
 		if st, err = s.Query(); err != nil {
 			return err
 		}
+	}
+	if st.State != svc.Stopped {
+		// Not an error to the caller, but whatever needs it gone may fail next.
+		slog.Warn("winutil: service did not stop in time", "service", name, "state", st.State, "wait", wait)
 	}
 	return nil
 }

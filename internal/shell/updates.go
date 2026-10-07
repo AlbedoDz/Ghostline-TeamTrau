@@ -81,6 +81,20 @@ func newUpdateChecker(meta *metaFile, st *updateState, bus *app.Bus, log *slog.L
 	}
 }
 
+// writePair saves a downloaded list and its signature, logging a failure.
+// It reports whether both were written.
+func writePair(log *slog.Logger, what, path string, data []byte, sigPath string, sig []byte) bool {
+	if err := os.WriteFile(path, data, 0o644); err != nil {
+		log.Warn(what+": saving the download failed", "path", path, "err", err)
+		return false
+	}
+	if err := os.WriteFile(sigPath, sig, 0o644); err != nil {
+		log.Warn(what+": saving the signature failed", "path", sigPath, "err", err)
+		return false
+	}
+	return true
+}
+
 // runUpdates performs the background jobs: the release check (at start and
 // every 6 hours), the signed server list and the DNSCrypt resolver list
 // (daily). Failures are only logged.
@@ -104,7 +118,7 @@ func runUpdates(ctx context.Context, paths store.Paths, box *app.SettingsBox, ca
 					code = app.CodeServerListBadSig
 				}
 				log.Info("server list", "code", code, "err", err)
-			} else if os.WriteFile(paths.ServersRemote, raw, 0o644) == nil && os.WriteFile(paths.ServersRemoteSig, sig, 0o644) == nil {
+			} else if writePair(log, "server list", paths.ServersRemote, raw, paths.ServersRemoteSig, sig) {
 				metaF.update(func(m *store.Meta) { m.LastServerList = now })
 				cat.reload()
 			}
@@ -112,7 +126,7 @@ func runUpdates(ctx context.Context, paths store.Paths, box *app.SettingsBox, ca
 		if s.Updates.UpdateServerList && updater.Due(meta.LastStrategyList, now) {
 			if raw, sig, err := updater.FetchSigned(ctx, client, brand.StrategyListURL, brand.StrategyListSigURL, serverListKey()); err != nil {
 				log.Info("strategy list", "code", app.CodeStrategyListInvalid, "err", err)
-			} else if os.WriteFile(paths.DPIStrategies, raw, 0o644) == nil && os.WriteFile(paths.DPIStrategiesSig, sig, 0o644) == nil {
+			} else if writePair(log, "strategy list", paths.DPIStrategies, raw, paths.DPIStrategiesSig, sig) {
 				metaF.update(func(m *store.Meta) { m.LastStrategyList = now })
 				strats.reload()
 			}
@@ -120,7 +134,7 @@ func runUpdates(ctx context.Context, paths store.Paths, box *app.SettingsBox, ca
 		if s.Updates.UpdateServerList && updater.Due(meta.LastDNSCrypt, now) {
 			if md, sig, err := updater.FetchDNSCrypt(ctx, client, brand.DNSCryptListURLs, brand.DNSCryptMinisignKey); err != nil {
 				log.Info("dnscrypt list", "err", err)
-			} else if os.WriteFile(paths.ServersDNSCrypt, md, 0o644) == nil && os.WriteFile(paths.ServersDNSCryptSig, sig, 0o644) == nil {
+			} else if writePair(log, "dnscrypt list", paths.ServersDNSCrypt, md, paths.ServersDNSCryptSig, sig) {
 				metaF.update(func(m *store.Meta) { m.LastDNSCrypt = now })
 				cat.reload()
 			}

@@ -136,8 +136,13 @@ func (b *Bus) State(s Snapshot) { b.em.Emit(EventState, s) }
 
 // Log implements Sink.
 func (b *Bus) Log(e LogEvent) {
-	// File log: codes and params only (params never carry domain names).
-	slog.Info("event", "source", e.Source, "code", e.Code, "params", e.Params)
+	// File log: codes and params (params never carry domain names), plus
+	// the underlying error of a failure.
+	if e.Err != "" {
+		slog.Warn("event", "source", e.Source, "code", e.Code, "params", e.Params, "err", e.Err)
+	} else {
+		slog.Info("event", "source", e.Source, "code", e.Code, "params", e.Params)
+	}
 	b.logs.Add(e)
 	b.em.Emit(EventLog, e)
 }

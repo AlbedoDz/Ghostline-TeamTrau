@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/netip"
 	"slices"
 	"time"
@@ -103,10 +104,10 @@ func (o *Orchestrator) dropSetupRule() {
 		return
 	}
 	if err := o.d.Firewall.DeleteNamed(winutil.RuleSetup); err != nil {
-		o.log("dnsserver", CodeSetupPageFailed, "detail", err.Error())
+		o.logErr("dnsserver", CodeSetupPageFailed, err, "detail", err.Error())
 		return
 	}
-	_ = ignoreNoChange(o.setState(func(st *store.State) { st.RemoveFirewallRule(winutil.RuleSetup) }))
+	warnIgnored("state update", ignoreNoChange(o.setState(func(st *store.State) { st.RemoveFirewallRule(winutil.RuleSetup) })))
 }
 
 // closeSetup stops the setup page; its OnStop removes the rule.
@@ -116,7 +117,7 @@ func (o *Orchestrator) closeSetup() {
 	o.setup, o.setupURL = nil, ""
 	o.mu.Unlock()
 	if p != nil {
-		_ = p.Stop()
+		warnIgnored("setup page stop", p.Stop())
 	}
 }
 
@@ -153,6 +154,7 @@ func (o *Orchestrator) RemoveAllCerts(ctx context.Context) error {
 	}
 	list, err := o.d.Certs.List()
 	if err != nil {
+		slog.Warn("certs: listing the root store failed", "err", err)
 		return err
 	}
 	var errs []error
@@ -166,12 +168,16 @@ func (o *Orchestrator) RemoveAllCerts(ctx context.Context) error {
 			errs = append(errs, err)
 			continue
 		}
-		_ = ignoreNoChange(o.setState(func(st *store.State) { st.RemoveSessionCert(c.Thumbprint) }))
+		warnIgnored("state update", ignoreNoChange(o.setState(func(st *store.State) { st.RemoveSessionCert(c.Thumbprint) })))
 	}
 	if lan {
 		errs = append(errs, o.d.Certs.RemoveLANCA(ctx))
 	}
-	return errors.Join(errs...)
+	err = errors.Join(errs...)
+	if err != nil {
+		slog.Warn("certs: removing Ghostline roots failed", "err", err)
+	}
+	return err
 }
 
 // RetryCertRemoval removes session CAs still recorded in state.json that
@@ -207,10 +213,12 @@ func (o *Orchestrator) RetryCertRemoval() error {
 		o.sni.installed = slices.DeleteFunc(o.sni.installed, func(x string) bool { return x == t })
 		errs = append(errs, o.forgetSessionCert(t))
 	}
-	if errors.Join(errs...) == nil {
-		o.ClearWarning(CodeCertRemoveFailed)
+	if err := errors.Join(errs...); err != nil {
+		slog.Warn("certs: retrying session CA removal failed", "err", err)
+		return err
 	}
-	return errors.Join(errs...)
+	o.ClearWarning(CodeCertRemoveFailed)
+	return nil
 }
 
 // listCerts is the Root store content for the certificates section.

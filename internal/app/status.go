@@ -116,4 +116,7 @@ type LogEvent struct {
 	Source string         `json:"source"` // engine | dpi | system | ok
 	Code   string         `json:"code"`
 	Params map[string]any `json:"params,omitempty"`
+	// Err is the underlying error, for the log file only: the UI shows the
+	// translated code, and the cause may name things it should not.
+	Err string `json:"-"`
 }

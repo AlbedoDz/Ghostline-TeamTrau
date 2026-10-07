@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io/fs"
+	"log/slog"
 	"os"
 
 	"github.com/hashcott/ghostline/internal/rules"
@@ -35,6 +36,7 @@ func LoadRules(path string) (RulesFile, bool, error) {
 	}
 	f := emptyRules()
 	if jerr := json.Unmarshal(bytes.TrimPrefix(b, []byte{0xEF, 0xBB, 0xBF}), &f); jerr != nil {
+		slog.Warn("store: rules.json is not valid JSON; starting empty, old file kept as .bak", "path", path, "err", jerr)
 		if err := os.Rename(path, path+".bak"); err != nil {
 			return emptyRules(), true, err
 		}

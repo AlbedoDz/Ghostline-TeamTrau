@@ -134,9 +134,13 @@ func (s *Service) StartAdvancedScan(req AdvScanRequest) (AdvScanStart, error) {
 			cancel()
 			s.x.Bus.Emit(EventToolsScan, AdvScanProgress{Done: len(rs), Total: len(list), Running: false})
 		}()
-		rs, _ = advanced.Scan(ctx, list, c, st.Tools.Scanner.Workers, func(done, total int, r advanced.Result) {
+		var err error
+		rs, err = advanced.Scan(ctx, list, c, st.Tools.Scanner.Workers, func(done, total int, r advanced.Result) {
 			s.x.Bus.Emit(EventToolsScan, AdvScanProgress{Done: done, Total: total, Result: &r, Running: true})
 		})
+		if err != nil && !errors.Is(err, context.Canceled) {
+			slog.Warn("tools: advanced scan failed", "err", err)
+		}
 	}()
 	return start, nil
 }

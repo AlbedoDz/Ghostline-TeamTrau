@@ -111,7 +111,7 @@ func (o *Orchestrator) startSNIPhase(ctx context.Context) error {
 		}
 		o.update(func(sn *Snapshot) { sn.FakeSNI = FakeSNIStatus{Error: &AppError{Code: ae.Code, Params: ae.Params}} })
 		o.addReason(reasonFakeSNI)
-		o.log("fakesni", ae.Code, flatten(ae.Params)...)
+		o.logAppErr("fakesni", ae)
 		return err
 	}
 	o.sni.domains = domains
@@ -135,6 +135,7 @@ func (o *Orchestrator) undoFailedInstall(thumb string) bool {
 	if err := o.d.Certs.RemoveSession(thumb); err != nil {
 		o.sni.installed = append(o.sni.installed, thumb)
 		o.AddWarning(AppError{Code: CodeCertRemoveFailed, Params: map[string]any{"thumbprint": thumb}})
+		o.logErr("fakesni", CodeCertRemoveFailed, err, "thumbprint", thumb)
 		return false
 	}
 	return true
@@ -154,7 +155,7 @@ func (o *Orchestrator) forgetSessionCert(thumb string) error {
 func (o *Orchestrator) removeSessionCA(thumb string) error {
 	if err := o.d.Certs.RemoveSession(thumb); err != nil {
 		o.AddWarning(AppError{Code: CodeCertRemoveFailed, Params: map[string]any{"thumbprint": thumb}})
-		o.log("fakesni", CodeCertRemoveFailed, "thumbprint", thumb)
+		o.logErr("fakesni", CodeCertRemoveFailed, err, "thumbprint", thumb)
 		return err
 	}
 	o.sni.installed = slices.DeleteFunc(o.sni.installed, func(x string) bool { return x == thumb })
@@ -169,7 +170,7 @@ func (o *Orchestrator) stopSNIPhase(context.Context) {
 	}
 	o.sni.issuer, o.sni.domains = nil, nil
 	for _, t := range slices.Clone(o.sni.installed) {
-		_ = o.removeSessionCA(t)
+		warnIgnored("session CA remove", o.removeSessionCA(t), "thumbprint", t)
 	}
 	o.update(func(sn *Snapshot) { sn.FakeSNI = FakeSNIStatus{} })
 	o.clearReason(reasonFakeSNI)
@@ -250,14 +251,15 @@ func (o *Orchestrator) rotateSession(ctx context.Context, force bool) {
 	thumb := ca.Thumbprint()
 	if err := ignoreNoChange(o.setState(func(st *store.State) { st.AddSessionCert(thumb) })); err != nil {
 		o.AddWarning(AppError{Code: CodeCertInstallFailed, Params: map[string]any{"kind": "session"}})
+		o.logErr("fakesni", CodeCertInstallFailed, err, "kind", "session")
 		return
 	}
 	if err := o.d.Certs.InstallSession(ca.DER); err != nil {
 		if o.undoFailedInstall(thumb) {
-			_ = ignoreNoChange(o.setState(func(st *store.State) { st.RemoveSessionCert(thumb) }))
+			warnIgnored("state update", ignoreNoChange(o.setState(func(st *store.State) { st.RemoveSessionCert(thumb) })))
 		}
 		o.AddWarning(AppError{Code: CodeCertInstallFailed, Params: map[string]any{"kind": "session"}})
-		o.log("fakesni", CodeCertInstallFailed, "kind", "session")
+		o.logErr("fakesni", CodeCertInstallFailed, err, "kind", "session")
 		return
 	}
 	o.sni.installed = append(o.sni.installed, thumb)
@@ -266,6 +268,6 @@ func (o *Orchestrator) rotateSession(ctx context.Context, force bool) {
 	o.sni.domains = domains
 	o.d.SetMITM(o.sni.issuer)
 	o.setSNIStatus()
-	_ = o.removeSessionCA(old)
+	warnIgnored("session CA remove", o.removeSessionCA(old), "thumbprint", old)
 	o.log("fakesni", "FAKESNI_ROTATED", "domains", len(domains))
 }

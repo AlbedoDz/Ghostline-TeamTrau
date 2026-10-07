@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"log/slog"
 	"net"
 	"os"
 	"regexp"
@@ -336,6 +337,7 @@ func LoadSettings(path string) (s Settings, recovered bool, err error) {
 	}
 	m, jerr := MigrateSettings(b)
 	if jerr != nil {
+		slog.Warn("store: settings.json is not valid JSON; reset to defaults, old file kept as .bak", "path", path, "err", jerr)
 		if err := os.Rename(path, path+".bak"); err != nil {
 			return DefaultSettings(), true, err
 		}

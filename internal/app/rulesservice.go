@@ -6,6 +6,8 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"io/fs"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -87,6 +89,9 @@ func (s *Service) recompileLocked(changed string) {
 		}
 		res, err := s.x.Fetcher.LoadCached(l)
 		if err != nil {
+			if !errors.Is(err, fs.ErrNotExist) {
+				slog.Warn("rules: loading a cached list failed", "id", l.ID, "err", err)
+			}
 			continue
 		}
 		if total+len(res.Entries) > maxEntries {
@@ -99,6 +104,7 @@ func (s *Service) recompileLocked(changed string) {
 		}
 		set, err := lists.ToListSet(l, res)
 		if err != nil {
+			slog.Warn("rules: list skipped", "id", l.ID, "err", err)
 			continue
 		}
 		total += len(res.Entries)
@@ -106,16 +112,29 @@ func (s *Service) recompileLocked(changed string) {
 	}
 	c, err := rules.Compile(s.rf.Rules, sets)
 	if err != nil {
+		// The error names the rule's pattern (a user domain): log its row.
+		slog.Warn("rules: compile failed", "rule", badRuleRow(s.rf.Rules))
 		s.o.log("rules", CodeRulesParse, "line", 0)
 		return
 	}
 	s.x.Rules.Store(c)
 	if disabled != "" {
-		_ = store.SaveRules(s.x.RulesPath, s.rf)
+		warnIgnored("rules save", store.SaveRules(s.x.RulesPath, s.rf))
 		s.o.log("rules", CodeListTooLarge, "id", disabled)
 	}
 	s.x.Bus.Emit(EventRulesCompiled, RulesCompiled{Count: c.Count(), Ms: time.Since(start).Milliseconds()})
 	s.o.OnRulesCompiled()
+}
+
+// badRuleRow is the 1-based row of the first enabled rule whose pattern
+// does not parse, or 0.
+func badRuleRow(rs []rules.Rule) int {
+	for i, r := range rs {
+		if _, err := rules.ParsePattern(r.Pattern); r.Enabled && err != nil {
+			return i + 1
+		}
+	}
+	return 0
 }
 
 func (s *Service) saveRulesLocked() error { return store.SaveRules(s.x.RulesPath, s.rf) }
@@ -355,7 +374,7 @@ func (s *Service) refresh(ctx context.Context, id string) error {
 		cur.LastUpdated, cur.ETag, cur.LastModified, cur.Detected = l.LastUpdated, l.ETag, l.LastModified, l.Detected
 		cur.Counts, cur.Skipped, cur.SkippedSamples, cur.LastError = l.Counts, l.Skipped, l.SkippedSamples, l.LastError
 		s.rf.Lists[j] = cur
-		_ = s.saveRulesLocked()
+		warnIgnored("rules save", s.saveRulesLocked())
 		s.recompileLocked(id)
 	}
 	s.rmu.Unlock()
@@ -370,7 +389,7 @@ func (s *Service) refresh(ctx context.Context, id string) error {
 			code = CodeListTooLarge
 		}
 		p.Error = code
-		s.o.log("rules", code, "id", id)
+		s.o.logErr("rules", code, err, "id", id)
 	}
 	s.x.Bus.Emit(EventListsProgress, p)
 	return err

@@ -1,7 +1,6 @@
 package main
 
 import (
-
 	goodbyedpi "github.com/hashcott/ghostline/assets/goodbyedpi"
 	zapret2 "github.com/hashcott/ghostline/assets/zapret2"
 	"github.com/hashcott/ghostline/internal/dpi"

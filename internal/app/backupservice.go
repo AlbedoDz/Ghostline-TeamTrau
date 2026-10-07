@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"slices"
@@ -104,7 +105,12 @@ func (s *Service) currentBackupDataLocked() (backup.Data, error) {
 }
 
 // ExportSettings saves the chosen sections through the save dialog.
-func (s *Service) ExportSettings(sections []string) error {
+func (s *Service) ExportSettings(sections []string) (err error) {
+	defer func() {
+		if err != nil {
+			slog.Warn("backup: export failed", "err", err)
+		}
+	}()
 	d, err := s.currentBackupData()
 	if err != nil {
 		return appErr(CodeExportWriteFailed, err, "detail", err.Error())
@@ -231,6 +237,7 @@ func (s *Service) applyImportLocked(t *importTicket, c backup.Choices) (bool, er
 		if errors.As(err, &we) {
 			file = filepath.Base(we.Path)
 		}
+		slog.Warn("backup: writing the import failed", "file", file, "err", err)
 		return false, appErr(CodeImportWriteFailed, err, "file", file)
 	}
 	s.reloadAfterImportLocked(cur, target, changed)
@@ -301,7 +308,7 @@ func (s *Service) reloadAfterImportLocked(old, d backup.Data, changed []string) 
 			s.rf = d.Rules
 			s.recompileLocked("")
 		case backup.SecCustom:
-			_ = s.x.SaveCustom(d.Custom) // same content; reloads the catalog
+			warnIgnored("custom servers save", s.x.SaveCustom(d.Custom)) // same content; reloads the catalog
 		}
 	}
 }

@@ -4,6 +4,7 @@ package sysproxy
 
 import (
 	"errors"
+	"log/slog"
 
 	"github.com/hashcott/ghostline/internal/store"
 )
@@ -72,8 +73,12 @@ func (m Manager) IsOurs(addr string) (bool, error) {
 // RestoreIfOurs puts snap back unless another app or the user replaced
 // Ghostline's setting. If the current setting cannot be read, it restores.
 func (m Manager) RestoreIfOurs(addr string, snap store.SysProxySnapshot) (bool, error) {
-	if ours, err := m.IsOurs(addr); err == nil && !ours {
+	ours, err := m.IsOurs(addr)
+	if err == nil && !ours {
 		return false, nil
+	}
+	if err != nil {
+		slog.Warn("sysproxy: read current proxy failed; restoring anyway", "err", err, "ours", addr)
 	}
 	if err := m.API.Set(snap); err != nil {
 		return false, err

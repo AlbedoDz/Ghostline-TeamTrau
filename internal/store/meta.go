@@ -1,6 +1,11 @@
 package store
 
-import "time"
+import (
+	"errors"
+	"io/fs"
+	"log/slog"
+	"time"
+)
 
 // Meta records when background jobs last ran (server lists daily, release
 // check at start and every 6 hours).
@@ -19,7 +24,9 @@ type Meta struct {
 // LoadMeta reads meta.json; a missing or unreadable file is a zero Meta.
 func LoadMeta(path string) Meta {
 	var m Meta
-	_ = ReadJSON(path, &m)
+	if err := ReadJSON(path, &m); err != nil && !errors.Is(err, fs.ErrNotExist) {
+		slog.Warn("store: reading meta.json failed; using defaults", "path", path, "err", err)
+	}
 	return m
 }
 

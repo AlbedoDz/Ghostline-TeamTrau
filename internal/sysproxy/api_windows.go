@@ -2,6 +2,7 @@ package sysproxy
 
 import (
 	"fmt"
+	"log/slog"
 	"runtime"
 	"unsafe"
 
@@ -103,7 +104,13 @@ func (winAPI) Set(s store.SysProxySnapshot) error {
 	if r == 0 {
 		return fmt.Errorf("sysproxy: InternetSetOption: %w", err)
 	}
-	_, _, _ = procSetOption.Call(0, optSettingsChanged, 0, 0)
-	_, _, _ = procSetOption.Call(0, optRefresh, 0, 0)
+	// Without these broadcasts running browsers keep the old proxy until
+	// restarted; the setting itself is already written.
+	if r, _, err := procSetOption.Call(0, optSettingsChanged, 0, 0); r == 0 {
+		slog.Warn("sysproxy: broadcast INTERNET_OPTION_SETTINGS_CHANGED failed", "err", err)
+	}
+	if r, _, err := procSetOption.Call(0, optRefresh, 0, 0); r == 0 {
+		slog.Warn("sysproxy: broadcast INTERNET_OPTION_REFRESH failed", "err", err)
+	}
 	return nil
 }

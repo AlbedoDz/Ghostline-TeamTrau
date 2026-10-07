@@ -55,13 +55,16 @@ type rateWindow struct {
 // running engine, so rules, cache, statistics and the no-leak guarantee
 // are the same as for the loopback listener.
 func (e *Engine) Serve(ctx context.Context, sc ServeConfig) (ServeResult, error) {
-	_ = e.StopServe(ctx)
+	if err := e.StopServe(ctx); err != nil {
+		slog.Warn("engine: stopping the previous DNS server failed", "err", err)
+	}
 	res := ServeResult{Skipped: map[netip.AddrPort]string{}}
 	var doh []netip.AddrPort
 	loop := false
 	for _, a := range sc.DoH {
 		b, err := probeTCP(a)
 		if err != nil {
+			slog.Warn("engine: DoH listen address skipped", "addr", a, "err", err)
 			res.Skipped[a] = err.Error()
 			continue
 		}
@@ -75,6 +78,7 @@ func (e *Engine) Serve(ctx context.Context, sc ServeConfig) (ServeResult, error)
 	var tcp []*net.TCPAddr
 	for _, a := range sc.Plain {
 		if err := probeUDPTCP(a); err != nil {
+			slog.Warn("engine: plain DNS listen address skipped", "addr", a, "err", err)
 			res.Skipped[a] = err.Error()
 			continue
 		}
@@ -96,9 +100,11 @@ func (e *Engine) Serve(ctx context.Context, sc ServeConfig) (ServeResult, error)
 		RequestHandler: proxy.HandlerFunc(e.serveHandle),
 	})
 	if err != nil {
+		slog.Warn("engine: creating the DNS server failed", "err", err)
 		return res, fmt.Errorf("engine: serve: %w", err)
 	}
 	if err := p.Start(ctx); err != nil {
+		slog.Warn("engine: starting the DNS server failed", "err", err)
 		return res, fmt.Errorf("engine: serve: %w", err)
 	}
 	mux := http.NewServeMux()
@@ -110,17 +116,24 @@ func (e *Engine) Serve(ctx context.Context, sc ServeConfig) (ServeResult, error)
 	for _, a := range doh {
 		ln, err := net.Listen("tcp", a.String())
 		if err != nil {
+			slog.Warn("engine: DoH listen failed", "addr", a, "err", err)
 			res.Skipped[a] = err.Error()
 			continue
 		}
 		srv := &http.Server{Handler: mux, TLSConfig: tlsConf.Clone(), ReadHeaderTimeout: 10 * time.Second, IdleTimeout: 2 * time.Minute}
-		go func() { _ = srv.ServeTLS(ln, "", "") }()
+		go func() {
+			if err := srv.ServeTLS(ln, "", ""); err != nil && !errors.Is(err, http.ErrServerClosed) {
+				slog.Warn("engine: DoH server stopped unexpectedly", "addr", a, "err", err)
+			}
+		}()
 		srvs = append(srvs, srv)
 		res.Bound = append(res.Bound, a)
 		loop = loop || a.Addr().IsLoopback()
 	}
 	if !loop {
-		_ = shutdownAll(ctx, srvs, p)
+		if err := shutdownAll(ctx, srvs, p); err != nil {
+			slog.Warn("engine: DNS server shutdown failed", "err", err)
+		}
 		return res, ErrNoLoopbackDoH
 	}
 	e.mu.Lock()
@@ -131,7 +144,9 @@ func (e *Engine) Serve(ctx context.Context, sc ServeConfig) (ServeResult, error)
 
 func shutdownAll(ctx context.Context, srvs []*http.Server, p *proxy.Proxy) error {
 	for _, s := range srvs {
-		_ = s.Shutdown(ctx)
+		if err := s.Shutdown(ctx); err != nil {
+			slog.Warn("engine: DoH server shutdown failed", "addr", s.Addr, "err", err)
+		}
 	}
 	return p.Shutdown(ctx)
 }

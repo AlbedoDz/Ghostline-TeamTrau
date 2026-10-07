@@ -1,6 +1,10 @@
 package cfscan
 
 import (
+	"errors"
+	"io/fs"
+	"log/slog"
+	"path/filepath"
 	"slices"
 	"time"
 
@@ -45,10 +49,19 @@ func (c *Cache) Get(key string) (CacheEntry, bool) {
 func LoadCache(path string) *Cache {
 	c := &Cache{}
 	if err := store.ReadJSON(path, c); err != nil || c.Entries == nil {
+		if err != nil && !errors.Is(err, fs.ErrNotExist) {
+			slog.Warn("cfscan: loading the scan cache failed; starting empty", "file", filepath.Base(path), "err", err)
+		}
 		return &Cache{Entries: map[string]CacheEntry{}}
 	}
 	return c
 }
 
 // SaveCache writes the cache atomically.
-func SaveCache(path string, c *Cache) error { return store.WriteJSONAtomic(path, c) }
+func SaveCache(path string, c *Cache) error {
+	err := store.WriteJSONAtomic(path, c)
+	if err != nil {
+		slog.Warn("cfscan: saving the scan cache failed", "file", filepath.Base(path), "err", err)
+	}
+	return err
+}

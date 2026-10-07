@@ -139,9 +139,11 @@ func (e *Engine) startLocked(ctx context.Context, v4, v6 netip.AddrPort, ups []u
 		RequestHandler: proxy.HandlerFunc(e.handle),
 	})
 	if err != nil {
+		slog.Warn("engine: creating the DNS proxy failed", "upstreams", len(ups), "err", err)
 		return fmt.Errorf("engine: %w", err)
 	}
 	if err := p.Start(ctx); err != nil {
+		slog.Warn("engine: starting the DNS proxy failed", "listen", v4, "listen6", v6, "err", err)
 		return fmt.Errorf("engine: %w", err)
 	}
 	e.p = p
@@ -164,6 +166,7 @@ func (e *Engine) Swap(ctx context.Context, ups []upstream.Upstream) error {
 	}
 	v4 := e.addr
 	if err := e.p.Shutdown(ctx); err != nil {
+		slog.Warn("engine: shutdown before upstream swap failed", "err", err)
 		return fmt.Errorf("engine: shutdown: %w", err)
 	}
 	e.p = nil
@@ -173,7 +176,9 @@ func (e *Engine) Swap(ctx context.Context, ups []upstream.Upstream) error {
 
 // Stop shuts the proxy down and closes its upstreams.
 func (e *Engine) Stop(ctx context.Context) error {
-	_ = e.StopServe(ctx)
+	if err := e.StopServe(ctx); err != nil {
+		slog.Warn("engine: stopping the DNS server failed", "err", err)
+	}
 	e.mu.Lock()
 	defer e.mu.Unlock()
 	if e.p == nil {
@@ -181,6 +186,9 @@ func (e *Engine) Stop(ctx context.Context) error {
 	}
 	err := e.p.Shutdown(ctx)
 	e.p = nil
+	if err != nil {
+		slog.Warn("engine: shutdown failed", "err", err)
+	}
 	return err
 }
 

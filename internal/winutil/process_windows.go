@@ -1,6 +1,8 @@
 package winutil
 
 import (
+	"errors"
+	"log/slog"
 	"os"
 	"os/exec"
 	"time"
@@ -71,6 +73,11 @@ func ProcessName(pid uint32) (string, error) {
 func WaitForExit(pid uint32) error {
 	h, err := windows.OpenProcess(windows.SYNCHRONIZE, false, pid)
 	if err != nil {
+		// ERROR_INVALID_PARAMETER: no such pid. Anything else (access
+		// denied) means we are not really waiting.
+		if !errors.Is(err, windows.ERROR_INVALID_PARAMETER) {
+			slog.Warn("winutil: open process to wait for exit failed; treating it as exited", "err", err, "pid", pid)
+		}
 		return nil // already gone
 	}
 	defer windows.CloseHandle(h)

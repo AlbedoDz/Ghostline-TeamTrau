@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"errors"
+	"log/slog"
 
 	"github.com/hashcott/ghostline/internal/dpi"
 	"github.com/hashcott/ghostline/internal/store"
@@ -83,7 +84,8 @@ func (o *Orchestrator) startDPI(ctx context.Context, s store.Settings) error {
 		return first
 	}
 	fb := o.planFor(s, store.EngineGoodbyeDPI)
-	if o.startEngine(ctx, store.EngineGoodbyeDPI, fb) != nil {
+	if ferr := o.startEngine(ctx, store.EngineGoodbyeDPI, fb); ferr != nil {
+		slog.Warn("dpi: fallback engine failed to start", "engine", store.EngineGoodbyeDPI, "err", ferr, "cause", first)
 		return first
 	}
 	o.update(func(sn *Snapshot) {
@@ -98,7 +100,7 @@ func (o *Orchestrator) startDPI(ctx context.Context, s store.Settings) error {
 // at once: a restart takes seconds and the UI must not keep showing the
 // engine being stopped.
 func (o *Orchestrator) stopDPI() {
-	_ = o.d.DPI.Stop()
+	warnIgnored("dpi stop", o.d.DPI.Stop())
 	o.recordDPI(false, 0, "")
 	o.update(func(sn *Snapshot) {
 		sn.DPI.Running, sn.DPI.Engine, sn.DPI.Preset, sn.DPI.Fallback = false, "", "", false
@@ -122,6 +124,7 @@ func (o *Orchestrator) RestartDPI(ctx context.Context) error {
 	}
 	o.stopDPI()
 	if err := o.startDPI(ctx, o.d.Settings()); err != nil {
+		slog.Warn("dpi: restart failed", "err", err)
 		o.update(func(sn *Snapshot) { sn.DPI.Running, sn.DPI.Engine, sn.DPI.Fallback = false, "", false })
 		return err
 	}
@@ -139,6 +142,9 @@ func (o *Orchestrator) RewriteZapret2File(ctx context.Context, write func() erro
 		o.stopDPI() // copies the engine's list out first
 	}
 	err := write()
+	if err != nil {
+		slog.Warn("dpi: rewriting a zapret2 file failed", "err", err)
+	}
 	if !stopped || !o.connected() {
 		if stopped {
 			o.update(func(sn *Snapshot) { sn.DPI.Running, sn.DPI.Engine, sn.DPI.Fallback = false, "", false })
@@ -146,6 +152,7 @@ func (o *Orchestrator) RewriteZapret2File(ctx context.Context, write func() erro
 		return err
 	}
 	if serr := o.startDPI(ctx, o.d.Settings()); serr != nil {
+		slog.Warn("dpi: restart after a list rewrite failed", "err", serr)
 		o.update(func(sn *Snapshot) { sn.DPI.Running, sn.DPI.Engine, sn.DPI.Fallback = false, "", false })
 		return serr
 	}
@@ -172,6 +179,7 @@ func (o *Orchestrator) SetDPIEnabled(ctx context.Context, on bool) error {
 		// meanwhile don't flip the UI switch back.
 		o.update(func(sn *Snapshot) { sn.DPI.Enabled = true })
 		if err := o.startDPI(ctx, s); err != nil {
+			slog.Warn("dpi: start failed", "err", err)
 			o.update(func(sn *Snapshot) { sn.DPI.Enabled = s.DPI.Enabled })
 			return err
 		}

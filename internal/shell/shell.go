@@ -49,11 +49,13 @@ type Options struct {
 // Run starts the UI process.
 func Run(o Options) error {
 	if !webView2Installed() {
+		// No log file yet: the message box is the only trace of this.
 		messageBox(brand.AppName, "Ghostline cần Microsoft Edge WebView2 Runtime.\nGhostline needs the Microsoft Edge WebView2 Runtime.\n\nhttps://go.microsoft.com/fwlink/p/?LinkId=2124703")
 		return errors.New("webview2 missing")
 	}
 	paths := store.WithMachineDir(store.ResolvePaths(o.Executable, os.Getenv("APPDATA")), filepath.Join(os.Getenv("ProgramData"), brand.AppName))
 	if err := os.MkdirAll(paths.DataDir, 0o755); err != nil {
+		// Before the log exists: the message box shows the error.
 		fatalBox(err)
 		return err
 	}
@@ -65,16 +67,22 @@ func Run(o Options) error {
 	defer logw.Close()
 	log := slog.New(slog.NewTextHandler(logw, nil))
 	slog.SetDefault(log)
-	log.Info("start", "version", brand.Version, "portable", paths.Portable, "mode", o.Mode.Kind)
+	// An unrecovered panic in any goroutine kills the process; a GUI exe has
+	// no stderr, so send the crash report (with stacks) to a file.
+	if err := logx.CrashOutput(paths.LogDir, "ghostline-crash"); err != nil {
+		log.Warn("shell: crash output setup failed", "dir", paths.LogDir, "err", err)
+	}
+	log.Info("start", append([]any{"version", brand.Version, "portable", paths.Portable, "mode", o.Mode.Kind.String()}, envAttrs()...)...)
 
 	initial, settingsReset, err := store.LoadSettings(paths.Settings)
 	if err != nil {
-		log.Warn("settings", "err", err)
+		log.Warn("settings", "path", paths.Settings, "err", err)
 	}
 	box := app.NewSettingsBox(paths.Settings, initial)
 
 	lock, err := winutil.NewNamedMutex(brand.StateMutex)
 	if err != nil {
+		log.Error("shell: state mutex failed", "err", err)
 		fatalBox(err)
 		return err
 	}
@@ -277,7 +285,10 @@ func Run(o Options) error {
 		PlainUpstream: plainUpstream,
 		DialDirect:    dialDirect,
 		ISPResolvers: func() []string {
-			st, _ := states.Load()
+			st, err := states.Load()
+			if err != nil {
+				log.Warn("shell: reading state.json for the ISP resolvers failed", "err", err)
+			}
 			return ispResolvers(st, liveAdapters())
 		},
 		OpenFile: func(title string) (string, error) {
@@ -309,16 +320,22 @@ func Run(o Options) error {
 		Services:    []application.Service{application.NewService(svc)},
 		Assets:      application.AssetOptions{Handler: application.AssetFileServerFS(o.Assets)},
 		SingleInstance: &application.SingleInstanceOptions{
-			UniqueID:               brand.SingleInstanceID,
-			OnSecondInstanceLaunch: func(application.SecondInstanceData) { ui.show() },
+			UniqueID: brand.SingleInstanceID,
+			OnSecondInstanceLaunch: func(application.SecondInstanceData) {
+				log.Info("shell: second instance launched; showing the window")
+				ui.show()
+			},
 		},
 		Windows: application.WindowsOptions{
 			DisableQuitOnLastWindowClosed: true,
 			WndProcInterceptor: func(hwnd uintptr, msg uint32, wParam, lParam uintptr) (uintptr, bool) {
 				switch classify(msg, wParam) {
 				case wmEndSession:
+					log.Info("shell: session ending; disconnecting", "wm", msg)
 					ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-					_ = orch.Disconnect(ctx)
+					if err := orch.Disconnect(ctx); err != nil {
+						log.Warn("shell: disconnect at session end failed", "err", err)
+					}
 					cancel()
 					if msg == wmQueryEndSession {
 						return 1, true
@@ -332,7 +349,9 @@ func Run(o Options) error {
 		OnShutdown: func() {
 			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			defer cancel()
-			_ = orch.Disconnect(ctx)
+			if err := orch.Disconnect(ctx); err != nil {
+				log.Warn("shell: disconnect at shutdown failed", "err", err)
+			}
 		},
 	})
 	em.app = wapp
@@ -371,9 +390,14 @@ func Run(o Options) error {
 	go runUpdates(ctx, paths, box, cat, strats, checker, log)
 
 	if o.Mode.Kind == cli.KindAutostart && box.Get().AutoConnect {
-		go func() { _ = orch.Connect(context.Background()) }()
+		go func() {
+			if err := orch.Connect(context.Background()); err != nil {
+				log.Warn("shell: auto-connect at Windows start failed", "err", err)
+			}
+		}()
 	}
 	if err := wapp.Run(); err != nil {
+		log.Error("shell: wails run failed", "err", err)
 		fatalBox(err)
 		return fmt.Errorf("shell: %w", err)
 	}
@@ -384,23 +408,38 @@ func Run(o Options) error {
 // DHCP when there is no usable snapshot.
 func restoreNow(states *store.StateStore, mgr *sysdns.Manager) error {
 	st, err := states.Load()
+	if err != nil {
+		slog.Warn("restore now: reading state.json failed; resetting loopback adapters instead", "err", err)
+	}
 	if err == nil && len(st.Snapshot) > 0 {
+		slog.Info("restore now: restoring the DNS snapshot", "adapters", len(st.Snapshot))
 		if errs := mgr.Restore(st.Snapshot); len(errs) > 0 {
+			slog.Warn("restore now: restoring the snapshot failed", "errs", errs)
 			return errs[0]
 		}
-		return states.Reset()
+		return logResetErr(states.Reset())
 	}
 	ads, err := mgr.LoopbackAdapters()
 	if err != nil {
+		slog.Warn("restore now: listing loopback adapters failed", "err", err)
 		return err
 	}
+	slog.Info("restore now: resetting loopback adapters to DHCP", "adapters", len(ads))
 	var snaps []model.AdapterSnapshot
 	for _, a := range ads {
 		snaps = append(snaps, model.AdapterSnapshot{GUID: a.GUID, IfIndex: a.IfIndex, Alias: a.Alias,
 			IPv4: model.FamilyDNS{Mode: model.DNSModeDHCP}, IPv6: model.FamilyDNS{Mode: model.DNSModeDHCP}})
 	}
 	if errs := mgr.Restore(snaps); len(errs) > 0 {
+		slog.Warn("restore now: resetting loopback adapters failed", "errs", errs)
 		return errs[0]
 	}
-	return states.Reset()
+	return logResetErr(states.Reset())
+}
+
+func logResetErr(err error) error {
+	if err != nil {
+		slog.Warn("restore now: resetting state.json failed", "err", err)
+	}
+	return err
 }

@@ -157,7 +157,9 @@ func (u *ui) resize(mode string) {
 	} else {
 		if w0 >= minFullW { // remember the full-interface size
 			s.FullWindow.Width, s.FullWindow.Height = w0, h0
-			_ = u.box.Save(s)
+			if err := u.box.Save(s); err != nil {
+				u.log.Warn("ui: saving the window size failed", "err", err)
+			}
 		}
 		u.win.SetMinSize(simpleW, simpleH)
 		u.win.SetResizable(false)
@@ -177,7 +179,9 @@ func (u *ui) createTray() {
 		url := u.updURL
 		u.mu.Unlock()
 		if url != "" {
-			_ = u.app.Browser.OpenURL(url)
+			if err := u.app.Browser.OpenURL(url); err != nil {
+				u.log.Warn("tray: opening the release page failed", "err", err)
+			}
 		}
 	})
 	u.connItem = menu.Add(tt.connect).OnClick(func(*application.Context) {
@@ -186,9 +190,11 @@ func (u *ui) createTray() {
 				if !u.confirmDisconnect(tt) {
 					return
 				}
-				_ = u.orch.Disconnect(context.Background())
-			} else {
-				_ = u.orch.Connect(context.Background())
+				if err := u.orch.Disconnect(context.Background()); err != nil {
+					u.log.Warn("tray: disconnect failed", "err", err)
+				}
+			} else if err := u.orch.Connect(context.Background()); err != nil {
+				u.log.Warn("tray: connect failed", "err", err)
 			}
 		}()
 	})
@@ -197,6 +203,7 @@ func (u *ui) createTray() {
 		on := c.IsChecked()
 		go func() {
 			if err := u.orch.SetDPIEnabled(context.Background(), on); err != nil {
+				u.log.Warn("tray: switching DPI bypass failed", "on", on, "err", err)
 				u.dpiItem.SetChecked(!on)
 			}
 		}()
@@ -204,7 +211,10 @@ func (u *ui) createTray() {
 	u.proxyItem = menu.Add(tt.proxyLabel(u.box.Get().Proxy.Enabled)).OnClick(func(*application.Context) {
 		go func() {
 			if u.svc != nil {
-				_ = u.svc.SetProxyEnabled(!u.box.Get().Proxy.Enabled)
+				on := !u.box.Get().Proxy.Enabled
+				if err := u.svc.SetProxyEnabled(on); err != nil {
+					u.log.Warn("tray: switching the proxy failed", "on", on, "err", err)
+				}
 			}
 			u.onLanguage()
 		}()
@@ -299,6 +309,7 @@ func (u *ui) checkUpdate() {
 	tt := trayText(u.box.Get().Language)
 	msg := tt.upToDate + " (" + brand.Version + ")"
 	if err != nil {
+		u.log.Warn("tray: update check failed", "err", err)
 		msg = tt.checkFailed
 	}
 	u.tray.SetTooltip(brand.AppName + " · " + msg)

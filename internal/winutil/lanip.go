@@ -1,6 +1,7 @@
 package winutil
 
 import (
+	"log/slog"
 	"net"
 	"net/netip"
 )
@@ -74,6 +75,7 @@ func UnicastAddrs(ifaces []net.Interface, addrs func(net.Interface) ([]net.Addr,
 func LocalUnicastAddrs() []netip.Addr {
 	ifs, err := net.Interfaces()
 	if err != nil {
+		slog.Warn("winutil: list network interfaces failed", "err", err)
 		return nil
 	}
 	return UnicastAddrs(ifs, func(i net.Interface) ([]net.Addr, error) { return i.Addrs() })
@@ -83,6 +85,7 @@ func LocalUnicastAddrs() []netip.Addr {
 func LocalLANAddrs() []netip.Addr {
 	ifs, err := net.Interfaces()
 	if err != nil {
+		slog.Warn("winutil: list network interfaces failed", "err", err)
 		return nil
 	}
 	return LANAddrs(ifs, func(i net.Interface) ([]net.Addr, error) { return i.Addrs() })

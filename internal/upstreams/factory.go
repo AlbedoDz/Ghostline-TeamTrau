@@ -51,6 +51,7 @@ func NewFactory(o Options) (*Factory, error) {
 	for _, addr := range o.Bootstrap {
 		r, err := upstream.NewUpstreamResolver(addr, &upstream.Options{Timeout: o.Timeout, Logger: quiet})
 		if err != nil {
+			slog.Warn("upstreams: bootstrap resolver construction failed", "bootstrap", addr, "err", err)
 			return nil, fmt.Errorf("upstreams: bootstrap %q: %w", addr, err)
 		}
 		par = append(par, upstream.NewCachingResolver(r))
@@ -67,6 +68,7 @@ func (f *Factory) Build(s model.Server) (upstream.Upstream, error) {
 		for _, ip := range s.IPs {
 			a, err := netip.ParseAddr(ip)
 			if err != nil {
+				slog.Warn("upstreams: server has a bad pinned IP", "server", s.ID, "ip", ip, "err", err)
 				return nil, fmt.Errorf("upstreams: %s: bad IP %q", s.ID, ip)
 			}
 			static = append(static, a)
@@ -80,6 +82,7 @@ func (f *Factory) Build(s model.Server) (upstream.Upstream, error) {
 			Timeout: f.o.Timeout, RootCAs: f.o.RootCAs,
 		})
 		if err != nil {
+			slog.Warn("upstreams: fragmenting DoH upstream construction failed", "server", s.ID, "address", s.Address, "err", err)
 			return nil, err
 		}
 		return fu, nil
@@ -88,6 +91,7 @@ func (f *Factory) Build(s model.Server) (upstream.Upstream, error) {
 		Bootstrap: boot, Timeout: f.o.Timeout, RootCAs: f.o.RootCAs, Logger: quiet,
 	})
 	if err != nil {
+		slog.Warn("upstreams: upstream construction failed", "server", s.ID, "address", s.Address, "err", err)
 		return nil, err
 	}
 	return &bounded{Upstream: u, timeout: f.o.Timeout}, nil

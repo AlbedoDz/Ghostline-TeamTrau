@@ -22,6 +22,23 @@ const (
 	KindExport
 )
 
+// String names the mode for the log.
+func (k Kind) String() string {
+	switch k {
+	case KindWatchdog:
+		return "watchdog"
+	case KindRestore:
+		return "restore"
+	case KindRemoveCerts:
+		return "remove-certs"
+	case KindAutostart:
+		return "autostart"
+	case KindExport:
+		return "export"
+	}
+	return "ui"
+}
+
 // Mode is the parsed command line.
 type Mode struct {
 	Kind        Kind

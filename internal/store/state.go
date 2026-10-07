@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"log/slog"
 	"os"
 	"slices"
 	"time"
@@ -158,8 +159,14 @@ func (s *StateStore) Locked(fn func() error) error {
 	if err := s.lock.Lock(); err != nil {
 		return err
 	}
-	defer func() { _ = s.lock.Unlock() }()
+	defer s.unlock()
 	return fn()
+}
+
+func (s *StateStore) unlock() {
+	if err := s.lock.Unlock(); err != nil {
+		slog.Warn("store: releasing the state lock failed", "err", err)
+	}
 }
 
 // Write replaces state.json; callers must hold the lock (see Locked).
@@ -187,7 +194,7 @@ func (s *StateStore) Update(fn func(*State) error) error {
 	if err := s.lock.Lock(); err != nil {
 		return err
 	}
-	defer func() { _ = s.lock.Unlock() }()
+	defer s.unlock()
 	st, err := s.Load()
 	if err != nil {
 		return err
@@ -204,6 +211,6 @@ func (s *StateStore) Reset() error {
 	if err := s.lock.Lock(); err != nil {
 		return err
 	}
-	defer func() { _ = s.lock.Unlock() }()
+	defer s.unlock()
 	return WriteJSONAtomic(s.path, cleanState())
 }

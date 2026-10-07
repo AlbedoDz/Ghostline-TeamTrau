@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"errors"
+	"log/slog"
 
 	"github.com/hashcott/ghostline/internal/watchdog"
 )
@@ -49,9 +50,10 @@ func (o *Orchestrator) RestoreNow(ctx context.Context, fallback func() error) er
 	}
 	if fallback != nil {
 		if err := fallback(); err != nil {
+			slog.Warn("system: manual DNS restore failed", "err", err)
 			return err
 		}
-		_ = o.d.Safety.DeleteRecoveryTask()
+		warnIgnored("recovery task delete", o.d.Safety.DeleteRecoveryTask())
 	}
 	o.ClearWarning(CodeRestoreFailed)
 	o.ClearWarning(CodeStateReset)

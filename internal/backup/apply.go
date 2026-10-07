@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"log/slog"
 	"os"
 
 	"github.com/hashcott/ghostline/internal/store"
@@ -40,12 +41,16 @@ func Apply(ws []Write) error {
 		for i := len(did) - 1; i >= 0; i-- {
 			d := did[i]
 			if d.existed {
-				if b, err := os.ReadFile(d.path + bakSuffix); err == nil {
-					_ = store.WriteFileAtomic(d.path, b)
+				if b, err := os.ReadFile(d.path + bakSuffix); err != nil {
+					slog.Error("backup: rollback: reading the saved copy failed", "path", d.path+bakSuffix, "err", err)
+				} else if err := store.WriteFileAtomic(d.path, b); err != nil {
+					slog.Error("backup: rollback: restoring the file failed", "path", d.path, "err", err)
 				}
-				_ = os.Remove(d.path + bakSuffix)
-			} else {
-				_ = os.Remove(d.path)
+				if err := os.Remove(d.path + bakSuffix); err != nil {
+					slog.Warn("backup: rollback: removing the saved copy failed", "path", d.path+bakSuffix, "err", err)
+				}
+			} else if err := os.Remove(d.path); err != nil && !errors.Is(err, fs.ErrNotExist) {
+				slog.Warn("backup: rollback: removing the imported file failed", "path", d.path, "err", err)
 			}
 		}
 	}
@@ -53,17 +58,20 @@ func Apply(ws []Write) error {
 		old, err := os.ReadFile(w.Path)
 		existed := err == nil
 		if err != nil && !errors.Is(err, fs.ErrNotExist) {
+			slog.Warn("backup: reading the current file failed; rolling back", "path", w.Path, "err", err)
 			rollback()
 			return &WriteError{Path: w.Path, Err: err}
 		}
 		if existed {
 			if err := store.WriteFileAtomic(w.Path+bakSuffix, old); err != nil {
+				slog.Warn("backup: saving a copy of the current file failed; rolling back", "path", w.Path+bakSuffix, "err", err)
 				rollback()
 				return &WriteError{Path: w.Path, Err: err}
 			}
 		}
 		did = append(did, done{w.Path, existed})
 		if err := store.WriteFileAtomic(w.Path, w.Data); err != nil {
+			slog.Warn("backup: writing the imported file failed; rolling back", "path", w.Path, "err", err)
 			rollback()
 			return &WriteError{Path: w.Path, Err: err}
 		}

@@ -7,6 +7,8 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"log/slog"
+	"runtime/debug"
 	"strings"
 
 	"github.com/ameshkov/dnsstamps"
@@ -86,7 +88,9 @@ func Decode(s string) (f Fields, err error) {
 		return f, nil
 	}
 	defer func() { // the library indexes past short input on some malformed stamps
-		if recover() != nil {
+		if r := recover(); r != nil {
+			// Expected on some malformed input; the stack shows where.
+			slog.Warn("stamps: decoder panicked on a malformed stamp", "panic", r, "stack", string(debug.Stack()))
 			f, err = Fields{}, invalid("stamp", "malformed")
 		}
 	}()

@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/netip"
 	"net/url"
 	"slices"
@@ -109,10 +110,21 @@ func (o *Orchestrator) update(fn func(*Snapshot)) {
 }
 
 func (o *Orchestrator) log(source, code string, kv ...any) {
+	o.logErr(source, code, nil, kv...)
+}
+
+// logErr is log for a failure: err goes to the log file next to the code.
+func (o *Orchestrator) logErr(source, code string, err error, kv ...any) {
 	if o.d.Sink == nil {
+		if err != nil {
+			slog.Warn("event", "source", source, "code", code, "err", err)
+		}
 		return
 	}
 	e := LogEvent{Time: o.d.Now(), Source: source, Code: code}
+	if err != nil {
+		e.Err = err.Error()
+	}
 	if len(kv) > 0 {
 		e.Params = map[string]any{}
 		for i := 0; i+1 < len(kv); i += 2 {
@@ -120,6 +132,19 @@ func (o *Orchestrator) log(source, code string, kv ...any) {
 		}
 	}
 	o.d.Sink.Log(e)
+}
+
+// logAppErr logs ae with its params and its cause.
+func (o *Orchestrator) logAppErr(source string, ae *AppError) {
+	o.logErr(source, ae.Code, ae.cause, flatten(ae.Params)...)
+}
+
+// warnIgnored logs an error that a best-effort call drops, so a cleanup that
+// silently fails still leaves a trace in the log file.
+func warnIgnored(op string, err error, kv ...any) {
+	if err != nil {
+		slog.Warn("ignored error", append([]any{"op", op, "err", err}, kv...)...)
+	}
 }
 
 // AddWarning adds a persistent warning (deduplicated by code and params).
@@ -203,7 +228,7 @@ func (o *Orchestrator) Connect(ctx context.Context) error {
 		o.mu.Unlock()
 		o.AddWarning(AppError{Code: CodeRestoreFailed, Params: ae.Params})
 		o.update(func(s *Snapshot) { s.Status, s.Error = StatusError, &AppError{Code: ae.Code, Params: ae.Params} })
-		o.log("system", ae.Code, flatten(ae.Params)...)
+		o.logAppErr("system", ae)
 		return err
 	}
 	if err != nil {
@@ -220,7 +245,7 @@ func (o *Orchestrator) Connect(ctx context.Context) error {
 			ae = appErr(CodeInternal, err, "step", o.Snapshot().Step)
 		}
 		o.update(func(s *Snapshot) { s.Status, s.Error = StatusError, &AppError{Code: ae.Code, Params: ae.Params} })
-		o.log("system", ae.Code, flatten(ae.Params)...)
+		o.logAppErr("system", ae)
 		return err
 	}
 	o.update(func(s *Snapshot) {
@@ -376,7 +401,7 @@ func (o *Orchestrator) connectSteps() []step {
 				return appErr(CodeEngineSelfTest, err)
 			}
 			if err := o.d.Engine.SelfTest(ctx); err != nil {
-				_ = o.d.Engine.Stop(context.WithoutCancel(ctx))
+				warnIgnored("engine stop", o.d.Engine.Stop(context.WithoutCancel(ctx)))
 				return appErr(CodeEngineSelfTest, err)
 			}
 			o.mu.Lock()
@@ -423,7 +448,7 @@ func (o *Orchestrator) connectSteps() []step {
 				return appErr(CodeInternal, err, "step", 5)
 			}
 			if err := o.d.Safety.CreateRecoveryTask(); err != nil {
-				_ = stop()
+				warnIgnored("watchdog stop", stop())
 				return appErr(CodeInternal, err, "step", 5)
 			}
 			stopWD = stop
@@ -480,8 +505,11 @@ func randomHex(n int) string {
 // returns a halt error so the rollback keeps every safety layer.
 func (o *Orchestrator) restoreOrHalt(snaps []model.AdapterSnapshot, orig error) error {
 	errs := o.d.DNS.Restore(snaps)
-	_ = o.d.DNS.Flush()
+	warnIgnored("dns flush", o.d.DNS.Flush())
 	if len(errs) > 0 {
+		for _, e := range errs {
+			slog.Warn("system: DNS restore failed", "adapter", e.Alias, "err", e.Err)
+		}
 		return halt(appErr(CodeRestoreFailed, errs[0], "adapter", errs[0].Alias))
 	}
 	return orig
@@ -503,12 +531,13 @@ func (o *Orchestrator) disconnectLocked(ctx context.Context) []sysdns.RestoreErr
 	o.stopProxyPhase(ctx)
 	o.dropBlockPublic()
 	errs := o.d.DNS.Restore(snaps)
-	_ = o.d.DNS.Flush()
+	warnIgnored("dns flush", o.d.DNS.Flush())
 	if len(errs) > 0 {
 		o.mu.Lock()
 		o.dirty = true
 		o.mu.Unlock()
 		for _, e := range errs {
+			slog.Warn("system: DNS restore failed", "adapter", e.Alias, "err", e.Err)
 			o.AddWarning(AppError{Code: CodeRestoreFailed, Params: map[string]any{"adapter": e.Alias}})
 		}
 		return errs
@@ -517,10 +546,10 @@ func (o *Orchestrator) disconnectLocked(ctx context.Context) []sysdns.RestoreErr
 		healthStop()
 	}
 	if o.d.DPI.Running() {
-		_ = o.d.DPI.Stop()
+		warnIgnored("dpi stop", o.d.DPI.Stop())
 	}
-	_ = o.d.Engine.Stop(ctx)
-	_ = o.d.States.Update(func(s *store.State) error {
+	warnIgnored("engine stop", o.d.Engine.Stop(ctx))
+	warnIgnored("state reset", o.d.States.Update(func(s *store.State) error {
 		*s = store.CleanState()
 		// A session CA that could not be removed stays recorded so
 		// recovery and "retry removal" still find it (spec 2B 6.5).
@@ -528,11 +557,11 @@ func (o *Orchestrator) disconnectLocked(ctx context.Context) []sysdns.RestoreErr
 			s.Certs = &store.CertsState{Session: slices.Clone(o.sni.installed)}
 		}
 		return nil
-	})
+	}))
 	if stopWD != nil {
-		_ = stopWD()
+		warnIgnored("watchdog stop", stopWD())
 	}
-	_ = o.d.Safety.DeleteRecoveryTask()
+	warnIgnored("recovery task delete", o.d.Safety.DeleteRecoveryTask())
 	o.mu.Lock()
 	o.snaps, o.stopWatchdog, o.servers, o.healthStop, o.dirty = nil, nil, nil, nil, false
 	o.mu.Unlock()
@@ -563,7 +592,7 @@ func (o *Orchestrator) Disconnect(ctx context.Context) error {
 
 	if errs := o.disconnectLocked(ctx); len(errs) > 0 {
 		o.update(func(s *Snapshot) { s.Status = prev })
-		o.log("system", CodeRestoreFailed, "adapter", errs[0].Alias)
+		o.logErr("system", CodeRestoreFailed, errs[0].Err, "adapter", errs[0].Alias)
 		return nil
 	}
 	o.update(func(s *Snapshot) {
@@ -602,13 +631,13 @@ func (o *Orchestrator) cancelBackground() {
 // recordDPI persists GoodbyeDPI's state while DNS is redirected, so the
 // watchdog and --restore also remove the WinDivert driver after a crash.
 func (o *Orchestrator) recordDPI(running bool, pid int, engine string) {
-	_ = o.d.States.Update(func(st *store.State) error {
+	warnIgnored("state update", ignoreNoChange(o.d.States.Update(func(st *store.State) error {
 		if st.Phase != store.PhaseDNSSet {
 			return errNoChange
 		}
 		st.DPI = store.DPIState{Running: running, PID: pid, Engine: engine}
 		return nil
-	})
+	})))
 }
 
 var errNoChange = errors.New("no change")

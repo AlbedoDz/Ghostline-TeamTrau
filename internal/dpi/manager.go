@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"sync"
@@ -164,6 +165,9 @@ func (m *Manager) Start(ctx context.Context, engine string, p Plan) (int, error)
 	}
 	dir, pins := m.dir(engine), in.Engine.Files()
 	if err := verifyWith(dir, pins); err != nil {
+		// Expected on first run; after that it means the files were changed
+		// or removed (antivirus quarantine).
+		slog.Info("dpi: engine files missing or changed; extracting", "engine", engine, "dir", dir, "err", err)
 		if err := extractWith(in.Assets, dir, pins); err != nil {
 			// Real-time antivirus refuses the write itself.
 			if errors.Is(err, os.ErrPermission) || isAppControlBlock(err) {
@@ -189,13 +193,21 @@ func (m *Manager) Start(ctx context.Context, engine string, p Plan) (int, error)
 	}
 	m.sleep(2 * time.Second)
 	if proc.Exited() {
-		if verifyWith(dir, pins) != nil {
+		slog.Warn("dpi: engine exited during startup", "engine", engine, "pid", proc.PID(), "args", args)
+		if err := verifyWith(dir, pins); err != nil {
+			slog.Warn("dpi: engine files changed after start (quarantined?)", "engine", engine, "err", err)
 			return 0, ErrBlockedByAV // files vanished or changed: quarantined
 		}
 		return 0, ErrStartFailed
 	}
-	if ok, _ := m.svc.Running(driverService); !ok {
-		_ = proc.Kill()
+	if ok, err := m.svc.Running(driverService); !ok {
+		if err != nil {
+			slog.Warn("dpi: query WinDivert driver state failed", "err", err, "service", driverService)
+		}
+		slog.Warn("dpi: WinDivert driver not running after start; killing engine", "engine", engine, "pid", proc.PID())
+		if err := proc.Kill(); err != nil {
+			slog.Warn("dpi: kill engine failed", "err", err, "engine", engine, "pid", proc.PID())
+		}
 		return 0, fmt.Errorf("%w: WinDivert driver not running", ErrStartFailed)
 	}
 	m.proc, m.running, m.plan = proc, engine, p
@@ -262,8 +274,11 @@ func (m *Manager) stopLocked() error {
 	if m.proc != nil {
 		if m.plan.AutoHostlist != "" {
 			// Keep what the engine learned; it only lives in its directory.
-			if b, err := os.ReadFile(filepath.Join(m.dir(m.running), autoHostlistName)); err == nil {
+			src := filepath.Join(m.dir(m.running), autoHostlistName)
+			if b, err := os.ReadFile(src); err == nil {
 				errs = append(errs, os.WriteFile(m.plan.AutoHostlist, b, 0o644))
+			} else if !errors.Is(err, fs.ErrNotExist) {
+				slog.Warn("dpi: read learned auto-hostlist failed", "err", err, "path", src)
 			}
 		}
 		if !m.proc.Exited() {
@@ -283,9 +298,17 @@ func (m *Manager) stopLocked() error {
 // stopLocked tried to remove it. stopLocked waits out our own just-killed
 // driver, so anything still active here is held by another live process.
 func (m *Manager) driverInUse() bool {
-	names, _ := m.svc.Find(driverService)
+	names, err := m.svc.Find(driverService)
+	if err != nil {
+		slog.Warn("dpi: list WinDivert services failed", "err", err)
+	}
 	for _, n := range names {
-		if ok, _ := m.svc.Active(n); ok {
+		ok, err := m.svc.Active(n)
+		if err != nil {
+			slog.Warn("dpi: query WinDivert service state failed", "err", err, "service", n)
+		}
+		if ok {
+			slog.Warn("dpi: WinDivert service still active after cleanup; held by another program", "service", n)
 			return true
 		}
 	}

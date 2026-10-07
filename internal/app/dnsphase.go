@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"errors"
+	"log/slog"
 	"net/netip"
 	"slices"
 	"sync/atomic"
@@ -127,7 +128,7 @@ func (o *Orchestrator) startDNSPhase(ctx context.Context) error {
 			var err error
 			res, err = o.d.DNSServer.Serve(ctx, engine.ServeConfig{DoH: doh, Plain: plain, Cert: o.dnsLeaf})
 			if err == nil && len(plain) > 0 && !anyBound(res.Bound, plain) {
-				_ = o.d.DNSServer.StopServe(context.WithoutCancel(ctx))
+				warnIgnored("dnsserver stop", o.d.DNSServer.StopServe(context.WithoutCancel(ctx)))
 				err = errors.New("no LAN address could be bound")
 			}
 			if err != nil {
@@ -150,15 +151,15 @@ func (o *Orchestrator) startDNSPhase(ctx context.Context) error {
 		}
 		if o.dns.running {
 			o.dns.running = false
-			_ = o.d.DNSServer.StopServe(context.WithoutCancel(ctx))
+			warnIgnored("dnsserver stop", o.d.DNSServer.StopServe(context.WithoutCancel(ctx)))
 		}
-		_ = o.deleteDNSRules()
+		warnIgnored("dnsserver firewall delete", o.deleteDNSRules())
 		o.update(func(sn *Snapshot) {
 			sn.DNSServer = DNSServerStatus{Error: &AppError{Code: ae.Code, Params: ae.Params}, Skipped: skippedMap(res)}
 		})
 		o.addReason(reasonDNSServer)
 		o.dns.failedAt, o.dns.failedLAN = o.d.Now(), lan
-		o.log("dnsserver", ae.Code, flatten(ae.Params)...)
+		o.logAppErr("dnsserver", ae)
 		return err
 	}
 	o.dns.failedAt, o.dns.failedLAN = time.Time{}, nil
@@ -191,10 +192,10 @@ func (o *Orchestrator) deleteDNSRules() error {
 func (o *Orchestrator) stopDNSPhase(ctx context.Context) {
 	o.closeSetup()
 	if o.dns.running {
-		_ = o.d.DNSServer.StopServe(ctx)
+		warnIgnored("dnsserver stop", o.d.DNSServer.StopServe(ctx))
 	}
 	if err := o.deleteDNSRules(); err != nil {
-		o.log("dnsserver", CodeDNSServerFirewall, "detail", err.Error())
+		o.logErr("dnsserver", CodeDNSServerFirewall, err, "detail", err.Error())
 	}
 	o.dns.running, o.dns.lan, o.dns.ca = false, nil, nil
 	o.update(func(sn *Snapshot) { sn.DNSServer = DNSServerStatus{} })
@@ -240,7 +241,9 @@ func (o *Orchestrator) checkDNSHealth(ctx context.Context) {
 		return
 	}
 	if leaf := o.dns.leaf.Load(); leaf != nil && o.dns.ca != nil && leaf.Leaf.NotAfter.Sub(o.d.Now()) < dohLeafRenew {
-		_ = o.issueDoHLeaf(o.dns.ca, o.dns.lan)
+		if err := o.issueDoHLeaf(o.dns.ca, o.dns.lan); err != nil {
+			slog.Warn("dnsserver: DoH certificate renewal failed", "err", err)
+		}
 	}
 }
 
@@ -301,7 +304,7 @@ func (o *Orchestrator) ensureBlockPublic() error {
 		return err
 	}
 	if err := o.d.Firewall.AddNamed(winutil.BlockPublicRule); err != nil {
-		_ = ignoreNoChange(o.setState(func(st *store.State) { st.RemoveFirewallRule(winutil.RuleBlockPublic) }))
+		warnIgnored("state update", ignoreNoChange(o.setState(func(st *store.State) { st.RemoveFirewallRule(winutil.RuleBlockPublic) })))
 		return err
 	}
 	o.blockPublic = true
@@ -314,9 +317,9 @@ func (o *Orchestrator) dropBlockPublic() {
 		return
 	}
 	if err := o.d.Firewall.DeleteNamed(winutil.RuleBlockPublic); err != nil {
-		o.log("proxy", CodeProxyFirewall, "detail", err.Error())
+		o.logErr("proxy", CodeProxyFirewall, err, "detail", err.Error())
 		return // stays recorded: recovery removes it
 	}
 	o.blockPublic = false
-	_ = ignoreNoChange(o.setState(func(st *store.State) { st.RemoveFirewallRule(winutil.RuleBlockPublic) }))
+	warnIgnored("state update", ignoreNoChange(o.setState(func(st *store.State) { st.RemoveFirewallRule(winutil.RuleBlockPublic) })))
 }

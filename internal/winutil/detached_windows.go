@@ -2,6 +2,7 @@ package winutil
 
 import (
 	"errors"
+	"log/slog"
 	"os/exec"
 
 	"golang.org/x/sys/windows"
@@ -19,6 +20,8 @@ func StartDetached(exe string, args []string) (*exec.Cmd, error) {
 	if err == nil || !errors.Is(err, windows.ERROR_ACCESS_DENIED) {
 		return cmd, err
 	}
+	// Still works, but the process now dies when the host's job closes.
+	slog.Warn("winutil: breakaway from job denied; starting inside the parent's job", "err", err, "exe", exe)
 	cmd = HiddenCmd(exe, args, "")
 	return cmd, cmd.Start()
 }

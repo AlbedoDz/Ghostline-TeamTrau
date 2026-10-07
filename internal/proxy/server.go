@@ -115,6 +115,7 @@ func (s *Server) Start(ctx context.Context) error {
 	for _, a := range s.cfg.Listen {
 		ln, err := net.Listen(listenNetwork(a), a.String())
 		if err != nil {
+			slog.Warn("proxy: listen failed", "addr", a, "err", err)
 			for _, l := range lns {
 				l.Close()
 			}
@@ -196,7 +197,7 @@ func (s *Server) accept(ln net.Listener) {
 	defer s.wg.Done()
 	defer func() {
 		if r := recover(); r != nil {
-			slog.Error("proxy: accept loop panicked", "panic", fmt.Sprint(r))
+			slog.Error("proxy: accept loop panicked", "panic", fmt.Sprint(r), "stack", string(debug.Stack()))
 		}
 		// A listener that ends without Stop leaves the proxy dead: report it
 		// so the health check restarts the proxy phase.
@@ -207,6 +208,9 @@ func (s *Server) accept(ln net.Listener) {
 	for {
 		c, err := ln.Accept()
 		if err != nil {
+			if !errors.Is(err, net.ErrClosed) {
+				slog.Warn("proxy: accept failed; listener stopped", "addr", ln.Addr().String(), "err", err)
+			}
 			return
 		}
 		s.wg.Add(1)

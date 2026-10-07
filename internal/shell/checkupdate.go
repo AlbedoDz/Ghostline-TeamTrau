@@ -2,6 +2,7 @@ package shell
 
 import (
 	"context"
+	"log/slog"
 	"sync"
 	"time"
 
@@ -29,7 +30,9 @@ func (m *metaFile) update(fn func(*store.Meta)) {
 	defer m.mu.Unlock()
 	meta := store.LoadMeta(m.path)
 	fn(&meta)
-	_ = store.SaveMeta(m.path, meta)
+	if err := store.SaveMeta(m.path, meta); err != nil {
+		slog.Warn("meta: saving meta.json failed", "path", m.path, "err", err)
+	}
 }
 
 // updateChecker runs release checks, scheduled or manual, through one

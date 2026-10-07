@@ -3,6 +3,9 @@ package shell
 import (
 	"crypto/ed25519"
 	"encoding/hex"
+	"errors"
+	"io/fs"
+	"log/slog"
 	"os"
 	"sync"
 
@@ -33,24 +36,50 @@ func serverListKey() ed25519.PublicKey {
 }
 
 func (c *catalog) reload() {
-	builtin, _ := servers.ParseList(lists.BuiltinJSON)
+	builtin, err := servers.ParseList(lists.BuiltinJSON)
+	if err != nil {
+		slog.Error("catalog: parsing the built-in server list failed", "err", err)
+	}
 	var remote servers.List
 	if raw, err := os.ReadFile(c.paths.ServersRemote); err == nil {
-		if sig, err := os.ReadFile(c.paths.ServersRemoteSig); err == nil && servers.VerifySigned(raw, sig, serverListKey()) == nil {
-			remote, _ = servers.ParseList(raw)
+		sig, err := os.ReadFile(c.paths.ServersRemoteSig)
+		if err == nil {
+			err = servers.VerifySigned(raw, sig, serverListKey())
 		}
+		if err != nil {
+			slog.Warn("catalog: downloaded server list ignored (signature)", "file", c.paths.ServersRemote, "err", err)
+		} else if remote, err = servers.ParseList(raw); err != nil {
+			slog.Warn("catalog: parsing the downloaded server list failed", "file", c.paths.ServersRemote, "err", err)
+		}
+	} else if !errors.Is(err, fs.ErrNotExist) {
+		slog.Warn("catalog: reading the downloaded server list failed", "err", err)
 	}
 	var dnscrypt []model.Server
 	if md, err := os.ReadFile(c.paths.ServersDNSCrypt); err == nil {
-		if sig, err := os.ReadFile(c.paths.ServersDNSCryptSig); err == nil && servers.VerifyMinisign(md, sig, brand.DNSCryptMinisignKey) == nil {
-			dnscrypt, _ = servers.ParseDNSCryptMarkdown(md)
+		sig, err := os.ReadFile(c.paths.ServersDNSCryptSig)
+		if err == nil {
+			err = servers.VerifyMinisign(md, sig, brand.DNSCryptMinisignKey)
+		}
+		if err != nil {
+			slog.Warn("catalog: downloaded DNSCrypt list ignored (signature)", "file", c.paths.ServersDNSCrypt, "err", err)
+		} else if dnscrypt, err = servers.ParseDNSCryptMarkdown(md); err != nil {
+			slog.Warn("catalog: parsing the downloaded DNSCrypt list failed", "file", c.paths.ServersDNSCrypt, "err", err)
+		}
+	} else if !errors.Is(err, fs.ErrNotExist) {
+		slog.Warn("catalog: reading the downloaded DNSCrypt list failed", "err", err)
+	}
+	if len(dnscrypt) == 0 {
+		// Not downloaded yet (or the download is bad): the built-in copy.
+		if err := servers.VerifyMinisign(lists.DNSCryptMD, lists.DNSCryptSig, brand.DNSCryptMinisignKey); err != nil {
+			slog.Error("catalog: built-in DNSCrypt list signature check failed", "err", err)
+		} else if dnscrypt, err = servers.ParseDNSCryptMarkdown(lists.DNSCryptMD); err != nil {
+			slog.Error("catalog: parsing the built-in DNSCrypt list failed", "err", err)
 		}
 	}
-	if len(dnscrypt) == 0 && servers.VerifyMinisign(lists.DNSCryptMD, lists.DNSCryptSig, brand.DNSCryptMinisignKey) == nil {
-		// Not downloaded yet (or the download is bad): the built-in copy.
-		dnscrypt, _ = servers.ParseDNSCryptMarkdown(lists.DNSCryptMD)
+	custom, err := c.loadCustom()
+	if err != nil {
+		slog.Warn("catalog: reading custom servers failed; ignoring them", "file", c.paths.ServersCustom, "err", err)
 	}
-	custom, _ := c.loadCustom()
 	all := servers.Merge(builtin, remote, dnscrypt, custom)
 	c.mu.Lock()
 	c.all = all

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/netip"
 	"slices"
 
@@ -124,7 +125,7 @@ func (o *Orchestrator) startProxyPhase(ctx context.Context) error {
 				return appErr(CodeProxySelfTest, err)
 			}
 			if err := o.d.Proxy.SelfTest(ctx); err != nil {
-				_ = o.d.Proxy.Stop(context.WithoutCancel(ctx))
+				warnIgnored("proxy stop", o.d.Proxy.Stop(context.WithoutCancel(ctx)))
 				return appErr(CodeProxySelfTest, err)
 			}
 			o.px.running = true
@@ -177,7 +178,7 @@ func (o *Orchestrator) startProxyPhase(ctx context.Context) error {
 				return appErr(CodeProxyFirewall, err, "detail", err.Error())
 			}
 			if err := o.d.Firewall.Add(port); err != nil {
-				_ = ignoreNoChange(o.setSysProxyState(func(st *store.State) { st.RemoveFirewallRule(winutil.FirewallRuleName) }))
+				warnIgnored("state update", ignoreNoChange(o.setSysProxyState(func(st *store.State) { st.RemoveFirewallRule(winutil.FirewallRuleName) })))
 				return appErr(CodeProxyFirewall, err, "detail", err.Error())
 			}
 			o.px.fwSet = true
@@ -196,7 +197,8 @@ func (o *Orchestrator) startProxyPhase(ctx context.Context) error {
 			}
 			if err := o.d.SysProxy.Apply(addr); err != nil {
 				// Apply may have written before failing to read back.
-				_, _ = o.d.SysProxy.RestoreIfOurs(addr, snap)
+				_, rerr := o.d.SysProxy.RestoreIfOurs(addr, snap)
+				warnIgnored("sysproxy restore", rerr)
 				return appErr(CodeSysProxyFailed, err)
 			}
 			o.px.sysSet, o.px.takenOver = true, false
@@ -205,7 +207,8 @@ func (o *Orchestrator) startProxyPhase(ctx context.Context) error {
 					st.SysProxy.Set = true
 				}
 			})); err != nil {
-				_, _ = o.d.SysProxy.RestoreIfOurs(addr, snap)
+				_, rerr := o.d.SysProxy.RestoreIfOurs(addr, snap)
+				warnIgnored("sysproxy restore", rerr)
 				o.px.sysSet = false
 				return appErr(CodeSysProxyFailed, err)
 			}
@@ -220,7 +223,7 @@ func (o *Orchestrator) startProxyPhase(ctx context.Context) error {
 		o.px = proxyState{}
 		o.update(func(sn *Snapshot) { sn.Proxy = ProxyStatus{Error: &AppError{Code: ae.Code, Params: ae.Params}} })
 		o.addReason(reasonProxy)
-		o.log("proxy", ae.Code, flatten(ae.Params)...)
+		o.logAppErr("proxy", ae)
 		return err
 	}
 	o.update(func(sn *Snapshot) {
@@ -241,22 +244,22 @@ func (o *Orchestrator) stopProxyPhase(ctx context.Context) {
 			o.pending = &pendingRestore{addr: px.addr, snap: *px.snap}
 			o.mu.Unlock()
 			o.AddWarning(AppError{Code: CodeSysProxyRestore})
-			o.log("proxy", CodeSysProxyRestore)
+			o.logErr("proxy", CodeSysProxyRestore, err)
 		}
 	}
 	if px.fwSet {
 		if err := o.d.Firewall.Delete(); err != nil {
-			o.log("proxy", CodeProxyFirewall, "detail", err.Error())
+			o.logErr("proxy", CodeProxyFirewall, err, "detail", err.Error())
 		}
 	}
 	if px.running {
-		_ = o.d.Proxy.Stop(ctx)
+		warnIgnored("proxy stop", o.d.Proxy.Stop(ctx))
 	}
 	if px.running || px.sysSet || px.fwSet || px.snap != nil {
-		_ = o.setSysProxyState(func(st *store.State) {
+		warnIgnored("state update", ignoreNoChange(o.setSysProxyState(func(st *store.State) {
 			st.SysProxy = nil
 			st.RemoveFirewallRule(winutil.FirewallRuleName)
-		})
+		})))
 	}
 	o.px = proxyState{}
 	o.update(func(sn *Snapshot) { sn.Proxy = ProxyStatus{} })
@@ -303,15 +306,19 @@ func (o *Orchestrator) OnSysProxyChanged() {
 		return
 	}
 	ours, err := o.d.SysProxy.IsOurs(o.px.addr)
-	if err != nil || ours {
+	if err != nil {
+		slog.Warn("proxy: reading the system proxy failed", "err", err)
+		return
+	}
+	if ours {
 		return
 	}
 	o.px.takenOver = true
-	_ = o.setSysProxyState(func(st *store.State) {
+	warnIgnored("state update", ignoreNoChange(o.setSysProxyState(func(st *store.State) {
 		if st.SysProxy != nil {
 			st.SysProxy.TakenOver = true
 		}
-	})
+	})))
 	o.update(func(sn *Snapshot) { sn.Proxy.SystemProxy = false })
 	o.AddWarning(AppError{Code: CodeSysProxyTakenOver})
 	o.log("proxy", CodeSysProxyTakenOver)

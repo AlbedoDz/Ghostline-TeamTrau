@@ -2,6 +2,8 @@ package app
 
 import (
 	"context"
+	"errors"
+	"log/slog"
 	"time"
 
 	"github.com/hashcott/ghostline/internal/engine"
@@ -24,7 +26,7 @@ func (o *Orchestrator) afterConnect() {
 	s := o.d.Settings()
 	if s.DPI.Enabled {
 		if err := o.startDPI(context.Background(), s); err != nil {
-			o.log("dpi", errCode(err))
+			o.logCodedErr("dpi", err)
 		}
 	}
 	if o.d.Ticker != nil {
@@ -55,6 +57,7 @@ func (o *Orchestrator) ApplyBest(ctx context.Context) {
 	}
 	picked, err := o.d.Picker.Pick(ctx, nil)
 	if err != nil {
+		slog.Warn("engine: picking the best servers failed", "err", err)
 		return
 	}
 	o.mu.Lock()
@@ -68,11 +71,15 @@ func (o *Orchestrator) ApplyBest(ctx context.Context) {
 	}
 }
 
-func errCode(err error) string {
-	if ae, ok := err.(*AppError); ok {
-		return ae.Code
+// logCodedErr logs err under its AppError code (CodeInternal otherwise),
+// with its cause.
+func (o *Orchestrator) logCodedErr(source string, err error) {
+	var ae *AppError
+	if errors.As(err, &ae) {
+		o.logAppErr(source, ae)
+		return
 	}
-	return CodeInternal
+	o.logErr(source, CodeInternal, err)
 }
 
 // upstreamsFailing reports whether every upstream in use has failed more
@@ -145,7 +152,7 @@ func (o *Orchestrator) heal(ctx context.Context) {
 		picked, err = o.d.Picker.Pick(ctx, nil)
 	}
 	if err != nil {
-		o.log("engine", CodeNoServers)
+		o.logErr("engine", CodeNoServers, err)
 		return
 	}
 	o.swapTo(ctx, picked)
@@ -155,12 +162,13 @@ func (o *Orchestrator) heal(ctx context.Context) {
 func (o *Orchestrator) swapTo(ctx context.Context, picked []model.Server) {
 	ups, err := o.buildUpstreams(picked)
 	if err != nil {
+		slog.Warn("engine: building upstreams for a swap failed", "err", err)
 		return
 	}
 	if err := o.d.Engine.Swap(ctx, ups); err != nil {
 		// The engine may be gone while DNS still points at loopback: put
 		// DNS back rather than stay "connected" to nothing.
-		o.log("engine", "SWAP_FAILED")
+		o.logErr("engine", "SWAP_FAILED", err)
 		if errs := o.disconnectLocked(ctx); len(errs) > 0 {
 			o.update(func(s *Snapshot) {
 				s.Status, s.Error = StatusError, &AppError{Code: CodeRestoreFailed, Params: map[string]any{"adapter": errs[0].Alias}}
@@ -192,6 +200,7 @@ func (o *Orchestrator) OnNetworkChange(ctx context.Context) {
 	s := o.d.Settings()
 	ads, err := o.d.DNS.Select(s.Adapters, s.AdapterGUIDs)
 	if err != nil {
+		slog.Warn("system: listing adapters after a network change failed", "err", err)
 		return
 	}
 	o.mu.Lock()
@@ -205,13 +214,18 @@ func (o *Orchestrator) OnNetworkChange(ctx context.Context) {
 			continue
 		}
 		snaps, err := o.d.DNS.Snapshot([]sysdns.Adapter{a})
-		if err != nil || len(snaps) == 0 {
+		if err != nil {
+			slog.Warn("system: snapshotting a new adapter failed", "adapter", a.Alias, "err", err)
+			continue
+		}
+		if len(snaps) == 0 {
 			continue
 		}
 		if err := o.d.States.Update(func(st *store.State) error {
 			st.Snapshot = append(st.Snapshot, snaps...)
 			return nil
 		}); err != nil {
+			slog.Warn("system: recording a new adapter's snapshot failed", "adapter", a.Alias, "err", err)
 			continue
 		}
 		o.mu.Lock()
@@ -221,10 +235,10 @@ func (o *Orchestrator) OnNetworkChange(ctx context.Context) {
 		v6 := o.v6
 		o.mu.Unlock()
 		if err := o.d.DNS.ApplyLoopback(snaps, v6); err != nil {
-			o.log("system", CodeSetDNSFailed, "adapter", a.Alias)
+			o.logErr("system", CodeSetDNSFailed, err, "adapter", a.Alias)
 			continue
 		}
-		_ = o.d.DNS.Flush()
+		warnIgnored("dns flush", o.d.DNS.Flush())
 		o.log("system", "ADAPTER_ADDED", "adapter", a.Alias)
 	}
 	// Another network has its own ranking: use it, or build one.

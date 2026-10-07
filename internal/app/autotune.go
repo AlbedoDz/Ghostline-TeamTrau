@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"errors"
+	"log/slog"
 
 	"github.com/hashcott/ghostline/internal/dpi"
 	"github.com/hashcott/ghostline/internal/probe"
@@ -38,7 +39,7 @@ func (o *Orchestrator) Autotune(ctx context.Context, onProgress func(engine, pre
 			return
 		}
 		if err := o.startDPI(context.Background(), before); err != nil {
-			o.log("dpi", errCode(err))
+			o.logCodedErr("dpi", err)
 		}
 	}
 	sites := o.Snapshot().BlockedSites
@@ -77,6 +78,7 @@ func (o *Orchestrator) Autotune(ctx context.Context, onProgress func(engine, pre
 				steps, i = g.Strategies(), -1
 				continue
 			}
+			slog.Warn("dpi: autotune stopped", "engine", engine, "err", ae)
 			giveUp()
 			return ae // hash mismatch / AV: further presets will fail the same way
 		}
@@ -102,6 +104,7 @@ func (o *Orchestrator) Autotune(ctx context.Context, onProgress func(engine, pre
 			s.DPI.Preset = p
 		}
 		if err := o.d.SaveSettings(s); err != nil {
+			slog.Warn("dpi: saving the autotune result failed", "err", err)
 			return err
 		}
 		o.update(func(sn *Snapshot) {

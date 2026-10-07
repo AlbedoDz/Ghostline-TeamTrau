@@ -86,7 +86,7 @@ func (w *proxyWiring) upstream(id string) (dialer.Upstream, bool) {
 		if u.PassEnc != "" {
 			pass, err := winutil.UnprotectString(u.PassEnc)
 			if err != nil {
-				w.bus.Log(app.LogEvent{Time: time.Now(), Source: "proxy", Code: app.CodeUpstreamProxy, Params: map[string]any{"id": id}})
+				w.bus.Log(app.LogEvent{Time: time.Now(), Source: "proxy", Code: app.CodeUpstreamProxy, Params: map[string]any{"id": id}, Err: err.Error()})
 				return dialer.Upstream{}, false
 			}
 			out.Pass = pass
@@ -204,6 +204,8 @@ func (w *proxyWiring) lanInfo() app.LANInfo {
 	}
 	if pub, err := winutil.CurrentNetworkIsPublic(); err == nil {
 		info.Public = pub
+	} else {
+		w.log.Warn("proxy: reading the network category failed", "err", err)
 	}
 	return info
 }

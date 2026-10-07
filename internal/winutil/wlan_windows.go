@@ -1,7 +1,8 @@
 package winutil
 
 import (
-	"errors"
+	"fmt"
+	"log/slog"
 	"slices"
 	"unsafe"
 
@@ -36,12 +37,13 @@ func CurrentSSID() (string, error) {
 	var negotiated uint32
 	var h windows.Handle
 	if r, _, _ := procWlanOpenHandle.Call(2, 0, uintptr(unsafe.Pointer(&negotiated)), uintptr(unsafe.Pointer(&h))); r != 0 {
+		logWlanOpen(r)
 		return "", nil // WLAN AutoConfig not running: no Wi-Fi
 	}
 	defer func() { _, _, _ = procWlanCloseHandle.Call(uintptr(h), 0) }()
 	var list unsafe.Pointer
 	if r, _, _ := procWlanEnumInterfaces.Call(uintptr(h), 0, uintptr(unsafe.Pointer(&list))); r != 0 {
-		return "", errors.New("wlan: enumerate interfaces failed")
+		return "", fmt.Errorf("wlan: enumerate interfaces failed: %w", windows.Errno(r))
 	}
 	defer func() { _, _, _ = procWlanFreeMemory.Call(uintptr(list)) }()
 	n := *(*uint32)(list)
@@ -54,6 +56,7 @@ func CurrentSSID() (string, error) {
 		var data unsafe.Pointer
 		if r, _, _ := procWlanQueryInterface.Call(uintptr(h), uintptr(info), wlanOpcodeCurrentConnection, 0,
 			uintptr(unsafe.Pointer(&size)), uintptr(unsafe.Pointer(&data)), 0); r != 0 {
+			slog.Warn("wlan: query current connection failed", "err", windows.Errno(r), "interface", i)
 			continue
 		}
 		l := *(*uint32)(unsafe.Add(data, wlanSSIDOffset))
@@ -90,12 +93,13 @@ func WifiNames() ([]string, error) {
 	var negotiated uint32
 	var h windows.Handle
 	if r, _, _ := procWlanOpenHandle.Call(2, 0, uintptr(unsafe.Pointer(&negotiated)), uintptr(unsafe.Pointer(&h))); r != 0 {
+		logWlanOpen(r)
 		return nil, nil
 	}
 	defer func() { _, _, _ = procWlanCloseHandle.Call(uintptr(h), 0) }()
 	var ifaces unsafe.Pointer
 	if r, _, _ := procWlanEnumInterfaces.Call(uintptr(h), 0, uintptr(unsafe.Pointer(&ifaces))); r != 0 {
-		return nil, errors.New("wlan: enumerate interfaces failed")
+		return nil, fmt.Errorf("wlan: enumerate interfaces failed: %w", windows.Errno(r))
 	}
 	defer func() { _, _, _ = procWlanFreeMemory.Call(uintptr(ifaces)) }()
 	seen := map[string]bool{}
@@ -109,6 +113,8 @@ func WifiNames() ([]string, error) {
 				seen[windows.UTF16ToString(name)] = true
 			}
 			_, _, _ = procWlanFreeMemory.Call(uintptr(profiles))
+		} else {
+			slog.Warn("wlan: list saved profiles failed", "err", windows.Errno(r), "interface", i)
 		}
 		var nets unsafe.Pointer
 		if r, _, _ := procWlanGetAvailableNetworkList.Call(uintptr(h), uintptr(guid), 0, 0, uintptr(unsafe.Pointer(&nets))); r == 0 {
@@ -118,6 +124,8 @@ func WifiNames() ([]string, error) {
 				seen[string(unsafe.Slice((*byte)(unsafe.Add(e, 516)), l))] = true
 			}
 			_, _, _ = procWlanFreeMemory.Call(uintptr(nets))
+		} else {
+			slog.Warn("wlan: list networks in range failed", "err", windows.Errno(r), "interface", i)
 		}
 	}
 	delete(seen, "")
@@ -127,4 +135,12 @@ func WifiNames() ([]string, error) {
 	}
 	slices.Sort(out)
 	return out, nil
+}
+
+// logWlanOpen logs a WlanOpenHandle failure other than the WLAN AutoConfig
+// service not running (a PC without Wi-Fi), which callers treat as "no Wi-Fi".
+func logWlanOpen(r uintptr) {
+	if windows.Errno(r) != windows.ERROR_SERVICE_NOT_ACTIVE {
+		slog.Warn("wlan: WlanOpenHandle failed; treating as no Wi-Fi", "err", windows.Errno(r))
+	}
 }

@@ -2,6 +2,7 @@ package winutil
 
 import (
 	"errors"
+	"log/slog"
 	"path/filepath"
 	"unsafe"
 
@@ -87,8 +88,14 @@ func PortOwners(port uint16) ([]PortOwner, error) {
 		o := PortOwner{PID: r.pid, Proto: proto}
 		if name, err := ProcessName(r.pid); err == nil {
 			o.Name = filepath.Base(name)
+		} else {
+			slog.Warn("winutil: port owner process name lookup failed", "err", err, "pid", r.pid, "port", port, "proto", proto)
 		}
-		o.Service, _ = ServiceForPID(r.pid)
+		svcName, err := ServiceForPID(r.pid)
+		if err != nil {
+			slog.Warn("winutil: port owner service lookup failed", "err", err, "pid", r.pid, "port", port, "proto", proto)
+		}
+		o.Service = svcName
 		out = append(out, o)
 	}
 	return out, nil

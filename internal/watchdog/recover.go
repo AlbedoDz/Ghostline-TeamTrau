@@ -75,7 +75,9 @@ func RestoreIfOrphaned(d Deps) (Outcome, error) {
 			if d.DeleteRule != nil {
 				// Idempotent; there is no system proxy snapshot to restore.
 				for _, name := range AllFirewallRules {
-					_ = d.DeleteRule(name)
+					if err := d.DeleteRule(name); err != nil {
+						d.log().Warn("watchdog: delete firewall rule failed", "err", err, "rule", name)
+					}
 				}
 			}
 			// No thumbprints to go by: the sweep removes every session CA.
@@ -91,7 +93,9 @@ func RestoreIfOrphaned(d Deps) (Outcome, error) {
 			}
 			rerr := joinRestore(d.DNS.Restore(snaps))
 			if d.StopDPI != nil {
-				_ = d.StopDPI()
+				if err := d.StopDPI(); err != nil {
+					d.log().Warn("watchdog: stop DPI engine failed", "err", err)
+				}
 			}
 			out = RestoredFromCorrupt
 			if rerr != nil {
@@ -124,9 +128,11 @@ func RestoreIfOrphaned(d Deps) (Outcome, error) {
 		// Order: session CAs, system proxy, firewall, DNS (spec 2B 6.5).
 		cerr := removeSessionCerts(d, st)
 		perr := restoreProxy(d, st)
-		rerr := joinRestore(d.DNS.Restore(stillOurs(d.DNS, st.Snapshot)))
+		rerr := joinRestore(d.DNS.Restore(stillOurs(d.DNS, st.Snapshot, d.log())))
 		if st.DPI.Running && d.StopDPI != nil {
-			_ = d.StopDPI()
+			if err := d.StopDPI(); err != nil {
+				d.log().Warn("watchdog: stop DPI engine failed", "err", err)
+			}
 		}
 		out = Restored
 		if err := errors.Join(cerr, perr, rerr); err != nil {
@@ -195,9 +201,10 @@ func (d Deps) sweep() {
 // stillOurs keeps the snapshots of adapters whose DNS still points at
 // loopback. An adapter the user re-configured after a crash keeps their
 // settings. If the current DNS cannot be read, everything is restored.
-func stillOurs(dns Restorer, snaps []model.AdapterSnapshot) []model.AdapterSnapshot {
+func stillOurs(dns Restorer, snaps []model.AdapterSnapshot, log *slog.Logger) []model.AdapterSnapshot {
 	ads, err := dns.LoopbackAdapters()
 	if err != nil {
+		log.Warn("watchdog: read current adapter DNS failed; restoring every snapshot", "err", err)
 		return snaps
 	}
 	on := make(map[string]bool, len(ads))

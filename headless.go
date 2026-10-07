@@ -31,8 +31,15 @@ func runHeadless(mode cli.Mode) int {
 	logger := slog.Default()
 	if w, err := logx.NewRotating(paths.LogDir, "ghostline", 5<<20, 3); err == nil {
 		defer w.Close()
-		logger = slog.New(slog.NewTextHandler(w, nil)).With("mode", modeName(mode.Kind))
+		logger = slog.New(slog.NewTextHandler(w, nil)).With("mode", mode.Kind.String())
+		// Packages that log through slog.Default (store, backup, …) land in
+		// the file too.
+		slog.SetDefault(logger)
+		if err := logx.CrashOutput(paths.LogDir, "ghostline-crash"); err != nil {
+			logger.Warn("headless: crash output setup failed", "dir", paths.LogDir, "err", err)
+		}
 	}
+	logger.Info("headless start", "version", brand.Version, "portable", paths.Portable, "admin", winutil.IsAdmin())
 	if mode.Kind == cli.KindExport {
 		// Read-only: no state lock, no recovery. A GUI exe has no console of
 		// its own: borrow the caller's so the result can be read.
@@ -68,6 +75,7 @@ func runHeadless(mode cli.Mode) int {
 	}
 	switch mode.Kind {
 	case cli.KindWatchdog:
+		logger.Info("watchdog: watching", "parent", mode.ParentPID)
 		err = watchdog.RunWatchdog(mode.ParentPID, mode.ParentStart, winutil.WaitForExit, d)
 	case cli.KindRemoveCerts:
 		// The uninstaller: undo whatever a run left, then remove every
@@ -81,22 +89,6 @@ func runHeadless(mode cli.Mode) int {
 		return 1
 	}
 	return 0
-}
-
-func modeName(k cli.Kind) string {
-	switch k {
-	case cli.KindWatchdog:
-		return "watchdog"
-	case cli.KindRestore:
-		return "restore"
-	case cli.KindRemoveCerts:
-		return "remove-certs"
-	case cli.KindAutostart:
-		return "autostart"
-	case cli.KindExport:
-		return "export"
-	}
-	return "ui"
 }
 
 // sweepSession removes Fake SNI roots not in keep.

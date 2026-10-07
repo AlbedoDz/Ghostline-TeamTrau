@@ -3,7 +3,9 @@ package dnsserver
 import (
 	"context"
 	"embed"
+	"errors"
 	"html/template"
+	"log/slog"
 	"net"
 	"net/http"
 	"net/netip"
@@ -75,6 +77,7 @@ func (p *SetupPage) Handler() http.Handler {
 		}
 		b, err := p.files.MobileConfig(ssid)
 		if err != nil {
+			slog.Warn("dnsserver: building the iOS profile failed", "err", err)
 			http.Error(w, "could not build the profile", http.StatusInternalServerError)
 			return
 		}
@@ -116,13 +119,18 @@ func (p *SetupPage) Start(addrs []netip.AddrPort, life time.Duration) error {
 	for _, a := range addrs {
 		ln, err := net.Listen("tcp", a.String())
 		if err != nil {
+			slog.Warn("dnsserver: setup page listen failed", "addr", a, "err", err)
 			if firstErr == nil {
 				firstErr = err
 			}
 			continue
 		}
 		srv := &http.Server{Handler: h, ReadHeaderTimeout: 5 * time.Second}
-		go func() { _ = srv.Serve(ln) }()
+		go func() {
+			if err := srv.Serve(ln); err != nil && !errors.Is(err, http.ErrServerClosed) {
+				slog.Warn("dnsserver: setup page server stopped unexpectedly", "addr", a, "err", err)
+			}
+		}()
 		srvs = append(srvs, srv)
 	}
 	if len(srvs) == 0 {
@@ -154,7 +162,9 @@ func (p *SetupPage) Stop() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 	for _, s := range srvs {
-		_ = s.Shutdown(ctx)
+		if err := s.Shutdown(ctx); err != nil {
+			slog.Warn("dnsserver: setup page shutdown failed", "err", err)
+		}
 	}
 	if onStop != nil {
 		onStop()

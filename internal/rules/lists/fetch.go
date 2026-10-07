@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"os"
 	"path"
@@ -262,7 +263,9 @@ func (f *Fetcher) includes(l *List, r *Result, names []string, depth int, seen m
 			continue
 		}
 		if cache {
-			_ = f.WriteFile(f.cachePath(l.ID, name), data)
+			if err := f.WriteFile(f.cachePath(l.ID, name), data); err != nil {
+				slog.Warn("lists: caching an included file failed", "id", l.ID, "include", name, "err", err)
+			}
 		}
 		sub, err := formats.Parse(formats.V2fly, data)
 		if err != nil {

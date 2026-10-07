@@ -6,8 +6,11 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
+	"io/fs"
+	"log/slog"
 	"math/rand"
 	"net/netip"
+	"path/filepath"
 	"slices"
 	"strings"
 	"sync"
@@ -395,6 +398,9 @@ func (c *Cache) EverOK() map[string]bool {
 func LoadCache(path string) (*Cache, error) {
 	c := &Cache{Entries: map[string]CacheEntry{}}
 	if err := store.ReadJSON(path, c); err != nil {
+		if !errors.Is(err, fs.ErrNotExist) {
+			slog.Warn("scanner: loading the scan cache failed; starting empty", "file", filepath.Base(path), "err", err)
+		}
 		return &Cache{Entries: map[string]CacheEntry{}}, nil
 	}
 	if c.Entries == nil {
@@ -404,4 +410,10 @@ func LoadCache(path string) (*Cache, error) {
 }
 
 // SaveCache writes the cache atomically.
-func SaveCache(path string, c *Cache) error { return store.WriteJSONAtomic(path, c) }
+func SaveCache(path string, c *Cache) error {
+	err := store.WriteJSONAtomic(path, c)
+	if err != nil {
+		slog.Warn("scanner: saving the scan cache failed", "file", filepath.Base(path), "err", err)
+	}
+	return err
+}

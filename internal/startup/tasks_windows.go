@@ -1,8 +1,11 @@
 package startup
 
 import (
+	"errors"
 	"fmt"
+	"log/slog"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -73,5 +76,11 @@ func Delete(name string) error {
 
 // Exists reports whether the task is registered.
 func Exists(name string) bool {
-	return winutil.HiddenCmd("schtasks", []string{"/Query", "/TN", name}, "").Run() == nil
+	err := winutil.HiddenCmd("schtasks", []string{"/Query", "/TN", name}, "").Run()
+	// A non-zero exit means "no such task"; anything else means schtasks
+	// itself could not run, and the answer is a guess.
+	if err != nil && !errors.As(err, new(*exec.ExitError)) {
+		slog.Warn("startup: schtasks /Query failed to run", "err", err, "task", name)
+	}
+	return err == nil
 }

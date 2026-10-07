@@ -1,6 +1,7 @@
 package sysproxy
 
 import (
+	"log/slog"
 	"time"
 
 	"golang.org/x/sys/windows"
@@ -35,10 +36,19 @@ func Watch(onChange func()) (stop func(), err error) {
 		for {
 			if err := windows.RegNotifyChangeKeyValue(windows.Handle(k), true,
 				windows.REG_NOTIFY_CHANGE_LAST_SET|windows.REG_NOTIFY_CHANGE_NAME, changed, true); err != nil {
+				// The watcher ends here: later proxy changes go unnoticed.
+				slog.Warn("sysproxy: watch registry key failed; proxy watcher stopped", "err", err, "key", internetSettings)
 				return
 			}
 			ev, err := windows.WaitForMultipleObjects([]windows.Handle{changed, quit}, false, windows.INFINITE)
-			if err != nil || ev != windows.WAIT_OBJECT_0 {
+			if err != nil {
+				slog.Warn("sysproxy: wait for registry change failed; proxy watcher stopped", "err", err)
+				return
+			}
+			if ev != windows.WAIT_OBJECT_0 {
+				if ev != windows.WAIT_OBJECT_0+1 { // not the quit event
+					slog.Warn("sysproxy: unexpected wait result; proxy watcher stopped", "result", ev)
+				}
 				return
 			}
 			time.Sleep(500 * time.Millisecond) // let a burst of writes settle
@@ -46,7 +56,9 @@ func Watch(onChange func()) (stop func(), err error) {
 		}
 	}()
 	return func() {
-		_ = windows.SetEvent(quit)
+		if err := windows.SetEvent(quit); err != nil {
+			slog.Warn("sysproxy: signal proxy watcher to stop failed", "err", err)
+		}
 		<-done
 		windows.CloseHandle(quit)
 	}, nil

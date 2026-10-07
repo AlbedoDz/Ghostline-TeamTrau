@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/netip"
 	"os"
+	"runtime"
 	"strconv"
 	"sync"
 	"time"
@@ -30,7 +31,10 @@ func (system) PortOwners(p uint16) ([]winutil.PortOwner, error) {
 }
 func (system) SelfPID() (uint32, time.Time) {
 	pid := uint32(os.Getpid())
-	start, _ := winutil.ProcessStartTime(pid)
+	start, err := winutil.ProcessStartTime(pid)
+	if err != nil {
+		slog.Warn("shell: reading this process's start time failed", "pid", pid, "err", err)
+	}
 	return pid, start
 }
 
@@ -74,7 +78,11 @@ func (s safety) StartWatchdog(pid uint32, start time.Time) (func() error, error)
 	if err != nil {
 		return nil, err
 	}
-	go func() { _ = cmd.Wait() }()
+	go func() {
+		// Killed by the returned stop func on disconnect, or exited early.
+		err := cmd.Wait()
+		slog.Info("shell: watchdog process exited", "pid", cmd.Process.Pid, "err", err)
+	}()
 	return func() error { return cmd.Process.Kill() }, nil
 }
 
@@ -211,6 +219,17 @@ func webView2Installed() bool {
 		}
 	}
 	return false
+}
+
+// envAttrs describes the machine for the start line: Windows version and
+// build, CPU architecture, and whether Ghostline runs elevated.
+func envAttrs() []any {
+	v := windows.RtlGetVersion()
+	return []any{
+		"windows", fmt.Sprintf("%d.%d.%d", v.MajorVersion, v.MinorVersion, v.BuildNumber),
+		"arch", runtime.GOARCH,
+		"admin", winutil.IsAdmin(),
+	}
 }
 
 func messageBox(title, text string) {

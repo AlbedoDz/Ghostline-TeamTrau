@@ -1,6 +1,7 @@
 package sysdns
 
 import (
+	"log/slog"
 	"slices"
 	"sync"
 	"time"
@@ -90,12 +91,16 @@ func (m *Manager) ApplyLoopback(snaps []model.AdapterSnapshot, v6 bool) error {
 			continue
 		}
 		if err := m.api.SetDNS(s.GUID, false, []string{"127.0.0.1"}); err != nil {
+			slog.Warn("sysdns: SetDNS loopback failed; trying netsh", "err", err,
+				"adapter", a.Alias, "guid", a.GUID, "ifIndex", a.IfIndex, "family", "ipv4")
 			if err := m.api.NetshSetDNS(a.IfIndex, false, []string{"127.0.0.1"}); err != nil {
 				return err
 			}
 		}
 		if v6 && a.HasIPv6 {
 			if err := m.api.SetDNS(s.GUID, true, []string{"::1"}); err != nil {
+				slog.Warn("sysdns: SetDNS loopback failed; trying netsh", "err", err,
+					"adapter", a.Alias, "guid", a.GUID, "ifIndex", a.IfIndex, "family", "ipv6")
 				if err := m.api.NetshSetDNS(a.IfIndex, true, []string{"::1"}); err != nil {
 					return err
 				}
@@ -147,7 +152,9 @@ func (m *Manager) Restore(snaps []model.AdapterSnapshot) []RestoreError {
 			}
 		}
 	}
-	_ = m.api.Flush()
+	if err := m.api.Flush(); err != nil {
+		slog.Warn("sysdns: flush DNS cache after restore failed", "err", err)
+	}
 	return out
 }
 
@@ -155,6 +162,15 @@ func (m *Manager) restoreFamily(a Adapter, v6 bool, f model.FamilyDNS) error {
 	var servers []string
 	if f.Mode == model.DNSModeStatic {
 		servers = f.Servers
+	}
+	fam := "ipv4"
+	if v6 {
+		fam = "ipv6"
+	}
+	logFail := func(attempt int, method string, servers []string, err error) {
+		slog.Warn("sysdns: restore attempt failed", "err", err, "adapter", a.Alias, "guid", a.GUID,
+			"ifIndex", a.IfIndex, "family", fam, "attempt", attempt, "method", method,
+			"mode", f.Mode, "servers", servers)
 	}
 	var err error
 	for i := 0; i < 3; i++ {
@@ -164,14 +180,19 @@ func (m *Manager) restoreFamily(a Adapter, v6 bool, f model.FamilyDNS) error {
 		if err = m.api.SetDNS(a.GUID, v6, servers); err == nil {
 			return nil
 		}
+		logFail(i+1, "SetDNS", servers, err)
 	}
 	if err = m.api.NetshSetDNS(a.IfIndex, v6, servers); err == nil {
 		return nil
 	}
+	logFail(4, "netsh", servers, err)
 	if len(servers) > 0 {
 		if err = m.api.NetshSetDNS(a.IfIndex, v6, nil); err == nil {
+			slog.Warn("sysdns: restored DHCP instead of the recorded static servers",
+				"adapter", a.Alias, "guid", a.GUID, "family", fam, "servers", servers)
 			return nil
 		}
+		logFail(5, "netsh dhcp", nil, err)
 	}
 	return err
 }
@@ -185,8 +206,14 @@ func (m *Manager) LoopbackAdapters() ([]Adapter, error) {
 	}
 	var out []Adapter
 	for _, a := range all {
-		v4, _ := m.api.GetDNS(a.GUID, false)
-		v6, _ := m.api.GetDNS(a.GUID, true)
+		v4, err := m.api.GetDNS(a.GUID, false)
+		if err != nil {
+			slog.Warn("sysdns: read adapter DNS failed", "err", err, "adapter", a.Alias, "guid", a.GUID, "family", "ipv4")
+		}
+		v6, err := m.api.GetDNS(a.GUID, true)
+		if err != nil && a.HasIPv6 {
+			slog.Warn("sysdns: read adapter DNS failed", "err", err, "adapter", a.Alias, "guid", a.GUID, "family", "ipv6")
+		}
 		if slices.Equal(v4, []string{"127.0.0.1"}) || slices.Equal(v6, []string{"::1"}) {
 			out = append(out, a)
 		}

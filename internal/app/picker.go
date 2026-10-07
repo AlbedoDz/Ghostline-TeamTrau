@@ -239,7 +239,7 @@ func (p *ScanPicker) check(ctx context.Context, s store.Settings, pool []model.S
 		return nil, err
 	}
 	got = p.forgive(got)
-	_ = p.save(got, false) // a pick still works if the cache cannot be written
+	warnIgnored("scan cache save", p.save(got, false)) // a pick still works if the cache cannot be written
 	if top := best(got, pool, s, exclude, want); len(top) > 0 {
 		return top, nil
 	}
@@ -394,7 +394,7 @@ func (p *ScanPicker) CheckOne(ctx context.Context, id string) (scanner.Result, e
 		return scanner.Result{}, fmt.Errorf("app: no server %q", id)
 	}
 	r := p.Checker.Check(ctx, p.Catalog()[i])
-	_ = p.save([]scanner.Result{r}, false)
+	warnIgnored("scan cache save", p.save([]scanner.Result{r}, false))
 	return r, nil
 }
 

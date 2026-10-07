@@ -363,6 +363,8 @@ func (s *Service) ScanAll() error {
 		_, err := s.o.Rescan(ctx, onProgress)
 		if err == nil {
 			s.o.ApplyBest(ctx)
+		} else if !errors.Is(err, context.Canceled) {
+			slog.Warn("scan: full scan failed", "err", err)
 		}
 		if !watched {
 			s.x.Bus.Emit(EventScan, ScanProgress{Running: false})

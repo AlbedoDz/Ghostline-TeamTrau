@@ -1,6 +1,7 @@
 package sysdns
 
 import (
+	"log/slog"
 	"sync"
 	"time"
 
@@ -42,7 +43,9 @@ func Watch(onChange func()) (stop func(), err error) {
 	}
 	return func() {
 		// Never call CancelMibChangeNotify2 from inside the callback.
-		_ = windows.CancelMibChangeNotify2(h)
+		if err := windows.CancelMibChangeNotify2(h); err != nil {
+			slog.Warn("sysdns: cancel interface change notification failed", "err", err)
+		}
 		stopDebounce()
 		watchMu.Lock()
 		delete(watchFns, id)
