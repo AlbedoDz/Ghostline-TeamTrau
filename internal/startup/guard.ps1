@@ -3,7 +3,8 @@
 # antivirus that kills ghostline.exe also quarantines it, and with it the
 # watchdog and the --restore task), the DNS still points at 127.0.0.1 and
 # nothing answers there. This puts back the DNS and system proxy recorded in
-# state.json using only what ships with Windows. It never writes state.json:
+# state.json using only what ships with Windows; if state.json is gone too,
+# loopback DNS goes back to DHCP. It never writes state.json:
 # Ghostline's own recovery finishes the rest (firewall, certificates) when it
 # next starts. Keep this file ASCII: Windows PowerShell reads it as ANSI.
 param(
@@ -160,8 +161,64 @@ function Restore-Proxy($sp) {
     }
 }
 
+# state.json is gone (a portable folder deleted with the exe): no snapshot
+# to restore. Like sysdns.LoopbackAdapters, a family whose DNS is exactly
+# loopback is Ghostline's fingerprint; it goes back to DHCP. Returns how
+# many are still stuck there.
+function Reset-LoopbackDNS {
+    $stuck = 0
+    foreach ($f in @(@{ Name = 'ipv4'; Family = 'IPv4'; Loop = '127.0.0.1' }, @{ Name = 'ipv6'; Family = 'IPv6'; Loop = '::1' })) {
+        foreach ($d in @(Get-DnsClientServerAddress -AddressFamily $f.Family -ErrorAction SilentlyContinue)) {
+            $cur = @($d.ServerAddresses)
+            if ($cur.Count -ne 1 -or $cur[0] -ne $f.Loop) { continue }
+            try {
+                Set-FamilyDNS $d.InterfaceIndex $f.Name @()
+                Write-GuardLog "no state: reset $($f.Name) DNS on '$($d.InterfaceAlias)' from $($f.Loop) to DHCP"
+            } catch {
+                Write-GuardLog "no state: DHCP on '$($d.InterfaceAlias)' failed: $_"
+                $stuck++
+            }
+        }
+    }
+    try { Clear-DnsClientCache } catch { }
+    return $stuck
+}
+
+# state.json is gone: without Ghostline's address, a proxy on loopback that
+# nothing listens on is the fingerprint. It is switched off, which is what
+# almost every snapshot holds.
+function Reset-DeadLoopbackProxy {
+    if ($UserSid -notmatch '^S-1-5-21(-\d+)+$') { return }
+    $key = "Registry::HKEY_USERS\$UserSid\Software\Microsoft\Windows\CurrentVersion\Internet Settings"
+    if (-not (Test-Path -LiteralPath $key)) { return }
+    $cur = Get-ItemProperty -LiteralPath $key
+    if ($cur.ProxyEnable -ne 1 -or [string]$cur.ProxyServer -notmatch '^127\.0\.0\.1:(\d+)$') { return }
+    if (Get-NetTCPConnection -State Listen -LocalPort ([int]$Matches[1]) -ErrorAction SilentlyContinue) { return }
+    try {
+        Set-ItemProperty -LiteralPath $key -Name ProxyEnable -Value 0 -Type DWord
+        $conn = "$key\Connections"
+        $blob = (Get-ItemProperty -LiteralPath $conn -ErrorAction SilentlyContinue).DefaultConnectionSettings
+        if ($blob -and $blob.Length -ge 24) {
+            $flags = [BitConverter]::ToUInt32($blob, 8) -band (-bnot [uint32]2)
+            $new = Set-ConnectionBlob $blob $flags '' '' ''
+            Set-ItemProperty -LiteralPath $conn -Name DefaultConnectionSettings -Value $new -Type Binary
+        }
+        Write-GuardLog "no state: switched off dead proxy $($cur.ProxyServer)"
+    } catch {
+        Write-GuardLog "no state: switching off proxy failed: $_"
+    }
+}
+
 try {
-    if (-not (Test-Path -LiteralPath $State)) { Remove-Guard 'no state'; return }
+    if (-not (Test-Path -LiteralPath $State)) {
+        # Ghostline still serving DNS (its folder moved while connected): leave it.
+        if (Get-NetUDPEndpoint -LocalAddress 127.0.0.1 -LocalPort 53 -ErrorAction SilentlyContinue) { return }
+        Write-GuardLog "state.json is gone ($State); resetting loopback DNS to DHCP"
+        $stuck = Reset-LoopbackDNS
+        Reset-DeadLoopbackProxy
+        if ($stuck -eq 0) { Remove-Guard 'no state' }
+        return
+    }
     try {
         $st = Get-Content -LiteralPath $State -Raw -Encoding UTF8 | ConvertFrom-Json
     } catch {
