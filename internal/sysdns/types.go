@@ -35,4 +35,5 @@ func (e RestoreError) Error() string { return "sysdns: restore " + e.Alias + ": 
 const (
 	ifTypeEthernet = 6
 	ifTypeWiFi     = 71
+	ifTypeLoopback = 24
 )

@@ -486,7 +486,7 @@ Làm lần lượt, dừng lại khi trang đã mở được:
 | **Ghostline cần quyền quản trị (admin) để đổi DNS** | Bạn đã mở app không có quyền admin. Đóng lại, chuột phải → **Run as administrator** |
 | **Cổng 53 đang bị … chiếm** | Một chương trình khác đang chạy DNS trên 127.0.0.1 (thường là WSL, Hyper-V hoặc một phần mềm DNS khác; Mobile Hotspot không còn gây lỗi này). Tắt chương trình đó, hoặc dùng nút **Tạm dừng dịch vụ …** mà Ghostline đưa ra. Ghostline luôn hỏi trước khi dừng dịch vụ nào |
 | **Không tìm được máy chủ hoạt động** | Mạng đang mất kết nối, hoặc nhà mạng chặn cả DNS mã hoá. Kiểm tra mạng, rồi thử bật **Fragment DNS** |
-| **Truy vấn DNS không đi qua Ghostline** | Có VPN hoặc phần mềm khác đang chiếm DNS. Tắt chúng rồi kết nối lại |
+| **Truy vấn DNS không đi qua Ghostline** | Có VPN hoặc phần mềm khác đang chiếm DNS. Nếu dưới lỗi có dòng **card mạng có DNS riêng**, đó là card mạng Windows vẫn hỏi DNS qua đường khác (VPN, PPPoE, USB 4G...): tắt nó hoặc chọn nó trong Cài đặt → card mạng, rồi kết nối lại |
 | **Không đặt được DNS cho …** | Card mạng đó không cho đổi DNS (thường là card ảo của VPN/máy ảo). Vào **Cài đặt → card mạng → chọn tay** và bỏ card đó ra |
 | **Không trả được DNS về như cũ cho …** | Bấm **⚠ KHÔI PHỤC DNS NGAY**. Thông báo này sẽ còn hiện cho tới khi khôi phục thành công |
 | **GoodbyeDPI không chạy được** | Thử preset khác. Xem thêm chi tiết trong ngoặc của thông báo |

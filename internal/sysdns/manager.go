@@ -3,6 +3,7 @@ package sysdns
 import (
 	"log/slog"
 	"slices"
+	"strings"
 	"sync"
 	"time"
 
@@ -217,6 +218,46 @@ func (m *Manager) LoopbackAdapters() ([]Adapter, error) {
 		if slices.Equal(v4, []string{"127.0.0.1"}) || slices.Equal(v6, []string{"::1"}) {
 			out = append(out, a)
 		}
+	}
+	return out, nil
+}
+
+// AdapterDNS is an adapter with the DNS servers Windows reports for it.
+type AdapterDNS struct {
+	Adapter
+	IPv4 []string
+	IPv6 []string
+}
+
+// Report lists every adapter that is up, with its DNS servers. Windows'
+// fec0:0:0:ffff::N placeholders (no IPv6 DNS configured) are left out.
+func (m *Manager) Report() ([]AdapterDNS, error) {
+	all, err := m.api.Adapters()
+	if err != nil {
+		return nil, err
+	}
+	var out []AdapterDNS
+	for _, a := range all {
+		if !a.Up || a.IfType == ifTypeLoopback {
+			continue
+		}
+		r := AdapterDNS{Adapter: a}
+		var err error
+		if r.IPv4, err = m.api.GetDNS(a.GUID, false); err != nil {
+			slog.Warn("sysdns: read adapter DNS failed", "err", err, "adapter", a.Alias, "guid", a.GUID, "family", "ipv4")
+		}
+		if a.HasIPv6 {
+			v6, err := m.api.GetDNS(a.GUID, true)
+			if err != nil {
+				slog.Warn("sysdns: read adapter DNS failed", "err", err, "adapter", a.Alias, "guid", a.GUID, "family", "ipv6")
+			}
+			for _, s := range v6 {
+				if !strings.HasPrefix(strings.ToLower(s), "fec0:0:0:ffff::") {
+					r.IPv6 = append(r.IPv6, s)
+				}
+			}
+		}
+		out = append(out, r)
 	}
 	return out, nil
 }

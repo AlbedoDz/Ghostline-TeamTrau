@@ -378,7 +378,8 @@
     },
     "VERIFY_LEAK": {
       "message": "DNS queries are not going through Ghostline (a VPN or another tool owns DNS)",
-      "action": "Turn off the VPN/other DNS tool and retry"
+      "action": "Turn off the VPN/other DNS tool and retry",
+      "adapters": "adapters with their own DNS, bypassing Ghostline: {{adapters}}"
     },
     "RESTORE_FAILED": {
       "message": "could not restore the original DNS on {{adapter}}",

@@ -202,3 +202,28 @@ func TestSnapshot_LoopbackIsRecordedAsDHCP(t *testing.T) { // review I1
 	require.Equal(t, model.FamilyDNS{Mode: model.DNSModeDHCP}, snaps[0].IPv4, "never save Ghostline's own loopback as the original")
 	require.Equal(t, model.FamilyDNS{Mode: model.DNSModeDHCP}, snaps[0].IPv6)
 }
+
+func TestReport_ListsUpAdaptersWithTheirDNS(t *testing.T) {
+	api := &fakeAPI{adapters: []sysdns.Adapter{
+		eth("{A}", 1),
+		{GUID: "{B}", Alias: "PPP", IfType: 23, Up: true},
+		{GUID: "{C}", IfType: 24, Up: true, HasIPv6: true},
+		{GUID: "{D}", IfType: 71, Up: false},
+	}, dns: map[string][]string{
+		"{A}|v4": {"127.0.0.1"},
+		"{A}|v6": {"fec0:0:0:ffff::1", "fe80::1"},
+		"{B}|v4": {"203.162.4.191"},
+		"{C}|v4": {"9.9.9.9"},
+		"{D}|v4": {"8.8.8.8"},
+	}}
+	m, _ := newMgr(api)
+	got, err := m.Report()
+	require.NoError(t, err)
+	require.Len(t, got, 2)
+	require.Equal(t, "{A}", got[0].GUID)
+	require.Equal(t, []string{"127.0.0.1"}, got[0].IPv4)
+	require.Equal(t, []string{"fe80::1"}, got[0].IPv6)
+	require.Equal(t, "PPP", got[1].Alias)
+	require.Equal(t, []string{"203.162.4.191"}, got[1].IPv4)
+	require.Nil(t, got[1].IPv6)
+}

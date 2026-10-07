@@ -109,6 +109,18 @@ test("English locale renders English strings", async () => {
   await initI18n("vi");
 });
 
+test("VERIFY_LEAK names the adapters that bypass Ghostline", () => {
+  useGhost.getState().setSnapshot(snap({ status: "error", error: { code: "VERIFY_LEAK", params: { reason: "nxdomain", adapters: "VNPT, Wi-Fi" } } }));
+  render(<SimpleView onOpenLogs={() => {}} />);
+  expect(screen.getByText("card mạng có DNS riêng, không qua Ghostline: VNPT, Wi-Fi")).toBeInTheDocument();
+});
+
+test("VERIFY_LEAK without suspect adapters shows only the message", () => {
+  useGhost.getState().setSnapshot(snap({ status: "error", error: { code: "VERIFY_LEAK", params: { reason: "timeout" } } }));
+  render(<SimpleView onOpenLogs={() => {}} />);
+  expect(screen.queryByText(/card mạng có DNS riêng/)).toBeNull();
+});
+
 test("RESTORE_FAILED error never claims DNS is unchanged", () => { // review C1
   useGhost.getState().setSnapshot(snap({ status: "error", error: { code: "RESTORE_FAILED", params: { adapter: "Wi-Fi" } } }));
   render(<SimpleView onOpenLogs={() => {}} />);

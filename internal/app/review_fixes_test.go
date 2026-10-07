@@ -42,7 +42,7 @@ func TestConnect_VerifyLeakWithRestoreFailureKeepsSafetyNet(t *testing.T) {
 	h.r.fail["engine.saw"] = true
 	h.dns.restoreErr = true
 	require.Error(t, h.o.Connect(context.Background()))
-	require.Equal(t, []string{"dns.restore", "dns.flush"}, after(h.r.list(), "engine.saw"))
+	require.Equal(t, []string{"dns.report", "dns.restore", "dns.flush"}, after(h.r.list(), "engine.saw"))
 	st, _ := h.states.Load()
 	require.Equal(t, store.PhaseDNSSet, st.Phase)
 }

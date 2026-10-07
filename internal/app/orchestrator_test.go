@@ -43,7 +43,7 @@ func TestConnect_FailureAtEachStepRollsBack(t *testing.T) {
 		{"dns.snapshot", CodeSetDNSFailed, []string{"engine.stop"}},
 		{"safety.watchdog", CodeInternal, []string{"state.clean", "engine.stop"}},
 		{"dns.apply", CodeSetDNSFailed, []string{"dns.restore", "dns.flush", "safety.task.delete", "safety.watchdog.stop", "state.clean", "engine.stop"}},
-		{"engine.saw", CodeVerifyLeak, []string{"dns.restore", "dns.flush", "safety.task.delete", "safety.watchdog.stop", "state.clean", "engine.stop"}},
+		{"engine.saw", CodeVerifyLeak, []string{"dns.report", "dns.restore", "dns.flush", "safety.task.delete", "safety.watchdog.stop", "state.clean", "engine.stop"}},
 	}
 	for _, c := range cases {
 		t.Run(c.fail, func(t *testing.T) {

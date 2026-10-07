@@ -480,14 +480,9 @@ func (o *Orchestrator) connectSteps() []step {
 			nonce := randomHex(8)
 			o.d.Engine.ExpectVerify(nonce)
 			ips, err := o.d.Resolver.LookupNetIP(ctx, "ip4", nonce+".verify.ghostline.test")
-			hit := false
-			for _, ip := range ips {
-				if ip == engine.VerifyAnswer {
-					hit = true
-				}
-			}
-			if err != nil || !hit || !o.d.Engine.SawVerify(nonce) {
-				return appErr(CodeVerifyLeak, err)
+			hit := err == nil && slices.Contains(ips, engine.VerifyAnswer)
+			if saw := o.d.Engine.SawVerify(nonce); !hit || !saw {
+				return o.verifyLeakError(err, ips, saw, snaps, v6)
 			}
 			return nil
 		}},

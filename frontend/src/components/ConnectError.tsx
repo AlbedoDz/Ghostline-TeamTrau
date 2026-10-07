@@ -34,6 +34,9 @@ export function ConnectError({ onOpenServers }: Props) {
   return (
     <Banner tone="err" actions={actions}>
       {tCode(`errors.${code}.message`, snap.error.params ?? undefined)}
+      {code === "VERIFY_LEAK" && snap.error.params?.adapters ? (
+        <div>{tCode("errors.VERIFY_LEAK.adapters", snap.error.params)}</div>
+      ) : null}
     </Banner>
   );
 }

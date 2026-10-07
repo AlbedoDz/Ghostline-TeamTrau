@@ -38,6 +38,8 @@ type DNS interface {
 	ApplyLoopback([]model.AdapterSnapshot, bool) error
 	Restore([]model.AdapterSnapshot) []sysdns.RestoreError
 	Flush() error
+	// Report lists adapters that are up with their DNS, for diagnosis.
+	Report() ([]sysdns.AdapterDNS, error)
 }
 
 // DPI runs one DPI bypass engine at a time (dpi.Manager).

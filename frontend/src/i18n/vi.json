@@ -378,7 +378,8 @@
     },
     "VERIFY_LEAK": {
       "message": "truy vấn DNS không đi qua Ghostline (VPN hoặc phần mềm khác đang chiếm DNS)",
-      "action": "Tắt VPN/công cụ DNS khác rồi thử lại"
+      "action": "Tắt VPN/công cụ DNS khác rồi thử lại",
+      "adapters": "card mạng có DNS riêng, không qua Ghostline: {{adapters}}"
     },
     "RESTORE_FAILED": {
       "message": "không trả được DNS về như cũ cho {{adapter}}",

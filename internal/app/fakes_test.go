@@ -99,6 +99,7 @@ type fDNS struct {
 	r          *rec
 	adapters   []sysdns.Adapter
 	restoreErr bool
+	report     []sysdns.AdapterDNS
 }
 
 func (d *fDNS) Select(string, []string) ([]sysdns.Adapter, error) {
@@ -127,6 +128,9 @@ func (d *fDNS) Restore(s []model.AdapterSnapshot) []sysdns.RestoreError {
 	return nil
 }
 func (d *fDNS) Flush() error { return d.r.add("dns.flush") }
+func (d *fDNS) Report() ([]sysdns.AdapterDNS, error) {
+	return d.report, d.r.add("dns.report")
+}
 
 // fDPI runs no process but builds argv with the real engines, so tests can
 // check what would be launched.
@@ -291,10 +295,20 @@ type fBuilder struct{ r *rec }
 
 func (b *fBuilder) Build(model.Server) (upstream.Upstream, error) { return nopUp{}, b.r.add("build") }
 
-type fResolver struct{ r *rec }
+type fResolver struct {
+	r   *rec
+	ips []netip.Addr // nil: the verify answer
+	err error
+}
 
 func (f *fResolver) LookupNetIP(context.Context, string, string) ([]netip.Addr, error) {
-	return []netip.Addr{netip.MustParseAddr("192.0.2.1")}, f.r.add("resolve")
+	if err := f.r.add("resolve"); err != nil {
+		return nil, err
+	}
+	if f.ips == nil && f.err == nil {
+		return []netip.Addr{netip.MustParseAddr("192.0.2.1")}, nil
+	}
+	return f.ips, f.err
 }
 
 type fStates struct {
@@ -392,6 +406,7 @@ type harness struct {
 	states   *fStates
 	sink     *fSink
 	prober   *fProber
+	res      *fResolver
 	smu      sync.Mutex // guards settings against background readers
 	settings store.Settings
 	recovers int
@@ -445,10 +460,11 @@ func newHarness(t *testing.T) *harness {
 		sink:     &fSink{},
 		prober:   &fProber{r: r},
 		settings: goodbyeDefaults(),
+		res:      &fResolver{r: r},
 	}
 	h.o = New(Deps{
 		Engine: h.eng, DNS: h.dns, DPI: h.dpi, Safety: &fSafety{r: r}, System: h.sys, Picker: h.pick,
-		Builder: &fBuilder{r: r}, Resolver: &fResolver{r: r},
+		Builder: &fBuilder{r: r}, Resolver: h.res,
 		Recover: func() (watchdog.Outcome, error) { h.recovers++; _ = r.add("recover"); return watchdog.Restored, nil },
 		Sink:    h.sink, States: h.states,
 		Settings:     h.getSettings,
