@@ -99,11 +99,13 @@ func (r *fakeRunner) Start(exe string, args []string, dir string) (Process, erro
 type fakeSvc struct {
 	c       *calls
 	running bool
+	active  bool     // a WinDivert service held by another program
 	names   []string // installed WinDivert services
 }
 
 func (s *fakeSvc) Find(prefix string) ([]string, error) { return s.names, nil }
 func (s *fakeSvc) Running(name string) (bool, error)    { return s.running && name == "WinDivert", nil }
+func (s *fakeSvc) Active(name string) (bool, error)     { return s.active, nil }
 func (s *fakeSvc) Stop(name string) error               { s.c.log = append(s.c.log, "svc.stop:"+name); return nil }
 func (s *fakeSvc) Delete(name string) error {
 	s.c.log = append(s.c.log, "svc.delete:"+name)
@@ -163,6 +165,17 @@ func TestManager_StartRemovesStaleDriverServices(t *testing.T) { // Review Focus
 	_, err := rg.m.Start(context.Background(), "zapret2", Plan{})
 	require.NoError(t, err)
 	require.Equal(t, []string{"svc.stop:WinDivert1.4", "svc.delete:WinDivert1.4", "svc.stop:WinDivert", "svc.delete:WinDivert", "run:zapret2.exe"}, rg.c.log)
+}
+
+func TestManager_StartRejectsForeignDriverInUse(t *testing.T) {
+	rg := newRig(t)
+	// A standalone GoodbyeDPI/zapret holds WinDivert: it survives cleanup.
+	rg.s.names = []string{"WinDivert"}
+	rg.s.active = true
+	_, err := rg.m.Start(context.Background(), "goodbyedpi", Plan{})
+	require.ErrorIs(t, err, ErrDriverInUse)
+	require.False(t, rg.m.Running())
+	require.NotContains(t, rg.c.log, "run:goodbyedpi.exe") // engine never launched
 }
 
 func TestManager_ListsCopiedRelative(t *testing.T) { // Review Focus #1

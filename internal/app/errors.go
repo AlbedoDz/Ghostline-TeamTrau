@@ -16,6 +16,7 @@ const (
 	CodeRestoreFailed     = "RESTORE_FAILED"
 	CodeDPIStartFailed    = "DPI_START_FAILED"
 	CodeDPIBlockedByAV    = "DPI_BLOCKED_BY_AV"
+	CodeDPIDriverBusy     = "DPI_DRIVER_BUSY"
 	CodeDPIHashMismatch   = "DPI_HASH_MISMATCH"
 	CodeServerListBadSig  = "SERVERLIST_BAD_SIGNATURE"
 	CodeUpdateCheckFailed = "UPDATE_CHECK_FAILED"

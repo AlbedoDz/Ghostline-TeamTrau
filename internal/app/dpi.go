@@ -16,6 +16,8 @@ func dpiErr(err error, engine string) *AppError {
 		code = CodeDPIHashMismatch
 	case errors.Is(err, dpi.ErrBlockedByAV):
 		code = CodeDPIBlockedByAV
+	case errors.Is(err, dpi.ErrDriverInUse):
+		code = CodeDPIDriverBusy
 	}
 	return appErr(code, err, "engine", engine)
 }
