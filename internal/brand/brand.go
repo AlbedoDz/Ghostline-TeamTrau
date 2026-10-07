@@ -11,6 +11,7 @@ const (
 	Author           = "Harry Nguyen"
 	TaskAutostart    = "Ghostline"
 	TaskRecovery     = "Ghostline Recovery"
+	TaskGuard        = "Ghostline Network Guard" // guard.ps1, run as SYSTEM
 	StateMutex       = `Local\Ghostline-State`
 	SingleInstanceID = "io.github.hashcott.ghostline"
 

@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net"
 	"net/netip"
 	"os"
@@ -12,6 +13,7 @@ import (
 	"time"
 	"unsafe"
 
+	"github.com/hashcott/ghostline/internal/brand"
 	"github.com/hashcott/ghostline/internal/scanner"
 	"github.com/hashcott/ghostline/internal/startup"
 	"github.com/hashcott/ghostline/internal/winutil"
@@ -60,8 +62,9 @@ func (system) IPv6Available() bool {
 	return true
 }
 
-// safety implements app.Safety.
-type safety struct{ exe string }
+// safety implements app.Safety. machineDir holds the network guard
+// script; state is the state.json it reads.
+type safety struct{ exe, machineDir, state string }
 
 func (s safety) StartWatchdog(pid uint32, start time.Time) (func() error, error) {
 	// Deliberately not in our job object, and broken away from any job we
@@ -75,8 +78,22 @@ func (s safety) StartWatchdog(pid uint32, start time.Time) (func() error, error)
 	return func() error { return cmd.Process.Kill() }, nil
 }
 
-func (s safety) CreateRecoveryTask() error { return startup.Create(startup.RecoveryTask(s.exe)) }
-func (s safety) DeleteRecoveryTask() error { return startup.Delete(startup.RecoveryTask(s.exe).Name) }
+// CreateRecoveryTask registers the --restore task and the network guard.
+// The guard is a last resort for when an antivirus removes ghostline.exe:
+// failing to set it up is logged, not fatal.
+func (s safety) CreateRecoveryTask() error {
+	if err := startup.Create(startup.RecoveryTask(s.exe)); err != nil {
+		return err
+	}
+	if err := startup.CreateGuard(s.machineDir, s.state); err != nil {
+		slog.Warn("shell: network guard task not created", "err", err)
+	}
+	return nil
+}
+
+func (s safety) DeleteRecoveryTask() error {
+	return errors.Join(startup.Delete(startup.RecoveryTask(s.exe).Name), startup.Delete(brand.TaskGuard))
+}
 
 // adaptersAddresses returns the GetAdaptersAddresses list (with
 // gateways), or nil.

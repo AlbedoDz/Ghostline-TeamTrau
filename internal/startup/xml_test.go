@@ -49,3 +49,30 @@ func TestUTF16WithBOM(t *testing.T) {
 	b := startup.EncodeUTF16LE("<a/>")
 	require.Equal(t, []byte{0xFF, 0xFE, '<', 0, 'a', 0, '/', 0, '>', 0}, b)
 }
+
+func TestGuardTaskXML(t *testing.T) {
+	x := startup.GuardTaskXML(startup.Guard{PowerShell: `C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe`,
+		Script: `C:\ProgramData\Ghostline\guard.ps1`, State: `C:\Users\Đức\AppData\Roaming\Ghostline\state.json`,
+		UserSID: "S-1-5-21-1-2-3-1001", Log: `C:\ProgramData\Ghostline\guard.log`})
+	require.Contains(t, x, "<UserId>S-1-5-18</UserId>") // SYSTEM: no window, survives logoff
+	require.Contains(t, x, "<Interval>PT1M</Interval>")
+	require.Contains(t, x, "<BootTrigger>")
+	require.Contains(t, x, "EventID=1116 or EventID=1117")
+	require.Contains(t, x, `-File &#34;C:\ProgramData\Ghostline\guard.ps1&#34;`)
+	require.Contains(t, x, `-State &#34;C:\Users\Đức\AppData\Roaming\Ghostline\state.json&#34;`)
+	require.Contains(t, x, `-UserSid &#34;S-1-5-21-1-2-3-1001&#34;`)
+	require.Contains(t, x, `-TaskName &#34;`+brand.TaskGuard+`&#34;`)
+	require.NotContains(t, x, "ghostline.exe") // must outlive a quarantined exe
+	var v any
+	dec := xml.NewDecoder(strings.NewReader(x))
+	dec.CharsetReader = func(_ string, r io.Reader) (io.Reader, error) { return r, nil }
+	require.NoError(t, dec.Decode(&v))
+}
+
+func TestGuardScriptIsASCII(t *testing.T) {
+	// Windows PowerShell reads a BOM-less script as ANSI.
+	require.NotEmpty(t, startup.GuardScript)
+	for i, b := range startup.GuardScript {
+		require.Less(t, b, byte(0x80), "non-ASCII byte at %d", i)
+	}
+}

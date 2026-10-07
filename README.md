@@ -50,7 +50,7 @@ Ghostline runs a local DNS server on `127.0.0.1` / `::1`, points every network a
 
 - **Encrypted DNS for the whole system:** DoH, DoT, DoQ and DNSCrypt upstreams, powered by [AdGuard dnsproxy](https://github.com/AdguardTeam/dnsproxy).
 - **Automatic server choice:** scans resolvers in parallel, rejects poisoned answers, and remembers the best servers per network.
-- **Never lose the internet:** each adapter's original DNS is snapshotted before any change, with four recovery layers: clean disconnect, a watchdog process, restore on next launch, and a logon recovery task.
+- **Never lose the internet:** each adapter's original DNS is snapshotted before any change, with five recovery layers: clean disconnect, a watchdog process, restore on next launch, a logon recovery task, and a network guard that works even if an antivirus quarantines `ghostline.exe`.
 - **Leak verification:** after connecting, Ghostline checks that queries really go through it.
 - **DPI bypass with two engines:** bundled, hash-pinned [zapret2](https://github.com/bol-van/zapret2) v1.0.5.2 (fake packets, more split methods, QUIC for YouTube/Google) and GoodbyeDPI 0.2.3rc3. zapret2 strategies come from a signed list refreshed daily, with auto-tune, a site blacklist, automatic detection of blocked sites, and DoH request fragmentation. If antivirus blocks zapret2, Ghostline falls back to GoodbyeDPI and offers to retry.
 - **Local proxy (HTTP / HTTPS / SOCKS4/5):** runs with Connect, can become the Windows system proxy, and can be shared with phones and other devices on your Wi-Fi (QR code included). Names are always resolved through Ghostline's encrypted DNS.
@@ -134,12 +134,13 @@ apps ──► Windows DNS client ──► 127.0.0.1:53 (Ghostline / dnsproxy) 
             zapret2 / GoodbyeDPI (optional) rewrites outgoing TLS/HTTP/QUIC to dodge SNI filtering
 ```
 
-**Safety net.** Before touching an adapter, Ghostline writes a snapshot (`state.json`) of its DNS. Four layers make sure that snapshot gets restored:
+**Safety net.** Before touching an adapter, Ghostline writes a snapshot (`state.json`) of its DNS. Five layers make sure that snapshot gets restored:
 
 1. **Clean disconnect:** the normal path.
 2. **Watchdog:** a separate `--watchdog` process restores DNS within seconds if the app dies.
 3. **Next launch:** a leftover snapshot is restored at startup.
 4. **Logon task:** the `Ghostline Recovery` scheduled task runs `--restore` after a crash or power loss.
+5. **Network guard:** while connected, the `Ghostline Network Guard` task runs a PowerShell script as SYSTEM every minute, at boot and right after Microsoft Defender acts on a threat. If Ghostline is gone but DNS still points at 127.0.0.1, it restores DNS and the system proxy from `state.json`. It does not need `ghostline.exe`, so it still works when an antivirus kills and quarantines the app along with the layers above.
 
 Design details live in [`docs/superpowers/specs`](docs/superpowers/specs).
 

@@ -495,7 +495,7 @@ Làm lần lượt, dừng lại khi trang đã mở được:
 | **Không tìm được cấu hình vượt DPI phù hợp** | Tự dò không tìm được preset mở được mọi trang mẫu. Thử Mode 1–6 hoặc tham số tự nhập |
 | **Cần kết nối trước khi tự dò vượt DPI** | Bấm Kết nối rồi tự dò lại |
 
-**Mất mạng sau khi dùng Ghostline?** Gần như không thể xảy ra vì có 4 lớp khôi phục, nhưng nếu gặp:
+**Mất mạng sau khi dùng Ghostline?** Gần như không thể xảy ra vì có 5 lớp khôi phục. Kể cả khi antivirus kill Ghostline và xoá `ghostline.exe`, tác vụ `Ghostline Network Guard` vẫn tự trả DNS về như cũ trong khoảng 1 phút, và chạy lại khi khởi động máy. Nếu vẫn gặp:
 
 1. Mở Ghostline → **Cài đặt → ⚠ KHÔI PHỤC DNS NGAY**.
 2. Hoặc mở PowerShell bằng quyền admin và chạy:

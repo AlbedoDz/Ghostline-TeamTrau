@@ -147,7 +147,7 @@ func Run(o Options) error {
 	dw := &dnsWiring{eng: eng, certs: cw}
 	var svc *app.Service // assigned below; ConfirmOverride runs only after startup
 	orch := app.New(app.Deps{
-		Engine: eng, DNS: dnsMgr, DPI: dpiMgr, Safety: safety{exe: o.Executable}, System: system{},
+		Engine: eng, DNS: dnsMgr, DPI: dpiMgr, Safety: safety{exe: o.Executable, machineDir: paths.MachineDir, state: paths.State}, System: system{},
 		Picker: picker, Scans: picker, Builder: build, Resolver: net.DefaultResolver,
 		Prober: probe.Prober{
 			Resolve: func(ctx context.Context, host string) ([]netipAddr, error) {

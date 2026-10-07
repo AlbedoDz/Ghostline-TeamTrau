@@ -6,27 +6,55 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/hashcott/ghostline/internal/brand"
 	"github.com/hashcott/ghostline/internal/winutil"
+	"golang.org/x/sys/windows"
 )
 
 // Create registers (or replaces) the task. Needs elevation for HighestAvailable.
-func Create(t Task) error {
+func Create(t Task) error { return createXML(t.Name, TaskXML(t)) }
+
+// CreateGuard writes guard.ps1 into dir, made admin-only first because the
+// task runs it as SYSTEM, and registers the guard task for the current
+// user's state.json. Needs elevation.
+func CreateGuard(dir, state string) error {
+	if err := winutil.SecureDir(dir); err != nil {
+		return err
+	}
+	script := filepath.Join(dir, "guard.ps1")
+	if err := os.WriteFile(script, GuardScript, 0o600); err != nil {
+		return err
+	}
+	tu, err := windows.GetCurrentProcessToken().GetTokenUser()
+	if err != nil {
+		return fmt.Errorf("startup: current user: %w", err)
+	}
+	return createXML(brand.TaskGuard, GuardTaskXML(Guard{
+		PowerShell: filepath.Join(os.Getenv("SystemRoot"), "System32", "WindowsPowerShell", "v1.0", "powershell.exe"),
+		Script:     script,
+		State:      state,
+		UserSID:    tu.User.Sid.String(),
+		Log:        filepath.Join(dir, "guard.log"),
+	}))
+}
+
+func createXML(name, xml string) error {
 	f, err := os.CreateTemp("", "ghostline-task-*.xml")
 	if err != nil {
 		return err
 	}
 	path := f.Name()
 	defer os.Remove(path)
-	if _, err := f.Write(EncodeUTF16LE(TaskXML(t))); err != nil {
+	if _, err := f.Write(EncodeUTF16LE(xml)); err != nil {
 		f.Close()
 		return err
 	}
 	if err := f.Close(); err != nil {
 		return err
 	}
-	out, err := winutil.HiddenCmd("schtasks", []string{"/Create", "/TN", t.Name, "/XML", filepath.Clean(path), "/F"}, "").CombinedOutput()
+	out, err := winutil.HiddenCmd("schtasks", []string{"/Create", "/TN", name, "/XML", filepath.Clean(path), "/F"}, "").CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("startup: schtasks /Create %q: %w: %s", t.Name, err, strings.TrimSpace(string(out)))
+		return fmt.Errorf("startup: schtasks /Create %q: %w: %s", name, err, strings.TrimSpace(string(out)))
 	}
 	return nil
 }

@@ -49,7 +49,7 @@ Ghostline chạy một DNS server cục bộ trên `127.0.0.1` / `::1`, trỏ m�
 
 - **Mã hoá DNS cho toàn hệ thống:** hỗ trợ DoH, DoT, DoQ, DNSCrypt, chạy trên [AdGuard dnsproxy](https://github.com/AdguardTeam/dnsproxy).
 - **Tự chọn máy chủ:** quét song song, loại máy chủ trả kết quả bị đầu độc, và nhớ máy chủ tốt nhất cho từng mạng.
-- **Không bao giờ mất mạng:** chụp lại DNS gốc của từng card mạng trước khi đổi, với 4 lớp khôi phục: ngắt kết nối sạch, tiến trình watchdog, khôi phục khi mở lại app, và tác vụ chạy lúc đăng nhập.
+- **Không bao giờ mất mạng:** chụp lại DNS gốc của từng card mạng trước khi đổi, với 5 lớp khôi phục: ngắt kết nối sạch, tiến trình watchdog, khôi phục khi mở lại app, tác vụ chạy lúc đăng nhập, và lớp bảo vệ mạng vẫn chạy được khi antivirus cách ly `ghostline.exe`.
 - **Xác minh không rò rỉ:** sau khi kết nối, Ghostline kiểm tra truy vấn thật sự đi qua nó.
 - **Vượt DPI với hai engine:** đi kèm [zapret2](https://github.com/bol-van/zapret2) v1.0.5.2 (gói giả, nhiều kiểu cắt, hỗ trợ QUIC cho YouTube/Google) và GoodbyeDPI 0.2.3rc3, đều được khoá mã băm. Chiến lược zapret2 lấy từ danh sách có chữ ký, cập nhật hằng ngày; có tự dò, danh sách đen, tự phát hiện trang bị chặn, và chia nhỏ (fragment) truy vấn DoH. Nếu antivirus chặn zapret2, Ghostline tạm chạy GoodbyeDPI và cho phép thử lại.
 - **Proxy cục bộ (HTTP / HTTPS / SOCKS4/5):** chạy cùng nút Connect, có thể đặt làm System Proxy của Windows, và chia sẻ cho điện thoại hay thiết bị khác cùng Wi-Fi (có mã QR). Tên miền luôn được phân giải qua DNS mã hoá của Ghostline.
@@ -135,12 +135,13 @@ ghostline.exe --restore
             zapret2 / GoodbyeDPI (tuỳ chọn) biến đổi gói TLS/HTTP/QUIC đi ra để né lọc SNI
 ```
 
-**Lưới an toàn.** Trước khi đổi DNS của một card mạng, Ghostline ghi lại DNS hiện tại của card đó vào `state.json`. Bốn lớp sau bảo đảm bản lưu này luôn được khôi phục:
+**Lưới an toàn.** Trước khi đổi DNS của một card mạng, Ghostline ghi lại DNS hiện tại của card đó vào `state.json`. Năm lớp sau bảo đảm bản lưu này luôn được khôi phục:
 
 1. **Ngắt kết nối sạch:** trường hợp thông thường.
 2. **Watchdog:** một tiến trình `--watchdog` riêng khôi phục DNS trong vài giây nếu app chết.
 3. **Lần mở sau:** nếu còn bản lưu sót lại, app khôi phục ngay khi khởi động.
 4. **Tác vụ đăng nhập:** tác vụ `Ghostline Recovery` chạy `--restore` sau khi máy treo hoặc mất điện.
+5. **Bảo vệ mạng:** trong lúc kết nối, tác vụ `Ghostline Network Guard` chạy một script PowerShell bằng quyền SYSTEM mỗi phút, lúc khởi động máy và ngay sau khi Microsoft Defender xử lý một mối đe doạ. Nếu Ghostline đã tắt mà DNS vẫn trỏ về 127.0.0.1, script trả DNS và proxy hệ thống về như cũ theo `state.json`. Lớp này không cần `ghostline.exe`, nên vẫn hoạt động khi antivirus kill và cách ly app cùng các lớp ở trên.
 
 Chi tiết thiết kế nằm trong [`docs/superpowers/specs`](docs/superpowers/specs).
 

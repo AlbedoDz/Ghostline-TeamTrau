@@ -495,7 +495,7 @@ Work through these in order and stop as soon as the site opens:
 | **No working DPI bypass configuration found** | Auto-tune found no preset that opens every test site. Try Mode 1–6 or custom arguments |
 | **Connect first to auto-tune DPI bypass** | Click Connect, then run auto-tune again |
 
-**Lost internet after using Ghostline?** This is very unlikely because there are four recovery layers, but if it happens:
+**Lost internet after using Ghostline?** This is very unlikely because there are five recovery layers. Even if an antivirus kills Ghostline and deletes `ghostline.exe`, the `Ghostline Network Guard` task puts your DNS back within about a minute, and again at the next boot. If it still happens:
 
 1. Open Ghostline → **Settings → ⚠ RESTORE DNS NOW**.
 2. Or open PowerShell as administrator and run:
