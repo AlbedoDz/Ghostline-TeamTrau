@@ -11,6 +11,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 )
@@ -258,8 +259,16 @@ func (m *Manager) RefreshLists(p Plan) error {
 }
 
 func isAppControlBlock(err error) bool {
-	return bytes.Contains([]byte(err.Error()), []byte("Application Control")) ||
-		bytes.Contains([]byte(err.Error()), []byte("virus"))
+	if err == nil {
+		return false
+	}
+	s := strings.ToLower(err.Error())
+	return strings.Contains(s, "application control") ||
+		strings.Contains(s, "virus") ||
+		strings.Contains(s, "potentially unwanted") ||
+		strings.Contains(s, "applocker") ||
+		strings.Contains(s, "smartscreen") ||
+		strings.Contains(s, "windows defender")
 }
 
 // Stop kills the engine and removes every WinDivert service.

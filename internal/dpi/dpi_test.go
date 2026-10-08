@@ -332,6 +332,8 @@ func TestManager_ExtractRefusedIsBlockedByAV(t *testing.T) {
 
 func TestIsAppControlBlock(t *testing.T) {
 	require.True(t, isAppControlBlock(errors.New("open x: Operation did not complete successfully because the file contains a virus or potentially unwanted software.")))
+	require.True(t, isAppControlBlock(errors.New("blocked by Windows Defender SmartScreen")))
+	require.True(t, isAppControlBlock(errors.New("Execution prevented by AppLocker")))
 	require.False(t, isAppControlBlock(errors.New("disk full")))
 }
 
