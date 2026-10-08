@@ -1,9 +1,9 @@
-# Ghostline TeamTrau
+# TeamTrau Ghostline
 
 [![Version](https://img.shields.io/badge/version-1.0.2-blue.svg)](CHANGELOG.md)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-green.svg)](LICENSE)
 
-> **Ghostline-TeamTrau** is an enhanced, high-performance, and hardened fork of Ghostline — the secure DNS and multi-protocol proxy client for Windows. Optimized with Kaizen principles for low-latency gaming (CS2, Steam), anti-censorship bypass, zero-allocation network relay, and system privilege hardening.
+> **TeamTrau-Ghostline** is an enhanced, high-performance, and hardened fork of Ghostline — the secure DNS and multi-protocol proxy client for Windows. Optimized with Kaizen principles for low-latency gaming (CS2, Steam), anti-censorship bypass, zero-allocation network relay, and system privilege hardening.
 
 Read the full release history in [CHANGELOG.md](CHANGELOG.md).
 
