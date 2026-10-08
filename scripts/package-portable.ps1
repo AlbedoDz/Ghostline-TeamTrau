@@ -1,11 +1,22 @@
 [CmdletBinding()]
 param(
-    [string]$Version = $(if (Test-Path "$PSScriptRoot\..\VERSION") { (Get-Content "$PSScriptRoot\..\VERSION").Trim() } else { "1.0.1" }),
+    [string]$Version,
     [string]$OutputDir = "E:\antigravity",
     [string]$SourceDir = "E:\antigravity\Ghostline_Portable_Client"
 )
 
 $ErrorActionPreference = "Stop"
+
+if ([string]::IsNullOrWhiteSpace($Version)) {
+    $vPath = Join-Path $PSScriptRoot "..\VERSION"
+    if (Test-Path $vPath) {
+        $Version = (Get-Content $vPath -Raw).Trim()
+    } elseif (Test-Path "VERSION") {
+        $Version = (Get-Content "VERSION" -Raw).Trim()
+    } else {
+        $Version = "1.0.2"
+    }
+}
 
 if (-not (Test-Path $SourceDir)) {
     throw "Source portable directory does not exist: $SourceDir"
