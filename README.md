@@ -1,6 +1,11 @@
 # Ghostline TeamTrau
 
+[![Version](https://img.shields.io/badge/version-1.0.2-blue.svg)](CHANGELOG.md)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-green.svg)](LICENSE)
+
 > **Ghostline-TeamTrau** is an enhanced, high-performance, and hardened fork of Ghostline — the secure DNS and multi-protocol proxy client for Windows. Optimized with Kaizen principles for low-latency gaming (CS2, Steam), anti-censorship bypass, zero-allocation network relay, and system privilege hardening.
+
+Read the full release history in [CHANGELOG.md](CHANGELOG.md).
 
 ---
 
@@ -8,18 +13,21 @@
 
 ### 1. Ultra-Low Latency & High Throughput
 - **Optimistic DNS Caching (RFC 8767):** Serves cached DNS entries instantly (~0ms) while refreshing records asynchronously in the background. Backed by a 16MB in-memory cache.
+- **Dynamic DNS Benchmark & Auto-Swap (v1.0.2):** Runs background RTT benchmarks every 10 minutes, dynamically hot-swapping upstream resolvers to the lowest latency servers without connection drops.
 - **Fast Happy Eyeballs v2 (RFC 8305):** Reduced IP fallback latency from 3.0s to 250ms, eliminating annoying connection freezes when an ISP filters or drops the primary IP.
 - **TCP_NODELAY Socket Optimization:** Explicitly disabled Nagle's algorithm across proxy client/server sockets to eliminate 40–200ms ACK delays for gaming, interactive web requests, and TLS handshakes.
 - **Zero-Allocation Buffer Pooling:** Integrated `sync.Pool` for 32KB relay buffers, reducing heap allocations by over 85% and preventing Garbage Collection latency spikes under heavy network load.
 - **Cached Root Certificate Verifier:** Cached Windows CryptoAPI Root store parsing via `sync.Once`, saving 10–50ms CPU overhead per Fake SNI TLS handshake.
 
-### 2. Security Hardening
+### 2. Security & Antivirus (AV) Resilience
 - **Local Privilege Escalation (LPE) Patch:** Hardened `guard.ps1` (which executes under `NT AUTHORITY\SYSTEM`) to verify file ownership of `state.json`. Only files authored by `SYSTEM` (`S-1-5-18`) or `BUILTIN\Administrators` (`S-1-5-32-544`) are trusted, preventing standard users or malware from hijacking system DNS.
-- **Strict Network Recovery:** Failsafe DHCP restoration routines ensure loopback DNS is cleanly restored even after power cuts or hard crashes.
+- **Antivirus False-Positive Self-Healing (v1.0.2):** Intercepts SmartScreen, Defender PUA, or AppLocker locks, gracefully falling back to driverless Pure DNS mode without leaving DNS stuck on loopback.
+- **Strict Network Recovery:** Failsafe DHCP restoration routines ensure loopback DNS is cleanly restored even after power cuts or hard crashes. Includes 1-click Defender exclusion script `Loai_Tru_Defender_1Click.bat`.
 
-### 3. Steam & CS2 (Counter-Strike 2) Compatibility
-- **Complete Steam Unblock:** Cleanly bypasses ISP DNS poisoning in Vietnam for Steam Store, Community Market, and Friends network.
+### 3. Steam & CS2 Gaming Compatibility
+- **Complete Steam Unblock:** Cleanly bypasses ISP DNS poisoning in Vietnam for Steam Store, Community Market, and Friends network. Includes built-in `v2fly-steam` and `v2fly-twitch` community bypass presets.
 - **VAC (Valve Anti-Cheat) Safe Architecture:** CS2 match traffic runs over direct UDP and remains untouched. Provides clear separation between DNS mode (100% VAC-safe) and kernel driver DPI mode.
+- **Integrated Network Diagnostics (v1.0.2):** One-click in-app test for DNS leak status, ECH status, and concurrent ping to Steam Store, Steam Community, Discord, Cloudflare, and Google DNS.
 
 ---
 
