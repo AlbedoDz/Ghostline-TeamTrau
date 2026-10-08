@@ -10,17 +10,37 @@ import (
 	"time"
 )
 
+var relayBufPool = sync.Pool{
+	New: func() any {
+		b := make([]byte, 32<<10)
+		return &b
+	},
+}
+
+func optimizeConn(c net.Conn) {
+	if tc, ok := c.(*net.TCPConn); ok {
+		_ = tc.SetNoDelay(true)
+		_ = tc.SetKeepAlive(true)
+		_ = tc.SetKeepAlivePeriod(30 * time.Second)
+	}
+}
+
 // relay copies client↔server until both directions end. A direction that
 // reaches EOF half-closes the other side. If neither direction moves data
 // for the idle time, both are closed.
 func (s *Server) relay(client net.Conn, br *bufio.Reader, server net.Conn) {
+	optimizeConn(client)
+	optimizeConn(server)
+
 	var last atomic.Int64
 	last.Store(time.Now().UnixNano())
 	var wg sync.WaitGroup
 	wg.Add(2)
 	copyDir := func(dst net.Conn, src io.Reader, srcConn net.Conn, up bool) {
 		defer wg.Done()
-		buf := make([]byte, 32<<10)
+		bufPtr := relayBufPool.Get().(*[]byte)
+		defer relayBufPool.Put(bufPtr)
+		buf := *bufPtr
 		for {
 			_ = srcConn.SetReadDeadline(time.Now().Add(s.lim.Idle))
 			n, err := src.Read(buf)

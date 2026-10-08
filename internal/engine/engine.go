@@ -133,10 +133,14 @@ func (e *Engine) startLocked(ctx context.Context, v4, v6 netip.AddrPort, ups []u
 		Logger:         logger,
 		UDPListenAddr:  udp,
 		TCPListenAddr:  tcp,
-		UpstreamConfig: &proxy.UpstreamConfig{Upstreams: ups},
-		UpstreamMode:   proxy.UpstreamModeParallel,
-		CacheEnabled:   e.cfg.CacheEnabled,
-		RequestHandler: proxy.HandlerFunc(e.handle),
+		UpstreamConfig:  &proxy.UpstreamConfig{Upstreams: ups},
+		UpstreamMode:    proxy.UpstreamModeParallel,
+		CacheEnabled:    e.cfg.CacheEnabled,
+		CacheOptimistic: true,
+		CacheSizeBytes:  16 * 1024 * 1024,
+		CacheMinTTL:     60,
+		CacheMaxTTL:     86400,
+		RequestHandler:  proxy.HandlerFunc(e.handle),
 	})
 	if err != nil {
 		slog.Warn("engine: creating the DNS proxy failed", "upstreams", len(ups), "err", err)

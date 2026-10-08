@@ -5,8 +5,22 @@ import (
 	"crypto/x509"
 	"errors"
 	"fmt"
+	"sync"
 	"time"
 )
+
+var (
+	sysRootsOnce sync.Once
+	sysRoots     *x509.CertPool
+	sysRootsErr  error
+)
+
+func getSystemRoots() (*x509.CertPool, error) {
+	sysRootsOnce.Do(func() {
+		sysRoots, sysRootsErr = x509.SystemCertPool()
+	})
+	return sysRoots, sysRootsErr
+}
 
 // verifyServer requires a chain to p.Roots (system roots when nil) for
 // serverAuth, valid now, for the fake SNI or the real host. With no fake
@@ -18,7 +32,7 @@ func verifyServer(cs tls.ConnectionState, p Params) error {
 	roots := p.Roots
 	if roots == nil {
 		var err error
-		if roots, err = x509.SystemCertPool(); err != nil {
+		if roots, err = getSystemRoots(); err != nil {
 			return fmt.Errorf("%w: %v", ErrVerifyFailed, err)
 		}
 	}

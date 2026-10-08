@@ -90,7 +90,7 @@ var (
 
 const (
 	dialTimeout    = 10 * time.Second
-	fallbackAfter  = 3 * time.Second
+	fallbackAfter  = 250 * time.Millisecond
 	maxHelloRecord = 16<<10 + 5
 )
 

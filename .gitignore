@@ -8,3 +8,5 @@ frontend/bindings/
 build/windows/nsis/MicrosoftEdgeWebview2Setup.exe
 *.syso
 build/appicon.icns
+.codegraph/
+context-builder.toml

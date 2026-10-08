@@ -219,6 +219,21 @@ try {
         if ($stuck -eq 0) { Remove-Guard 'no state' }
         return
     }
+    # Mitigate LPE: Ensure state.json is authored by Administrators or SYSTEM.
+    try {
+        $owner = (Get-Acl -LiteralPath $State).Owner
+        $sid = (New-Object System.Security.Principal.NTAccount($owner)).Translate([System.Security.Principal.SecurityIdentifier]).Value
+        if ($sid -ne 'S-1-5-18' -and $sid -ne 'S-1-5-32-544') {
+            Write-GuardLog "state.json owner ($owner, $sid) is untrusted; resetting to DHCP to prevent LPE"
+            Reset-LoopbackDNS
+            Reset-DeadLoopbackProxy
+            Remove-Guard 'untrusted state owner'
+            return
+        }
+    } catch {
+        Write-GuardLog "verifying state.json owner failed: $_"
+        return
+    }
     try {
         $st = Get-Content -LiteralPath $State -Raw -Encoding UTF8 | ConvertFrom-Json
     } catch {
