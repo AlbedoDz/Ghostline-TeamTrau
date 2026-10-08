@@ -14,10 +14,11 @@ import (
 )
 
 const (
-	healthInterval = 30 * time.Second
-	degradedAfter  = 15 * time.Second
-	dpiSettleDelay = 2 * time.Second
-	probeAttempts  = 2
+	healthInterval    = 30 * time.Second
+	degradedAfter     = 15 * time.Second
+	dpiSettleDelay    = 2 * time.Second
+	probeAttempts     = 2
+	benchmarkInterval = 10 * time.Minute
 )
 
 // afterConnect starts background work once protected: DPI (if enabled),
@@ -98,6 +99,7 @@ func (o *Orchestrator) upstreamsFailing(st engine.Stats) bool {
 
 func (o *Orchestrator) healthLoop(ctx context.Context, ticks <-chan time.Time) {
 	var failingSince time.Time
+	var lastBenchmark time.Time
 	for {
 		var now time.Time
 		select {
@@ -112,6 +114,12 @@ func (o *Orchestrator) healthLoop(ctx context.Context, ticks <-chan time.Time) {
 		if !failing {
 			failingSince = time.Time{}
 			o.clearReason(reasonUpstreams)
+			if lastBenchmark.IsZero() {
+				lastBenchmark = now
+			} else if now.Sub(lastBenchmark) >= benchmarkInterval {
+				lastBenchmark = now
+				go o.ApplyBest(ctx)
+			}
 			continue
 		}
 		if failingSince.IsZero() {
@@ -121,6 +129,7 @@ func (o *Orchestrator) healthLoop(ctx context.Context, ticks <-chan time.Time) {
 		if now.Sub(failingSince) >= degradedAfter {
 			o.heal(ctx)
 			failingSince = time.Time{}
+			lastBenchmark = now
 		}
 	}
 }

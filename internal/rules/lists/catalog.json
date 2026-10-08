@@ -330,6 +330,28 @@
     "action": "fragment=on"
   },
   {
+    "id": "v2fly-steam",
+    "name": "Steam",
+    "description": "Steam Store and Community domains: fragment through proxy.",
+    "category": "bypass",
+    "repo": "https://github.com/v2fly/domain-list-community",
+    "license": "MIT",
+    "url": "https://raw.githubusercontent.com/v2fly/domain-list-community/master/data/steam",
+    "format": "v2fly",
+    "action": "fragment=on"
+  },
+  {
+    "id": "v2fly-twitch",
+    "name": "Twitch",
+    "description": "Twitch streaming domains: fragment through proxy.",
+    "category": "bypass",
+    "repo": "https://github.com/v2fly/domain-list-community",
+    "license": "MIT",
+    "url": "https://raw.githubusercontent.com/v2fly/domain-list-community/master/data/twitch",
+    "format": "v2fly",
+    "action": "fragment=on"
+  },
+  {
     "id": "fakesni-google",
     "name": "Fake SNI: Google & YouTube",
     "description": "Domain fronting through www.google.com for YouTube and Google services. Signed by Ghostline.",

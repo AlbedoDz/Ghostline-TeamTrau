@@ -220,3 +220,25 @@ func TestDefaultLookupSources_FallBackToCatalogWithoutScan(t *testing.T) {
 	srcs = h.svc.DefaultLookupSources()
 	require.Equal(t, []string{"ghostline", "server", "server"}, []string{srcs[0].Kind, srcs[1].Kind, srcs[2].Kind})
 }
+
+func TestOptimizeUpstreams(t *testing.T) {
+	h := newTools(t)
+	require.NoError(t, h.svc.OptimizeUpstreams(context.Background()))
+}
+
+func TestNetworkDiagnostics(t *testing.T) {
+	h := newTools(t)
+	diag, err := h.svc.NetworkDiagnostics(context.Background())
+	require.NoError(t, err)
+	require.False(t, diag.DNSProtected)
+	require.Equal(t, "unprotected", diag.DNSLeakStatus)
+	require.True(t, diag.ECHSupported)
+	require.Len(t, diag.Targets, 5)
+
+	h.o.update(func(s *Snapshot) { s.Status = StatusProtected })
+	diagProtected, err := h.svc.NetworkDiagnostics(context.Background())
+	require.NoError(t, err)
+	require.True(t, diagProtected.DNSProtected)
+	require.Equal(t, "protected", diagProtected.DNSLeakStatus)
+}
+
