@@ -1,7 +1,6 @@
 package dpi
 
 import (
-	"bytes"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
