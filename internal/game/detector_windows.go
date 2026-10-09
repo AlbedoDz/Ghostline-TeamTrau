@@ -16,7 +16,6 @@ import (
 var DefaultTargetGames = []string{
 	"cs2.exe",
 	"dota2.exe",
-	"steam.exe",
 }
 
 // FindRunningGames inspects running processes using standard Windows toolhelp snapshot
@@ -121,7 +120,7 @@ func (w *Watcher) Stop() {
 func (w *Watcher) RunningGames() []string {
 	w.mu.Lock()
 	defer w.mu.Unlock()
-	var out []string
+	out := []string{}
 	for g, active := range w.running {
 		if active {
 			out = append(out, g)

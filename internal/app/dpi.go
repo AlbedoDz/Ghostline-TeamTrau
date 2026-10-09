@@ -222,9 +222,6 @@ func (o *Orchestrator) SetDPIEnabled(ctx context.Context, on bool) error {
 // 2. Temporarily disables/bypasses system proxy so game packets are not proxied.
 // 3. Applies Windows registry network latency tweaks (TcpAckFrequency, TCPNoDelay, SystemResponsiveness).
 func (o *Orchestrator) EnterGameMode(gameName string, manual bool) {
-	o.opMu.Lock()
-	defer o.opMu.Unlock()
-
 	o.mu.Lock()
 	o.gameModeActive = true
 	o.gameModeManual = manual
@@ -232,9 +229,8 @@ func (o *Orchestrator) EnterGameMode(gameName string, manual bool) {
 	o.mu.Unlock()
 
 	// 1. Halt DPI and purge WinDivert from Windows SCM
-	o.stopDPI()
-	if o.d.DPI != nil {
-		_ = o.d.DPI.Stop()
+	if o.d.DPI != nil && o.d.DPI.Running() {
+		o.stopDPI()
 	}
 
 	// 2. Suspend system proxy if currently applied to prevent game traffic routing
@@ -264,9 +260,6 @@ func (o *Orchestrator) EnterGameMode(gameName string, manual bool) {
 
 // LeaveGameMode exits the dedicated Game Mode profile when games close (if not locked manual).
 func (o *Orchestrator) LeaveGameMode() {
-	o.opMu.Lock()
-	defer o.opMu.Unlock()
-
 	o.mu.Lock()
 	if o.gameModeManual {
 		o.mu.Unlock()

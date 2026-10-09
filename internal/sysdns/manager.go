@@ -1,6 +1,8 @@
 package sysdns
 
 import (
+	"errors"
+	"fmt"
 	"log/slog"
 	"slices"
 	"strings"
@@ -80,31 +82,43 @@ func (m *Manager) Snapshot(ads []Adapter) ([]model.AdapterSnapshot, error) {
 }
 
 // ApplyLoopback points every snapshotted adapter at 127.0.0.1 (and ::1 when
-// v6 is true and the adapter has IPv6).
+// v6 is true and the adapter has IPv6). An adapter that fails does not stop
+// the others from being set.
 func (m *Manager) ApplyLoopback(snaps []model.AdapterSnapshot, v6 bool) error {
 	ads, err := m.byGUID()
 	if err != nil {
 		return err
 	}
+	var errs []error
 	for _, s := range snaps {
 		a, ok := ads[s.GUID]
 		if !ok {
 			continue
 		}
-		if err := m.api.SetDNS(s.GUID, false, []string{"127.0.0.1"}); err != nil {
-			slog.Warn("sysdns: SetDNS loopback failed; trying netsh", "err", err,
-				"adapter", a.Alias, "guid", a.GUID, "ifIndex", a.IfIndex, "family", "ipv4")
-			if err := m.api.NetshSetDNS(a.IfIndex, false, []string{"127.0.0.1"}); err != nil {
-				return err
-			}
+		if err := m.setLoopback(a, v6); err != nil {
+			errs = append(errs, fmt.Errorf("adapter %s: %w", s.Alias, err))
 		}
-		if v6 && a.HasIPv6 {
-			if err := m.api.SetDNS(s.GUID, true, []string{"::1"}); err != nil {
-				slog.Warn("sysdns: SetDNS loopback failed; trying netsh", "err", err,
-					"adapter", a.Alias, "guid", a.GUID, "ifIndex", a.IfIndex, "family", "ipv6")
-				if err := m.api.NetshSetDNS(a.IfIndex, true, []string{"::1"}); err != nil {
-					return err
-				}
+	}
+	if len(errs) > 0 {
+		return errors.Join(errs...)
+	}
+	return nil
+}
+
+func (m *Manager) setLoopback(a Adapter, v6 bool) error {
+	if err := m.api.SetDNS(a.GUID, false, []string{"127.0.0.1"}); err != nil {
+		slog.Warn("sysdns: SetDNS loopback failed; trying netsh", "err", err,
+			"adapter", a.Alias, "guid", a.GUID, "ifIndex", a.IfIndex, "family", "ipv4")
+		if err := m.api.NetshSetDNS(a.IfIndex, false, []string{"127.0.0.1"}); err != nil {
+			return err
+		}
+	}
+	if v6 && a.HasIPv6 {
+		if err := m.api.SetDNS(a.GUID, true, []string{"::1"}); err != nil {
+			slog.Warn("sysdns: SetDNS loopback failed; trying netsh", "err", err,
+				"adapter", a.Alias, "guid", a.GUID, "ifIndex", a.IfIndex, "family", "ipv6")
+			if err := m.api.NetshSetDNS(a.IfIndex, true, []string{"::1"}); err != nil {
+				return err
 			}
 		}
 	}

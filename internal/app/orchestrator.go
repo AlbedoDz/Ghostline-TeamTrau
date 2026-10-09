@@ -194,6 +194,13 @@ func (o *Orchestrator) ClearWarning(code string) {
 func (o *Orchestrator) Cancel() {
 	o.mu.Lock()
 	c := o.cancel
+	if c != nil && o.snap.Status == StatusConnecting {
+		o.snap.Status = StatusDisconnecting
+		o.mu.Unlock()
+		o.emit()
+		c()
+		return
+	}
 	o.mu.Unlock()
 	if c != nil {
 		c()
@@ -348,7 +355,7 @@ func (o *Orchestrator) connectSteps() []step {
 				}
 			}
 			// Clean any leftover WinDivert driver services from previous crashes
-			if o.d.DPI != nil {
+			if o.d.DPI != nil && o.d.DPI.Running() {
 				warnIgnored("preflight dpi cleanup", o.d.DPI.Stop())
 			}
 			// Try the bind rather than refuse whenever port 53 has an owner:

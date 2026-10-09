@@ -70,11 +70,23 @@ export function SimpleView({
   const [bottomRef, bottomHeight] = useSmoothHeight<HTMLDivElement>();
   // The first-run tune shows as one more connect step, not as banners.
   const tuneBanners = !firstRun;
+  const [busy, setBusy] = useState(false);
 
   const onPower = () => {
-    if (status === "connecting") void Service.CancelConnect();
-    else if (isConnected(status)) { if (confirmDisconnect(t)) void Service.Disconnect(); }
-    else if (status !== "disconnecting") void Service.Connect();
+    if (busy) return;
+    if (status === "connecting") {
+      setBusy(true);
+      void Service.CancelConnect();
+      setTimeout(() => setBusy(false), 500);
+    } else if (isConnected(status)) {
+      if (confirmDisconnect(t)) {
+        setBusy(true);
+        Service.Disconnect().catch(console.error).finally(() => setBusy(false));
+      }
+    } else if (status !== "disconnecting") {
+      setBusy(true);
+      Service.Connect().catch(console.error).finally(() => setBusy(false));
+    }
   };
 
 
@@ -180,7 +192,7 @@ export function SimpleView({
     <section className={css.view}>
       <Warnings />
       <div className={css.hero}>
-        <PowerButton state={powerState(status)} label={label} onClick={onPower} disabled={status === "disconnecting"} />
+        <PowerButton state={powerState(status)} label={label} onClick={onPower} disabled={status === "disconnecting" || busy} />
         <div className={css.status} data-status={status}>
           {label}
           {(status === "connecting" || isConnected(status)) && <span className={css.cursor}>_</span>}

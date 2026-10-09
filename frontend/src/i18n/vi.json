@@ -273,6 +273,7 @@
     "SWAPPED": "đã chuyển sang {{servers}} máy chủ mới",
     "SWAP_FAILED": "không đổi được máy chủ",
     "ADAPTER_ADDED": "đã bảo vệ card mạng mới: {{adapter}}",
+    "DNS_REAPPLIED": "hệ thống đã đổi DNS; đặt lại ({{adapter}})",
     "SITES_BLOCKED": "{{count}} trang mẫu bị chặn ở tầng TLS",
     "DPI_STARTED": "{{engine}} đã chạy (preset {{preset}})",
     "DPI_STOPPED": "đã tắt vượt DPI",
@@ -371,6 +372,10 @@
     "PORT53_BUSY": {
       "message": "Cổng 53 đang bị {{name}} (PID {{pid}}) chiếm",
       "action": "Tắt chương trình đó hoặc tạm dừng dịch vụ trong Cài đặt"
+    },
+    "PORT53_NOT_OWNER": {
+      "message": "{{name}} không giữ cổng 53",
+      "action": "Tải lại rồi chọn đúng dịch vụ đang hiện"
     },
     "NO_SERVERS": {
       "message": "không tìm được máy chủ hoạt động ({{checked}} đã thử trong {{elapsed}}s)",

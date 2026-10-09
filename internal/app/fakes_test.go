@@ -444,6 +444,7 @@ func (p *fProber) setBlock(v bool) {
 func goodbyeDefaults() store.Settings {
 	s := store.DefaultSettings()
 	s.DPI.Engine = store.EngineGoodbyeDPI
+	s.GameMode.AutoDetect = false
 	return s
 }
 

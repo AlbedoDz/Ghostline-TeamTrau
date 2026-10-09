@@ -307,6 +307,7 @@ func Run(o Options) error {
 			}
 			return os.WriteFile(path, data, 0o644)
 		},
+		QuitApp: ui.quitApp,
 	})
 	ui.svc = svc
 	if recovered, err := app.LoadRules(svc); err != nil || recovered {
@@ -347,7 +348,7 @@ func Run(o Options) error {
 			},
 		},
 		OnShutdown: func() {
-			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 			defer cancel()
 			if err := orch.Disconnect(ctx); err != nil {
 				log.Warn("shell: disconnect at shutdown failed", "err", err)

@@ -1,6 +1,7 @@
 package startup
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -8,6 +9,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/hashcott/ghostline/internal/brand"
 	"github.com/hashcott/ghostline/internal/winutil"
@@ -55,7 +57,9 @@ func createXML(name, xml string) error {
 	if err := f.Close(); err != nil {
 		return err
 	}
-	out, err := winutil.HiddenCmd("schtasks", []string{"/Create", "/TN", name, "/XML", filepath.Clean(path), "/F"}, "").CombinedOutput()
+	cmdCtx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	out, err := winutil.HiddenCmdContext(cmdCtx, "schtasks", []string{"/Create", "/TN", name, "/XML", filepath.Clean(path), "/F"}, "").CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("startup: schtasks /Create %q: %w: %s", name, err, strings.TrimSpace(string(out)))
 	}
@@ -67,7 +71,9 @@ func Delete(name string) error {
 	if !Exists(name) {
 		return nil
 	}
-	out, err := winutil.HiddenCmd("schtasks", []string{"/Delete", "/TN", name, "/F"}, "").CombinedOutput()
+	cmdCtx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	out, err := winutil.HiddenCmdContext(cmdCtx, "schtasks", []string{"/Delete", "/TN", name, "/F"}, "").CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("startup: schtasks /Delete %q: %w: %s", name, err, strings.TrimSpace(string(out)))
 	}
@@ -76,7 +82,9 @@ func Delete(name string) error {
 
 // Exists reports whether the task is registered.
 func Exists(name string) bool {
-	err := winutil.HiddenCmd("schtasks", []string{"/Query", "/TN", name}, "").Run()
+	cmdCtx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	err := winutil.HiddenCmdContext(cmdCtx, "schtasks", []string{"/Query", "/TN", name}, "").Run()
 	// A non-zero exit means "no such task"; anything else means schtasks
 	// itself could not run, and the answer is a guess.
 	if err != nil && !errors.As(err, new(*exec.ExitError)) {

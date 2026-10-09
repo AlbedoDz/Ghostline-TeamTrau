@@ -1,6 +1,7 @@
 package winutil
 
 import (
+	"context"
 	"errors"
 	"log/slog"
 	"os"
@@ -88,6 +89,14 @@ func WaitForExit(pid uint32) error {
 // HiddenCmd builds a command that runs without a console window.
 func HiddenCmd(exe string, args []string, dir string) *exec.Cmd {
 	cmd := exec.Command(exe, args...)
+	cmd.Dir = dir
+	cmd.SysProcAttr = &windows.SysProcAttr{HideWindow: true, CreationFlags: windows.CREATE_NO_WINDOW}
+	return cmd
+}
+
+// HiddenCmdContext builds a command with a context that runs without a console window.
+func HiddenCmdContext(ctx context.Context, exe string, args []string, dir string) *exec.Cmd {
+	cmd := exec.CommandContext(ctx, exe, args...)
 	cmd.Dir = dir
 	cmd.SysProcAttr = &windows.SysProcAttr{HideWindow: true, CreationFlags: windows.CREATE_NO_WINDOW}
 	return cmd

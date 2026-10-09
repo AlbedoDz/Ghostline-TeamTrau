@@ -10,7 +10,6 @@ import (
 var DefaultTargetGames = []string{
 	"cs2.exe",
 	"dota2.exe",
-	"steam.exe",
 }
 
 func FindRunningGames(targets []string) ([]string, error) {
@@ -25,4 +24,4 @@ func NewWatcher(targets []string, interval time.Duration, onStart, onStop func(s
 
 func (w *Watcher) Start(ctx context.Context) {}
 func (w *Watcher) Stop()                     {}
-func (w *Watcher) RunningGames() []string    { return nil }
+func (w *Watcher) RunningGames() []string    { return []string{} }

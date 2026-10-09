@@ -101,6 +101,7 @@ type ServiceDeps struct {
 	SetMode      func(mode string)
 	RestoreNow   func() error
 	Info         func() AppInfo
+	QuitApp      func()
 	// OnSettingsChanged lets the shell react (autostart task, language…).
 	OnSettingsChanged func(old, new store.Settings)
 
@@ -182,10 +183,25 @@ func (s *Service) Connect() error {
 }
 
 // Disconnect stops protection.
-func (s *Service) Disconnect() error { return s.o.Disconnect(context.Background()) }
+func (s *Service) Disconnect() error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	return s.o.Disconnect(ctx)
+}
 
 // CancelConnect aborts a connect in progress.
 func (s *Service) CancelConnect() { s.o.Cancel() }
+
+// QuitApp cleanly terminates the application.
+func (s *Service) QuitApp() {
+	slog.Info("ui: quit app requested")
+	s.o.Cancel()
+	if s.x.QuitApp != nil {
+		s.x.QuitApp()
+		return
+	}
+	os.Exit(0)
+}
 
 // GetSettings returns the settings.
 func (s *Service) GetSettings() store.Settings { return s.x.Settings.Get() }
@@ -682,7 +698,10 @@ func (s *Service) StopConflictingService(name string) error { return s.x.StopSer
 
 // ListAdapters lists network adapters for manual selection.
 func (s *Service) ListAdapters() []sysdns.Adapter {
-	ads, _ := s.x.ListAdapters()
+	ads, err := s.x.ListAdapters()
+	if err != nil {
+		slog.Warn("ui: listing network adapters failed", "err", err)
+	}
 	return ads
 }
 

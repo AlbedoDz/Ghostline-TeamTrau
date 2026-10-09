@@ -20,7 +20,7 @@ const (
 	// The zapret2 strategy list is signed with the server-list key.
 	StrategyListURL    = "https://raw.githubusercontent.com/hashcott/ghostline/main/lists/strategies.json"
 	StrategyListSigURL = StrategyListURL + ".sig"
-	ReleasesAPI        = "https://api.github.com/repos/hashcott/ghostline/releases/latest"
+	ReleasesAPI        = "https://api.github.com/repos/" + RepoOwner + "/" + RepoName + "/releases/latest"
 
 	DNSCryptMinisignKey = "RWQf6LRCGA9i53mlYecO4IzT51TGPpvWucNSCh1CBM0QTaLn73Y7GFO3"
 )
@@ -32,7 +32,7 @@ var DNSCryptListURLs = []string{
 }
 
 // Version is overridden at build time with -ldflags -X, defaults to release version.
-var Version = "1.0.4"
+var Version = "1.0.5"
 
 // ServerListPublicKeyHex is the ed25519 public key that signs lists/servers.json.
 var ServerListPublicKeyHex = "e32c272e2a6ab33facb7e2d58c948c37a0c394724c63fa96cc9d870044bdd45c"

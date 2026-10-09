@@ -29,8 +29,11 @@ func (o *Orchestrator) afterConnect() {
 	s := o.d.Settings()
 
 	// Pre-flight game check: if Game Mode is enabled or games are running, activate Game Mode without starting DPI
-	running, _ := game.FindRunningGames(game.DefaultTargetGames)
-	if s.GameMode.Enabled || len(running) > 0 {
+	var running []string
+	if s.GameMode.AutoDetect {
+		running, _ = game.FindRunningGames(game.DefaultTargetGames)
+	}
+	if s.GameMode.Enabled || (s.GameMode.AutoDetect && len(running) > 0) {
 		gameLabel := "manual"
 		if len(running) > 0 {
 			gameLabel = strings.Join(running, ", ")
@@ -42,16 +45,18 @@ func (o *Orchestrator) afterConnect() {
 		}
 	}
 
-	gw := game.NewWatcher(game.DefaultTargetGames, 1*time.Second, func(gameName string) {
-		o.EnterGameMode(gameName, false)
-	}, func(gameName string) {
-		o.LeaveGameMode()
-	})
-	ctxGame, cancelGame := context.WithCancel(context.Background())
-	o.mu.Lock()
-	o.gameStop = func() { cancelGame(); gw.Stop() }
-	o.mu.Unlock()
-	gw.Start(ctxGame)
+	if s.GameMode.AutoDetect {
+		gw := game.NewWatcher(game.DefaultTargetGames, 1*time.Second, func(gameName string) {
+			o.EnterGameMode(gameName, false)
+		}, func(gameName string) {
+			o.LeaveGameMode()
+		})
+		ctxGame, cancelGame := context.WithCancel(context.Background())
+		o.mu.Lock()
+		o.gameStop = func() { cancelGame(); gw.Stop() }
+		o.mu.Unlock()
+		gw.Start(ctxGame)
+	}
 
 	if o.d.Ticker != nil {
 		ticks, stop := o.d.Ticker(healthInterval)

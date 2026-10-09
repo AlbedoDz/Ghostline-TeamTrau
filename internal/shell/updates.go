@@ -52,6 +52,9 @@ func releaseCheck(meta *store.Meta, now time.Time, current string, startup bool,
 		if r, err := latest(); err == nil {
 			meta.LastUpdateCheck = now
 			meta.LatestTag, meta.LatestURL = r.Tag, r.URL
+		} else if startup && !updater.Newer(current, meta.LatestTag) {
+			// Clear stale upstream metadata so outdated cache doesn't trigger alerts
+			meta.LatestTag, meta.LatestURL = "", ""
 		}
 	}
 	if meta.LatestTag == "" || !updater.Newer(current, meta.LatestTag) {
@@ -62,6 +65,13 @@ func releaseCheck(meta *store.Meta, now time.Time, current string, startup bool,
 
 // newUpdateChecker wires the release check to GitHub and the UI.
 func newUpdateChecker(meta *metaFile, st *updateState, bus *app.Bus, log *slog.Logger, onUpdate func(tag, url string)) *updateChecker {
+	// Clean stale or outdated update metadata on initialization
+	meta.update(func(m *store.Meta) {
+		if m.LatestTag != "" && !updater.Newer(brand.Version, m.LatestTag) {
+			m.LatestTag = ""
+			m.LatestURL = ""
+		}
+	})
 	client := &http.Client{Timeout: 30 * time.Second}
 	return &updateChecker{
 		meta: meta, state: st, current: brand.Version, now: time.Now,

@@ -273,6 +273,7 @@
     "SWAPPED": "switched to {{servers}} new servers",
     "SWAP_FAILED": "could not switch servers",
     "ADAPTER_ADDED": "protected new adapter: {{adapter}}",
+    "DNS_REAPPLIED": "the system changed DNS; set it again ({{adapter}})",
     "SITES_BLOCKED": "{{count}} test sites blocked at TLS",
     "DPI_STARTED": "{{engine}} started (preset {{preset}})",
     "DPI_STOPPED": "DPI bypass stopped",
@@ -371,6 +372,10 @@
     "PORT53_BUSY": {
       "message": "Port 53 is held by {{name}} (PID {{pid}})",
       "action": "Close that program or stop the service in Settings"
+    },
+    "PORT53_NOT_OWNER": {
+      "message": "{{name}} does not hold port 53",
+      "action": "Refresh and pick the service shown"
     },
     "NO_SERVERS": {
       "message": "no working servers found ({{checked}} tried in {{elapsed}}s)",

@@ -5,6 +5,7 @@ import (
 	"image/color"
 	"log/slog"
 	"net/netip"
+	"os"
 	"sync"
 	"time"
 
@@ -114,15 +115,36 @@ func (u *ui) createWindow() {
 	}
 	w := u.app.Window.NewWithOptions(opts)
 	u.win = w
-	w.RegisterHook(events.Common.WindowClosing, func(*application.WindowEvent) {
+	w.RegisterHook(events.Common.WindowClosing, func(e *application.WindowEvent) {
 		if u.box.Get().CloseToTray {
-			if u.win == w {
-				u.win = nil // let it close; the tray stays
+			if e != nil {
+				e.Cancel()
 			}
+			w.Hide()
 			return
 		}
-		u.app.Quit()
+		u.quitApp()
 	})
+}
+
+func (u *ui) quitApp() {
+	u.log.Info("ui: quitting application")
+	u.orch.Cancel()
+
+	// Hard exit fallback after 1500ms guarantees process never hangs
+	time.AfterFunc(1500*time.Millisecond, func() {
+		os.Exit(0)
+	})
+
+	go func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 1200*time.Millisecond)
+		defer cancel()
+		_ = u.orch.Disconnect(ctx)
+		if u.app != nil {
+			u.app.Quit()
+		}
+		os.Exit(0)
+	}()
 }
 
 // show brings the window up, creating it if it was closed to the tray.
@@ -224,7 +246,7 @@ func (u *ui) createTray() {
 	u.openItem = menu.Add(tt.open).OnClick(func(*application.Context) { u.show() })
 	menu.Add("Ghostline " + brand.Version).SetEnabled(false)
 	menu.AddSeparator()
-	u.quitItem = menu.Add(tt.quit).OnClick(func(*application.Context) { u.app.Quit() })
+	u.quitItem = menu.Add(tt.quit).OnClick(func(*application.Context) { u.quitApp() })
 	u.tray.SetMenu(menu)
 	u.tray.OnClick(u.show)
 	u.tray.OnRightClick(u.tray.OpenMenu) // works around tray menu issue #6161
