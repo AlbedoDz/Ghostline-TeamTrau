@@ -5,10 +5,10 @@ package brand
 const (
 	AppName          = "Ghostline"
 	AppID            = "ghostline"
-	RepoOwner        = "hashcott"
-	RepoName         = "ghostline"
+	RepoOwner        = "AlbedoDz"
+	RepoName         = "TeamTrau-Ghostline"
 	RepoURL          = "https://github.com/" + RepoOwner + "/" + RepoName
-	Author           = "Harry Nguyen"
+	Author           = "TeamTrau"
 	TaskAutostart    = "Ghostline"
 	TaskRecovery     = "Ghostline Recovery"
 	TaskGuard        = "Ghostline Network Guard" // guard.ps1, run as SYSTEM

@@ -1,40 +1,22 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Service } from "../../../../app/api";
+import { Service, type GameStatusResult, type SDRProbeResult } from "../../../../app/api";
 import { describeError } from "../../../../i18n";
 import css from "../../full.module.css";
 import tc from "./tools.module.css";
 
-type SDRResult = {
-  cluster: string;
-  location: string;
-  ip: string;
-  latencyMs: number;
-  status: string;
-};
-
-type GameStatus = {
-  activeGames: string[];
-  isGaming: boolean;
-  gameModeActive: boolean;
-  gameModeManual: boolean;
-  dpiDisarmed: boolean;
-  sdrClusters: SDRResult[];
-  windowsOptimized: boolean;
-};
-
 export function Gaming() {
   const { t } = useTranslation();
-  const [status, setStatus] = useState<GameStatus | null>(null);
-  const [sdrList, setSdrList] = useState<SDRResult[]>([]);
+  const [status, setStatus] = useState<GameStatusResult | null>(null);
+  const [sdrList, setSdrList] = useState<SDRProbeResult[]>([]);
   const [busy, setBusy] = useState(false);
   const [pingBusy, setPingBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
 
   const refreshStatus = () => {
-    (Service as any).GetGameStatus?.()
-      .then((res: GameStatus) => {
+    Service.GetGameStatus()
+      .then((res) => {
         if (res) {
           setStatus(res);
           if (res.sdrClusters && res.sdrClusters.length > 0) {
@@ -55,7 +37,7 @@ export function Gaming() {
     setError(null);
     try {
       const next = !status.gameModeActive;
-      await (Service as any).SetGameMode?.(next);
+      await Service.SetGameMode(next);
       setNote(next ? t("gaming.noteModeEnabled") : t("gaming.noteModeDisabled"));
       refreshStatus();
     } catch (e) {
@@ -71,7 +53,7 @@ export function Gaming() {
     setError(null);
     try {
       const next = !status.windowsOptimized;
-      await (Service as any).ApplyGamingNetworkTweaks?.(next);
+      await Service.ApplyGamingNetworkTweaks(next);
       setNote(next ? t("gaming.noteTweaksEnabled") : t("gaming.noteTweaksDisabled"));
       refreshStatus();
     } catch (e) {
@@ -85,7 +67,7 @@ export function Gaming() {
     setPingBusy(true);
     setError(null);
     try {
-      const list = await (Service as any).GetSDRRelayPings?.();
+      const list = await Service.GetSDRRelayPings();
       if (list) setSdrList(list);
     } catch (e) {
       setError(describeError(e));
@@ -171,9 +153,9 @@ export function Gaming() {
               </thead>
               <tbody>
                 {sdrList.map((c) => (
-                  <tr key={c.cluster} style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
-                    <td style={{ padding: "6px 8px", fontWeight: 600 }}>{c.cluster.toUpperCase()}</td>
-                    <td style={{ padding: "6px 8px" }}>{c.location}</td>
+                  <tr key={c.clusterId} style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+                    <td style={{ padding: "6px 8px", fontWeight: 600 }}>{c.clusterId.toUpperCase()}</td>
+                    <td style={{ padding: "6px 8px" }}>{c.clusterName}</td>
                     <td style={{ padding: "6px 8px", fontFamily: "monospace", color: "#94a3b8" }}>{c.ip}</td>
                     <td style={{ padding: "6px 8px", textAlign: "right", fontWeight: 600 }}>
                       {c.latencyMs > 0 ? `${c.latencyMs} ms` : "—"}
@@ -183,16 +165,16 @@ export function Gaming() {
                         padding: "6px 8px",
                         textAlign: "right",
                         color:
-                          c.status === "Excellent"
+                          c.quality === "excellent"
                             ? "#22c55e"
-                            : c.status === "Good"
+                            : c.quality === "good"
                             ? "#38bdf8"
-                            : c.status === "Fair"
+                            : c.quality === "fair"
                             ? "#eab308"
                             : "#ef4444",
                       }}
                     >
-                      {c.status}
+                      {c.quality}
                     </td>
                   </tr>
                 ))}

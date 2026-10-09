@@ -163,6 +163,13 @@ export function SimpleView({
         rows={[
           { k: t("simple.server"), v: t("simple.serverAuto") },
           { k: t("simple.dpi"), v: settings?.dpi.enabled ? t("common.on") : t("common.off"), tone: settings?.dpi.enabled ? "ok" : "dim" },
+          {
+            k: t("simple.gameMode"),
+            v: (snap as any).gameMode?.active
+              ? `${t("simple.gameModeActive", { game: (snap as any).gameMode.activeGames?.join(", ") || "Game" })} ✓`
+              : t("overview.gameModeReady"),
+            tone: (snap as any).gameMode?.active ? "ok" : "dim",
+          },
         ]}
       />
     );
