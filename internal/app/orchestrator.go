@@ -61,6 +61,9 @@ type Orchestrator struct {
 	setupURL string
 	// pending is a system proxy restore that failed; guarded by mu.
 	pending *pendingRestore
+	// pausedDPIForGame tracks if DPI was temporarily paused for VAC safety; guarded by mu.
+	pausedDPIForGame bool
+	gameStop         func()
 }
 
 // New creates an orchestrator in the disconnected state.
@@ -558,6 +561,11 @@ func (o *Orchestrator) disconnectLocked(ctx context.Context) []sysdns.RestoreErr
 	}
 	warnIgnored("recovery task delete", o.d.Safety.DeleteRecoveryTask())
 	o.mu.Lock()
+	if o.gameStop != nil {
+		o.gameStop()
+		o.gameStop = nil
+	}
+	o.pausedDPIForGame = false
 	o.snaps, o.stopWatchdog, o.servers, o.healthStop, o.dirty = nil, nil, nil, nil, false
 	o.mu.Unlock()
 	o.ClearWarning(CodeRestoreFailed)

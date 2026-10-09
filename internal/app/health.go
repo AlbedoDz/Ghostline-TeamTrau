@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/hashcott/ghostline/internal/engine"
+	"github.com/hashcott/ghostline/internal/game"
 	"github.com/hashcott/ghostline/internal/model"
 	"github.com/hashcott/ghostline/internal/probe"
 	"github.com/hashcott/ghostline/internal/store"
@@ -30,6 +31,17 @@ func (o *Orchestrator) afterConnect() {
 			o.logCodedErr("dpi", err)
 		}
 	}
+	gw := game.NewWatcher(game.DefaultTargetGames, 2*time.Second, func(gameName string) {
+		o.PauseDPIForGame(gameName)
+	}, func(gameName string) {
+		o.ResumeDPIAfterGame(context.Background())
+	})
+	ctxGame, cancelGame := context.WithCancel(context.Background())
+	o.mu.Lock()
+	o.gameStop = func() { cancelGame(); gw.Stop() }
+	o.mu.Unlock()
+	gw.Start(ctxGame)
+
 	if o.d.Ticker != nil {
 		ticks, stop := o.d.Ticker(healthInterval)
 		ctx, cancel := context.WithCancel(context.Background())

@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.0.3] - 2026-10-09
+
+### 🎮 Low-Latency Gaming & VAC Safety
+- **Auto Game Detection & VAC Protection:** Added `internal/game/detector_windows.go` monitoring `cs2.exe`, `dota2.exe`, and `steam.exe` via Windows Toolhelp snapshot (100% passive, zero memory access).
+- **Auto WinDivert Disarm:** When CS2 or Dota 2 starts, Ghostline automatically halts WinDivert kernel driver and switches to pure DNS mode (`PauseDPIForGame`), completely eliminating `"VAC was unable to verify your game session"` kicks and FACEIT blocks. Automatically resumes DPI when the game exits.
+- **Valve Steam Datagram Relay (SDR) Cluster Prober:** Added `internal/game/sdr.go` measuring real-time latency to Valve's official SDR edge clusters (Singapore `sgp`, Hong Kong `hkg`, Tokyo `tyo`, Seoul `seo`).
+- **Windows Gaming Network Registry Tweaks:** Added `internal/game/tuning_windows.go` to disable Windows Network Throttling (`NetworkThrottlingIndex = 0xffffffff`), maximize gaming responsiveness (`SystemResponsiveness = 0`), and eliminate delayed ACKs (`TcpAckFrequency = 1`, `TCPNoDelay = 1`). Fully reversible.
+- **Game APIs in Tools Service:** Added `GetGameStatus`, `ApplyGamingNetworkTweaks`, and `GetSDRRelayPings` to `internal/app/toolsservice.go`.
+
+---
+
 ## [1.0.2] - 2026-10-08
 
 ### 🆕 Added

@@ -1,9 +1,9 @@
 # TeamTrau Ghostline
 
-[![Version](https://img.shields.io/badge/phiên_bản-1.0.2-blue.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/phiên_bản-1.0.3-blue.svg)](CHANGELOG.md)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-green.svg)](LICENSE)
 
-> **TeamTrau-Ghostline** là phiên bản cải tiến, nâng cao hiệu suất và tăng cường bảo mật của Ghostline — ứng dụng máy khách DNS bảo mật và Proxy đa giao thức cho Windows. Được tinh chỉnh theo triết lý **Kaizen** nhằm giảm tối đa độ trễ cho game online (CS2, Steam), vượt tường lửa kiểm duyệt, chống nghẽn bộ nhớ mạng (zero-allocation) và vá các lỗ hổng leo thang đặc quyền hệ thống.
+> **TeamTrau-Ghostline** là phiên bản cải tiến, nâng cao hiệu suất và tăng cường bảo mật của Ghostline — ứng dụng máy khách DNS bảo mật và Proxy đa giao thức cho Windows. Được tinh chỉnh theo triết lý **Kaizen** nhằm giảm tối đa độ trễ cho game online (CS2, Dota 2, Steam), vượt tường lửa kiểm duyệt, chống nghẽn bộ nhớ mạng (zero-allocation) và vá các lỗ hổng leo thang đặc quyền hệ thống.
 
 Xem chi tiết lịch sử cập nhật tại [CHANGELOG.md](CHANGELOG.md).
 
@@ -24,9 +24,12 @@ Xem chi tiết lịch sử cập nhật tại [CHANGELOG.md](CHANGELOG.md).
 - **Tự phục hồi khi bị Antivirus cách ly (v1.0.2):** Tự phát hiện và xử lý lỗi khi file driver bị SmartScreen hoặc Defender khóa (1260, 32, 0x800704ec), tự fallback sang chế độ Pure DNS/Proxy an toàn, không làm treo DNS máy ở 127.0.0.1.
 - **Tự động khôi phục mạng an toàn:** Cơ chế dự phòng đảm bảo trả lại DNS về DHCP nếu xảy ra sự cố tắt máy đột ngột. Tích hợp sẵn script 1-click loại trừ Defender `Loai_Tru_Defender_1Click.bat`.
 
-### 3. Tương thích hoàn hảo với Steam & Game CS2 (Counter-Strike 2)
+### 3. Tương thích chuyên sâu CS2, Dota 2 & Steam (v1.0.3)
+- **Tự nhận diện Game & Bảo vệ VAC (v1.0.3):** Quét thụ động tiến trình `cs2.exe`, `dota2.exe`, và `steam.exe` bằng Windows Toolhelp snapshot (không chạm vào bộ nhớ game, an toàn 100%).
+- **Tự động ngắt driver WinDivert chống VAC kick:** Khi CS2 hoặc Dota 2 bật, Ghostline tự động dỡ bỏ driver `WinDivert` khỏi kernel (`PauseDPIForGame`), triệt tiêu 100% lỗi *"VAC was unable to verify your game session"* và tránh bị FACEIT Anti-Cheat chặn. Tự động bật lại khi game tắt.
+- **Đo ping cụm máy chủ Valve SDR (Steam Datagram Relay):** Tự đo độ trễ thực tế đến các cụm máy chủ Valve chính thức (Singapore `sgp`, Hong Kong `hkg`, Tokyo `tyo`, Seoul `seo`).
+- **Tinh chỉnh mạng Windows tối ưu độ trễ (1-Click):** Tắt giới hạn gói tin mạng Windows (`NetworkThrottlingIndex = 0xffffffff`), dành 100% độ ưu tiên cho game (`SystemResponsiveness = 0`), gửi ACK tức thì (`TcpAckFrequency = 1`, `TCPNoDelay = 1`).
 - **Mở chặn Steam 100%:** Vượt triệt để việc nhà mạng Việt Nam đầu độc DNS đối với Steam Store, Chợ cộng đồng (Community Market) và Danh sách bạn bè. Bổ sung sẵn 2 preset cộng đồng `v2fly-steam` và `v2fly-twitch`.
-- **An toàn tuyệt đối với Valve Anti-Cheat (VAC):** Lưu lượng trận đấu CS2 chạy qua UDP trực tiếp, không bị can thiệp. Có hướng dẫn phân tách rõ ràng giữa chế độ DNS (an toàn 100% cho VAC) và chế độ nạp driver kernel DPI.
 - **Bộ chẩn đoán mạng & ECH tích hợp (v1.0.2):** Kiểm tra 1-click ngay trong app: Rò rỉ DNS (DNS Leak), trạng thái mã hóa Encrypted Client Hello (ECH) và đo ping TCP trực tiếp đến Steam Store, Steam Community, Discord, Cloudflare, Google DNS.
 
 ---

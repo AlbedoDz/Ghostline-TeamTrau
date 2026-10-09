@@ -201,3 +201,39 @@ func (o *Orchestrator) SetDPIEnabled(ctx context.Context, on bool) error {
 	})
 	return nil
 }
+
+// PauseDPIForGame temporarily halts WinDivert kernel driver while a game is active to protect against VAC kicks.
+func (o *Orchestrator) PauseDPIForGame(gameName string) {
+	o.opMu.Lock()
+	defer o.opMu.Unlock()
+	if !o.d.DPI.Running() {
+		return
+	}
+	o.mu.Lock()
+	o.pausedDPIForGame = true
+	o.mu.Unlock()
+	o.stopDPI()
+	o.log("dpi", "DPI_PAUSED_VAC_SAFETY", "game", gameName)
+}
+
+// ResumeDPIAfterGame restores the DPI engine after the game terminates if it was previously paused.
+func (o *Orchestrator) ResumeDPIAfterGame(ctx context.Context) {
+	o.opMu.Lock()
+	defer o.opMu.Unlock()
+	o.mu.Lock()
+	paused := o.pausedDPIForGame
+	o.pausedDPIForGame = false
+	o.mu.Unlock()
+	if !paused || !o.connected() {
+		return
+	}
+	s := o.d.Settings()
+	if s.DPI.Enabled {
+		if err := o.startDPI(ctx, s); err != nil {
+			slog.Warn("dpi: resume after game failed", "err", err)
+		} else {
+			o.log("dpi", "DPI_RESUMED_AFTER_GAME")
+		}
+	}
+}
+

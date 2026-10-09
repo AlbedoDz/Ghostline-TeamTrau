@@ -32,7 +32,7 @@ var DNSCryptListURLs = []string{
 }
 
 // Version is overridden at build time with -ldflags -X, defaults to release version.
-var Version = "1.0.2"
+var Version = "1.0.3"
 
 // ServerListPublicKeyHex is the ed25519 public key that signs lists/servers.json.
 var ServerListPublicKeyHex = "e32c272e2a6ab33facb7e2d58c948c37a0c394724c63fa96cc9d870044bdd45c"

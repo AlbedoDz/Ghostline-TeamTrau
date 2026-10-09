@@ -33,8 +33,22 @@ if (Test-Path $targetZip) {
     Remove-Item $targetZip -Force
 }
 
+$stageDir = Join-Path $env:TEMP "Ghostline_Stage_v$Version"
+if (Test-Path $stageDir) {
+    Remove-Item $stageDir -Recurse -Force
+}
+New-Item -ItemType Directory -Path $stageDir -Force | Out-Null
+
+# Copy portable files, excluding locked runtime logs
+Get-ChildItem -Path $SourceDir | ForEach-Object {
+    if ($_.Name -ne "data") {
+        Copy-Item -Path $_.FullName -Destination $stageDir -Recurse -Force
+    }
+}
+
 Add-Type -AssemblyName System.IO.Compression.FileSystem
-[System.IO.Compression.ZipFile]::CreateFromDirectory($SourceDir, $targetZip, [System.IO.Compression.CompressionLevel]::Optimal, $false)
+[System.IO.Compression.ZipFile]::CreateFromDirectory($stageDir, $targetZip, [System.IO.Compression.CompressionLevel]::Optimal, $false)
+Remove-Item $stageDir -Recurse -Force -ErrorAction SilentlyContinue
 
 $sizeMB = [math]::Round(((Get-Item $targetZip).Length / 1MB), 2)
 Write-Host "Successfully generated: $targetZip ($sizeMB MB)" -ForegroundColor Green

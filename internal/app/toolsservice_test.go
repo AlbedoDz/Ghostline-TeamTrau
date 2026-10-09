@@ -242,3 +242,18 @@ func TestNetworkDiagnostics(t *testing.T) {
 	require.Equal(t, "protected", diagProtected.DNSLeakStatus)
 }
 
+func TestGameStatus(t *testing.T) {
+	h := newTools(t)
+	res, err := h.svc.GetGameStatus(context.Background())
+	require.NoError(t, err)
+	require.False(t, res.DPIDisarmed)
+	require.NotEmpty(t, res.SDRClusters)
+}
+
+func TestApplyGamingNetworkTweaks(t *testing.T) {
+	h := newTools(t)
+	// Testing invocation does not crash
+	_ = h.svc.ApplyGamingNetworkTweaks(false)
+}
+
+

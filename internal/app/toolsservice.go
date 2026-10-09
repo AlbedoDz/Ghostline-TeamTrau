@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/AdguardTeam/dnsproxy/upstream"
+	"github.com/hashcott/ghostline/internal/game"
 	"github.com/hashcott/ghostline/internal/lookup"
 	"github.com/hashcott/ghostline/internal/model"
 	"github.com/hashcott/ghostline/internal/scanner"
@@ -322,4 +323,47 @@ func (s *Service) NetworkDiagnostics(ctx context.Context) (NetworkDiagnosticsRes
 	wg.Wait()
 	return res, nil
 }
+
+// GameStatusResult represents the state of CS2/Dota2 detection and VAC safety.
+type GameStatusResult struct {
+	ActiveGames      []string              `json:"activeGames"`
+	IsGaming         bool                  `json:"isGaming"`
+	DPIDisarmed      bool                  `json:"dpiDisarmed"`
+	SDRClusters      []game.SDRProbeResult `json:"sdrClusters"`
+	WindowsOptimized bool                  `json:"windowsOptimized"`
+}
+
+// GetGameStatus returns whether CS2/Dota2/Steam is active, whether WinDivert is disarmed for VAC safety, and measures SDR pings.
+func (s *Service) GetGameStatus(ctx context.Context) (GameStatusResult, error) {
+	running, err := game.FindRunningGames(game.DefaultTargetGames)
+	if err != nil {
+		running = []string{}
+	}
+
+	optApplied, _ := game.IsWindowsGamingTweaksApplied()
+	sdrResults := game.ProbeSDRClusters(ctx, 2*time.Second)
+
+	s.o.mu.Lock()
+	disarmed := s.o.pausedDPIForGame
+	s.o.mu.Unlock()
+
+	return GameStatusResult{
+		ActiveGames:      running,
+		IsGaming:         len(running) > 0,
+		DPIDisarmed:      disarmed,
+		SDRClusters:      sdrResults,
+		WindowsOptimized: optApplied,
+	}, nil
+}
+
+// ApplyGamingNetworkTweaks applies or reverts safe Windows registry network optimizations.
+func (s *Service) ApplyGamingNetworkTweaks(enable bool) error {
+	return game.ApplyWindowsGamingTweaks(enable)
+}
+
+// GetSDRRelayPings returns latency measurements to all Valve SDR relay locations.
+func (s *Service) GetSDRRelayPings(ctx context.Context) ([]game.SDRProbeResult, error) {
+	return game.ProbeSDRClusters(ctx, 2*time.Second), nil
+}
+
 

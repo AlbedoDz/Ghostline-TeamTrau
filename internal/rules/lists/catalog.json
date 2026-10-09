@@ -331,8 +331,8 @@
   },
   {
     "id": "v2fly-steam",
-    "name": "Steam",
-    "description": "Steam Store and Community domains: fragment through proxy.",
+    "name": "Steam & Valve Games",
+    "description": "Steam & Valve game routing (CS2, Dota 2, Store & Community): fragment through proxy.",
     "category": "bypass",
     "repo": "https://github.com/v2fly/domain-list-community",
     "license": "MIT",
