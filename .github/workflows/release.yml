@@ -60,4 +60,5 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           $assets = Get-ChildItem bin -File | Where-Object { $_.Name -like "*installer.exe" -or $_.Name -like "*portable.zip" -or $_.Name -eq "SHA256SUMS" } | ForEach-Object { $_.FullName }
-          gh release create "${{ github.ref_name }}" @assets --generate-notes --clobber
+          gh release delete "${{ github.ref_name }}" --yes --cleanup-tag=false 2>$null
+          gh release create "${{ github.ref_name }}" @assets --generate-notes
