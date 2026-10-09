@@ -1,16 +1,16 @@
 {
 	"fixed": {
-		"file_version": "0.5.0",
-		"product_version": "0.5.0"
+		"file_version": "1.0.5",
+		"product_version": "1.0.5"
 	},
 	"info": {
 		"0409": {
-			"ProductVersion": "0.5.0",
-			"CompanyName": "Ghostline",
+			"ProductVersion": "1.0.5",
+			"CompanyName": "TeamTrau",
 			"FileDescription": "Ghostline - Secure DNS client",
-			"LegalCopyright": "© 2026 Harry Nguyen. GPL-3.0-only.",
+			"LegalCopyright": "© 2026 TeamTrau. GPL-3.0-only.",
 			"ProductName": "Ghostline",
-			"Comments": "https://github.com/hashcott/ghostline"
+			"Comments": "https://github.com/AlbedoDz/TeamTrau-Ghostline"
 		}
 	}
 }
