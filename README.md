@@ -86,7 +86,15 @@ flowchart TD
 
 ## Acknowledgments & Credits
 
-Special thanks to **Harry Nguyen** ([@hashcott](https://github.com/hashcott)) for creating the original [Ghostline](https://github.com/hashcott/ghostline) project and providing its robust foundation.
+Ghostline stands on the shoulders of open-source projects:
+- [dnsproxy](https://github.com/AdguardTeam/dnsproxy)
+- [zapret2](https://github.com/bol-van/zapret2)
+- [GoodbyeDPI](https://github.com/ValdikSS/GoodbyeDPI)
+- [WinDivert](https://github.com/basil00/WinDivert)
+- [Wails](https://wails.io)
+- Inspired by [DNSveil / SecureDNSClient](https://github.com/msasanmh/SecureDNSClient)
+
+Special thanks to the original Ghostline project and the open-source community for providing a robust foundation.
 
 ---
 

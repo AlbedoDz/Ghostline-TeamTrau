@@ -10,3 +10,5 @@ build/windows/nsis/MicrosoftEdgeWebview2Setup.exe
 build/appicon.icns
 .codegraph/
 context-builder.toml
+.context-builder/
+docs/context_*.md

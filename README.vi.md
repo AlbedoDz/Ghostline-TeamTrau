@@ -87,7 +87,15 @@ flowchart TD
 
 ## Lời cảm ơn (Acknowledgments & Credits)
 
-Chân thành cảm ơn tác giả **Harry Nguyen** ([@hashcott](https://github.com/hashcott)) đã phát triển dự án gốc [Ghostline](https://github.com/hashcott/ghostline) và xây dựng nền tảng kiến trúc vững chắc ban đầu.
+Ghostline kế thừa và phát triển dựa trên nền tảng của các dự án mã nguồn mở:
+- [dnsproxy](https://github.com/AdguardTeam/dnsproxy) của AdGuard
+- [zapret2](https://github.com/bol-van/zapret2) của bol-van
+- [GoodbyeDPI](https://github.com/ValdikSS/GoodbyeDPI) của ValdikSS
+- [WinDivert](https://github.com/basil00/WinDivert) của basil00
+- [Wails](https://wails.io) của Wails Team
+- Lấy cảm hứng từ [DNSveil / SecureDNSClient](https://github.com/msasanmh/SecureDNSClient)
+
+Chân thành cảm ơn dự án gốc Ghostline cùng cộng đồng mã nguồn mở đã xây dựng và đóng góp những nền móng vững chắc.
 
 ---
 
