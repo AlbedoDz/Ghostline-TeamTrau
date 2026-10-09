@@ -49,6 +49,8 @@
     "serverAuto": "tự động",
     "latency": "độ trễ",
     "dpi": "vượt dpi",
+    "gameMode": "chế độ game",
+    "gameModeActive": "Bật (VAC Safe · {{game}})",
     "uptime": "thời gian",
     "lastScan": "lần quét",
     "never": "chưa quét",
@@ -119,7 +121,11 @@
     "dnsserver": "DNS server",
     "dnsDevices": "{{count}} thiết bị LAN",
     "fakesni": "Fake SNI",
-    "fakesniDomains": "{{count}} tên miền"
+    "fakesniDomains": "{{count}} tên miền",
+    "gameMode": "Chế độ Game / VAC Safe",
+    "gameModeActive": "Đang bật ({{game}})",
+    "gameModeDetails": "WinDivert đã gỡ · Tinh chỉnh TCP",
+    "gameModeReady": "Tự động (Sẵn sàng cho CS2/Dota 2)"
   },
   "servers": {
     "title": "MÁY CHỦ",
@@ -175,6 +181,8 @@
   },
   "dpi": {
     "title": "VƯỢT DPI",
+    "gameModeNotice": "Chế độ Game Mode đang kích hoạt cho {{game}}",
+    "gameModeDesc": "Driver WinDivert đã được tự động dỡ bỏ khỏi kernel để bảo vệ tài khoản chống VAC kick / FACEIT block.",
     "legalNote": "Bạn tự chịu trách nhiệm tuân thủ pháp luật nơi mình sinh sống và điều khoản của nhà mạng. Không dùng tính năng này để truy cập nội dung bị cấm theo quy định của pháp luật.",
     "preset": "preset",
     "presets": {
@@ -883,6 +891,7 @@
     "copy": "sao chép",
     "tab": {
       "logs": "nhật ký",
+      "gaming": "chơi game",
       "lookup": "lookup",
       "scanner": "scanner",
       "cfscan": "ip cloudflare",
@@ -1027,5 +1036,36 @@
       "speedTest": "đo tốc độ tải",
       "rechecking": "đang kiểm tra…"
     }
+  },
+  "gaming": {
+    "statusTitle": "Trạng thái Game & Chống Ban VAC",
+    "active": "Đang kích hoạt",
+    "standby": "Sẵn sàng tự động",
+    "activeGames": "Game đang chạy",
+    "none": "Không phát hiện game",
+    "vacSafe": "Bảo vệ VAC",
+    "driverPurged": "WinDivert đã gỡ bỏ khỏi Kernel (100% An toàn)",
+    "driverNormal": "Bình thường (sẽ tự gỡ khi vào game)",
+    "disableMode": "Tắt Game Mode",
+    "enableMode": "Bật Game Mode thủ công",
+    "tweaksTitle": "Tinh Chỉnh Mạng Windows Giảm Ping",
+    "optimized": "Đã tối ưu",
+    "default": "Mặc định",
+    "tweaksDesc": "Tắt giới hạn gói tin mạng Windows (NetworkThrottlingIndex), gửi ACK lập tức (TcpAckFrequency=1, TCPNoDelay=1) giúp giảm 40-200ms lag.",
+    "revertTweaks": "Hoàn tác về mặc định",
+    "applyTweaks": "Kích hoạt tinh chỉnh",
+    "sdrTitle": "Độ Trễ Cụm Máy Chủ Valve SDR (Steam Datagram Relay)",
+    "pinging": "Đang đo...",
+    "measurePings": "Đo ping cụm Valve SDR",
+    "sdrEmpty": "Bấm nút đo ping để kiểm tra độ trễ đến các cụm máy chủ CS2/Dota 2.",
+    "cluster": "Cụm Relay",
+    "location": "Vị trí",
+    "ip": "IP",
+    "latency": "Độ trễ",
+    "quality": "Chất lượng",
+    "noteModeEnabled": "Đã bật Game Mode thủ công. Driver WinDivert và proxy ngầm đã được gỡ an toàn.",
+    "noteModeDisabled": "Đã tắt Game Mode thủ công.",
+    "noteTweaksEnabled": "Đã kích hoạt các tinh chỉnh registry giảm ping Windows.",
+    "noteTweaksDisabled": "Đã khôi phục cài đặt registry mạng Windows về mặc định."
   }
 }

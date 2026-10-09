@@ -136,7 +136,15 @@ export function SimpleView({
         rows={[
           { k: t("simple.server"), v: serverSummary(snap.servers) },
           { k: t("simple.latency"), v: t("common.ms", { value: lastLatency }) },
-          { k: t("simple.dpi"), v: snap.dpi.running ? `${strategyName} ✓` : t("common.off"), tone: snap.dpi.running ? "ok" : "dim" },
+          {
+            k: (snap as any).gameMode?.active ? t("simple.gameMode") : t("simple.dpi"),
+            v: (snap as any).gameMode?.active
+              ? `${t("simple.gameModeActive", { game: (snap as any).gameMode.activeGames?.join(", ") || "Game" })} ✓`
+              : snap.dpi.running
+              ? `${strategyName} ✓`
+              : t("common.off"),
+            tone: (snap as any).gameMode?.active || snap.dpi.running ? "ok" : "dim",
+          },
           { k: t("simple.uptime"), v: uptime },
           ...(snap.proxy?.running ? [{ k: t("simple.proxy"), v: snap.proxy.addr }] : []),
           ...(lanDNS ? [{ k: t("simple.dnsLan"), v: lanDNS }] : []),

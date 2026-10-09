@@ -328,6 +328,8 @@ func (s *Service) NetworkDiagnostics(ctx context.Context) (NetworkDiagnosticsRes
 type GameStatusResult struct {
 	ActiveGames      []string              `json:"activeGames"`
 	IsGaming         bool                  `json:"isGaming"`
+	GameModeActive   bool                  `json:"gameModeActive"`
+	GameModeManual   bool                  `json:"gameModeManual"`
 	DPIDisarmed      bool                  `json:"dpiDisarmed"`
 	SDRClusters      []game.SDRProbeResult `json:"sdrClusters"`
 	WindowsOptimized bool                  `json:"windowsOptimized"`
@@ -345,15 +347,24 @@ func (s *Service) GetGameStatus(ctx context.Context) (GameStatusResult, error) {
 
 	s.o.mu.Lock()
 	disarmed := s.o.pausedDPIForGame
+	gmActive := s.o.gameModeActive
+	gmManual := s.o.gameModeManual
 	s.o.mu.Unlock()
 
 	return GameStatusResult{
 		ActiveGames:      running,
 		IsGaming:         len(running) > 0,
+		GameModeActive:   gmActive,
+		GameModeManual:   gmManual,
 		DPIDisarmed:      disarmed,
 		SDRClusters:      sdrResults,
 		WindowsOptimized: optApplied,
 	}, nil
+}
+
+// SetGameMode toggles the dedicated Game Mode profile manually.
+func (s *Service) SetGameMode(enable bool) error {
+	return s.o.SetGameModeManual(enable)
 }
 
 // ApplyGamingNetworkTweaks applies or reverts safe Windows registry network optimizations.

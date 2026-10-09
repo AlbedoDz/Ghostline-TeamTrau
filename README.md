@@ -1,6 +1,6 @@
 # TeamTrau Ghostline
 
-[![Version](https://img.shields.io/badge/version-1.0.3-blue.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.0.4-blue.svg)](CHANGELOG.md)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-green.svg)](LICENSE)
 
 > **TeamTrau-Ghostline** is an enhanced, high-performance, and hardened fork of Ghostline — the secure DNS and multi-protocol proxy client for Windows. Optimized with Kaizen principles for low-latency gaming (CS2, Dota 2, Steam), anti-censorship bypass, zero-allocation network relay, and system privilege hardening.
@@ -22,15 +22,16 @@ Read the full release history in [CHANGELOG.md](CHANGELOG.md).
 ### 2. Security & Antivirus (AV) Resilience
 - **Local Privilege Escalation (LPE) Patch:** Hardened `guard.ps1` (which executes under `NT AUTHORITY\SYSTEM`) to verify file ownership of `state.json`. Only files authored by `SYSTEM` (`S-1-5-18`) or `BUILTIN\Administrators` (`S-1-5-32-544`) are trusted, preventing standard users or malware from hijacking system DNS.
 - **Antivirus False-Positive Self-Healing (v1.0.2):** Intercepts SmartScreen, Defender PUA, or AppLocker locks, gracefully falling back to driverless Pure DNS mode without leaving DNS stuck on loopback.
+- **Service Control Manager Orphan Driver Purge (v1.0.4):** Scans and purges lingering `WinDivert` services in preflight and on exit, eliminating driver traces left behind by ungraceful crashes.
 - **Strict Network Recovery:** Failsafe DHCP restoration routines ensure loopback DNS is cleanly restored even after power cuts or hard crashes. Includes 1-click Defender exclusion script `Loai_Tru_Defender_1Click.bat`.
 
-### 3. Steam, CS2 & Dota 2 Gaming Compatibility (v1.0.3)
-- **Auto Game Detection & VAC Protection (v1.0.3):** Passively detects `cs2.exe`, `dota2.exe`, and `steam.exe` via Windows Toolhelp snapshot (100% passive, zero memory access).
-- **Auto WinDivert Disarm (100% VAC-Safe):** Automatically unloads WinDivert driver when CS2 or Dota 2 starts, preventing `"VAC was unable to verify your game session"` kicks and FACEIT blocks. Automatically resumes DPI when the game exits.
+### 3. Dedicated Game Mode Profile & Zero-VAC Ban Architecture (v1.0.4)
+- **Isolated Game Mode Profile:** Completely decouples gaming traffic from DPI and loopback proxies. When active, WinDivert is unloaded, system proxy is suspended so game UDP packets go direct, and low-latency registry tweaks are engaged.
+- **Zero-Window Pre-flight Guard:** Inspects CS2 and Dota 2 process states *before* initiating DPI or connections. Completely eradicates the 1–2 second timing window where WinDivert previously loaded into kernel before detection, avoiding `"VAC was unable to verify your game session"` kicks.
+- **Auto Game Detection & State Switching:** Passive Toolhelp monitoring of `cs2.exe`, `dota2.exe`, and `steam.exe` with immediate startup poll.
 - **Valve Steam Datagram Relay (SDR) Prober:** Measures real-time latency to official Valve SDR game clusters (Singapore `sgp`, Hong Kong `hkg`, Tokyo `tyo`, Seoul `seo`).
 - **Windows Gaming Network Registry Tweaks:** 1-click optimization to disable Windows network throttling (`NetworkThrottlingIndex = 0xffffffff`), maximize responsiveness (`SystemResponsiveness = 0`), and disable delayed ACKs (`TcpAckFrequency = 1`, `TCPNoDelay = 1`).
 - **Complete Steam Unblock:** Cleanly bypasses ISP DNS poisoning in Vietnam for Steam Store, Community Market, and Friends network. Includes built-in `v2fly-steam` and `v2fly-twitch` community bypass presets.
-- **Integrated Network Diagnostics (v1.0.2):** One-click in-app test for DNS leak status, ECH status, and concurrent ping to Steam Store, Steam Community, Discord, Cloudflare, and Google DNS.
 
 ---
 

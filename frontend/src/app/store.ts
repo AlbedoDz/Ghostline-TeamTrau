@@ -19,7 +19,7 @@ import type {
 
 export type Mode = "simple" | "full";
 export type Page = "overview" | "servers" | "dpi" | "proxy" | "rules" | "dnsserver" | "fakesni" | "tools" | "logs" | "settings";
-export type ToolsTab = "logs" | "lookup" | "scanner" | "cfscan" | "stamp";
+export type ToolsTab = "logs" | "lookup" | "scanner" | "cfscan" | "stamp" | "gaming";
 export type ProxyTab = "proxy" | "fakesni";
 
 const emptySnapshot = {

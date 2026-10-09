@@ -61,8 +61,10 @@ type Orchestrator struct {
 	setupURL string
 	// pending is a system proxy restore that failed; guarded by mu.
 	pending *pendingRestore
-	// pausedDPIForGame tracks if DPI was temporarily paused for VAC safety; guarded by mu.
+	// pausedDPIForGame, gameModeActive and gameModeManual track dedicated VAC-safe game profile; guarded by mu.
 	pausedDPIForGame bool
+	gameModeActive   bool
+	gameModeManual   bool
 	gameStop         func()
 }
 
@@ -344,6 +346,10 @@ func (o *Orchestrator) connectSteps() []step {
 					}
 				}
 			}
+			// Clean any leftover WinDivert driver services from previous crashes
+			if o.d.DPI != nil {
+				warnIgnored("preflight dpi cleanup", o.d.DPI.Stop())
+			}
 			// Try the bind rather than refuse whenever port 53 has an owner:
 			// Mobile Hotspot holds 0.0.0.0:53, yet 127.0.0.1:53 still binds
 			// and receives every loopback query.
@@ -566,8 +572,11 @@ func (o *Orchestrator) disconnectLocked(ctx context.Context) []sysdns.RestoreErr
 		o.gameStop = nil
 	}
 	o.pausedDPIForGame = false
+	o.gameModeActive = false
+	o.gameModeManual = false
 	o.snaps, o.stopWatchdog, o.servers, o.healthStop, o.dirty = nil, nil, nil, nil, false
 	o.mu.Unlock()
+	_ = game.ApplyWindowsGamingTweaks(false)
 	o.ClearWarning(CodeRestoreFailed)
 	return nil
 }

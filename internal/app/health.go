@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"log/slog"
+	"strings"
 	"time"
 
 	"github.com/hashcott/ghostline/internal/engine"
@@ -26,15 +27,25 @@ const (
 // health checks and the post-connect site probe.
 func (o *Orchestrator) afterConnect() {
 	s := o.d.Settings()
-	if s.DPI.Enabled {
+
+	// Pre-flight game check: if Game Mode is enabled or games are running, activate Game Mode without starting DPI
+	running, _ := game.FindRunningGames(game.DefaultTargetGames)
+	if s.GameMode.Enabled || len(running) > 0 {
+		gameLabel := "manual"
+		if len(running) > 0 {
+			gameLabel = strings.Join(running, ", ")
+		}
+		o.EnterGameMode(gameLabel, s.GameMode.Enabled)
+	} else if s.DPI.Enabled {
 		if err := o.startDPI(context.Background(), s); err != nil {
 			o.logCodedErr("dpi", err)
 		}
 	}
-	gw := game.NewWatcher(game.DefaultTargetGames, 2*time.Second, func(gameName string) {
-		o.PauseDPIForGame(gameName)
+
+	gw := game.NewWatcher(game.DefaultTargetGames, 1*time.Second, func(gameName string) {
+		o.EnterGameMode(gameName, false)
 	}, func(gameName string) {
-		o.ResumeDPIAfterGame(context.Background())
+		o.LeaveGameMode()
 	})
 	ctxGame, cancelGame := context.WithCancel(context.Background())
 	o.mu.Lock()

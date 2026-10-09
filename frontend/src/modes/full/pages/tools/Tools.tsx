@@ -6,10 +6,11 @@ import { Lookup } from "./Lookup";
 import { Scanner } from "./Scanner";
 import { CfScan } from "./CfScan";
 import { Stamp } from "./Stamp";
+import { Gaming } from "./Gaming";
 import css from "../../full.module.css";
 import tc from "./tools.module.css";
 
-const tabs: ToolsTab[] = ["logs", "lookup", "scanner", "cfscan", "stamp"];
+const tabs: ToolsTab[] = ["logs", "gaming", "lookup", "scanner", "cfscan", "stamp"];
 
 /** Tools is the Advanced-mode diagnostics page: logs first, then the tools (spec 3 §10.1). */
 export function Tools() {
@@ -23,6 +24,7 @@ export function Tools() {
         <Logs />
       ) : (
         <div className={`${css.page} ${tc.ui}`}>
+          {tab === "gaming" && <Gaming />}
           {tab === "lookup" && <Lookup />}
           {tab === "scanner" && <Scanner />}
           {tab === "cfscan" && <CfScan />}

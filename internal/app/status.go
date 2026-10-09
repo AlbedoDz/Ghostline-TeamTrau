@@ -81,6 +81,16 @@ type Snapshot struct {
 	Proxy     ProxyStatus     `json:"proxy"`
 	DNSServer DNSServerStatus `json:"dnsServer"`
 	FakeSNI   FakeSNIStatus   `json:"fakeSni"`
+	GameMode  GameModeStatus  `json:"gameMode"`
+}
+
+// GameModeStatus reports whether the dedicated VAC-safe gaming profile is active.
+type GameModeStatus struct {
+	Active          bool     `json:"active"`
+	Manual          bool     `json:"manual"`
+	ActiveGames     []string `json:"activeGames,omitempty"`
+	TweaksApplied   bool     `json:"tweaksApplied"`
+	WinDivertPurged bool     `json:"winDivertPurged"`
 }
 
 func (s Snapshot) clone() Snapshot {
@@ -89,6 +99,7 @@ func (s Snapshot) clone() Snapshot {
 	c.Servers = append([]string(nil), s.Servers...)
 	c.BlockedSites = append([]string(nil), s.BlockedSites...)
 	c.Reasons = append([]string(nil), s.Reasons...)
+	c.GameMode.ActiveGames = append([]string(nil), s.GameMode.ActiveGames...)
 	if s.Proxy.Error != nil {
 		e := *s.Proxy.Error
 		c.Proxy.Error = &e

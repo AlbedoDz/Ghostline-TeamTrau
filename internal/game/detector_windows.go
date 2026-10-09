@@ -101,6 +101,9 @@ func (w *Watcher) Start(ctx context.Context) {
 	w.cancel = cancel
 	w.mu.Unlock()
 
+	// Immediate poll to catch games already running at startup
+	w.poll()
+
 	go w.loop(cctx)
 }
 

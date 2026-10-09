@@ -71,6 +71,21 @@ export function Overview() {
           )}
         </div>
         <div className={css.panel}>
+          <div className={css.panelTitle}>{t("overview.gameMode")}</div>
+          {(snap as any).gameMode?.active ? (
+            <>
+              <div className={css.ok}>
+                {t("overview.gameModeActive", {
+                  game: (snap as any).gameMode.activeGames?.join(", ") || "Game",
+                })}
+              </div>
+              <div className={css.dim}>{t("overview.gameModeDetails")}</div>
+            </>
+          ) : (
+            <span className={css.dim}>{t("overview.gameModeReady")}</span>
+          )}
+        </div>
+        <div className={css.panel}>
           <div className={css.panelTitle}>{t("overview.inUse")}</div>
           {servers.length === 0 ? (
             <span className={css.dim}>—</span>

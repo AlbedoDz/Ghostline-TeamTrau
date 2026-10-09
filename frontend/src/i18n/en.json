@@ -49,6 +49,8 @@
     "serverAuto": "auto",
     "latency": "latency",
     "dpi": "dpi bypass",
+    "gameMode": "game mode",
+    "gameModeActive": "Active (VAC Safe · {{game}})",
     "uptime": "uptime",
     "lastScan": "last scan",
     "never": "never",
@@ -119,7 +121,11 @@
     "dnsserver": "DNS server",
     "dnsDevices": "{{count}} LAN devices",
     "fakesni": "Fake SNI",
-    "fakesniDomains": "{{count}} domains"
+    "fakesniDomains": "{{count}} domains",
+    "gameMode": "Game Mode / VAC Safe",
+    "gameModeActive": "Active ({{game}})",
+    "gameModeDetails": "WinDivert disarmed · Low-latency TCP",
+    "gameModeReady": "Auto (Ready for CS2/Dota 2)"
   },
   "servers": {
     "title": "SERVERS",
@@ -175,6 +181,8 @@
   },
   "dpi": {
     "title": "DPI BYPASS",
+    "gameModeNotice": "Game Mode active for {{game}}",
+    "gameModeDesc": "WinDivert driver has been automatically purged from the kernel to protect against VAC kicks / FACEIT blocks.",
     "legalNote": "You are responsible for complying with the laws where you live and your network provider's terms. Do not use this feature to reach content that is prohibited by law.",
     "preset": "preset",
     "presets": {
@@ -883,6 +891,7 @@
     "copy": "copy",
     "tab": {
       "logs": "logs",
+      "gaming": "gaming",
       "lookup": "lookup",
       "scanner": "scanner",
       "cfscan": "cloudflare ip",
@@ -1027,5 +1036,36 @@
       "speedTest": "download speed test",
       "rechecking": "checking…"
     }
+  },
+  "gaming": {
+    "statusTitle": "Game Status & VAC Ban Protection",
+    "active": "Active",
+    "standby": "Auto Standby",
+    "activeGames": "Running Games",
+    "none": "No games detected",
+    "vacSafe": "VAC Safety",
+    "driverPurged": "WinDivert purged from kernel (100% Safe)",
+    "driverNormal": "Normal (will auto-disarm when game launches)",
+    "disableMode": "Disable Game Mode",
+    "enableMode": "Enable Game Mode Manually",
+    "tweaksTitle": "Windows Network Latency Tweaks",
+    "optimized": "Optimized",
+    "default": "Default",
+    "tweaksDesc": "Disables Windows network throttling, sends instant ACKs (TcpAckFrequency=1, TCPNoDelay=1) reducing 40-200ms lag.",
+    "revertTweaks": "Revert to Windows Default",
+    "applyTweaks": "Apply Latency Tweaks",
+    "sdrTitle": "Valve Steam Datagram Relay (SDR) Cluster Latencies",
+    "pinging": "Pinging...",
+    "measurePings": "Ping Valve SDR Clusters",
+    "sdrEmpty": "Click ping to measure real-time latency to CS2/Dota 2 Valve relay clusters.",
+    "cluster": "Relay Cluster",
+    "location": "Location",
+    "ip": "IP",
+    "latency": "Latency",
+    "quality": "Quality",
+    "noteModeEnabled": "Game Mode manually enabled. WinDivert driver and proxies cleanly disarmed.",
+    "noteModeDisabled": "Game Mode manually disabled.",
+    "noteTweaksEnabled": "Windows gaming latency registry tweaks applied.",
+    "noteTweaksDisabled": "Windows network registry tweaks reverted to default."
   }
 }

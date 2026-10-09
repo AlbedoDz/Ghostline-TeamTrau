@@ -42,6 +42,14 @@ type Settings struct {
 	FakeSNI          FakeSNISettings   `json:"fakeSni"`
 	Tools            ToolsSettings     `json:"tools"`
 	Simple           SimpleSettings    `json:"simple"`
+	GameMode         GameModeSettings  `json:"gameMode"`
+}
+
+// GameModeSettings configure the dedicated VAC-safe game profile.
+type GameModeSettings struct {
+	Enabled     bool `json:"enabled"`
+	AutoDetect  bool `json:"autoDetect"`
+	ApplyTweaks bool `json:"applyTweaks"`
 }
 
 // SimpleSettings belong to the Simple interface's protection levels.
@@ -289,6 +297,7 @@ func DefaultSettings() Settings {
 		DNSBlockMode: "zero",
 		DNSServer:    DNSServerSettings{DoHPort: 443},
 		Tools:        DefaultTools(),
+		GameMode:     GameModeSettings{Enabled: false, AutoDetect: true, ApplyTweaks: true},
 	}
 }
 
@@ -391,6 +400,10 @@ func MigrateSettings(b []byte) (Settings, error) {
 	}
 	if s.Tools.Scanner.MaxServers == 0 { // v5 files from before maxServers
 		s.Tools.Scanner.MaxServers = DefaultScanMaxServers
+	}
+	if !s.GameMode.AutoDetect && !s.GameMode.Enabled {
+		s.GameMode.AutoDetect = true
+		s.GameMode.ApplyTweaks = true
 	}
 	return s, nil
 }

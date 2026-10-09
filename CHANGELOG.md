@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.0.4] - 2026-10-09
+
+### 🛡️ Radical Security Hardening & Zero-VAC Ban Architecture
+- **Dedicated Game Mode Profile:** Implemented isolated Game Mode profile in `internal/store/settings.go` (`GameModeSettings`) and `internal/app/status.go` (`GameModeStatus`). When active, completely halts and unloads WinDivert, disarms proxy redirection, and enables direct low-latency DNS + adapter tweaks.
+- **Zero-Window Pre-flight Game Guard:**
+  - Resolved 1–2s kernel driver exposure race condition: `afterConnect()` and `startDPI()` now detect active `cs2.exe`, `dota2.exe`, `steam.exe` *before* attempting any driver load, immediately switching to Game Mode with zero WinDivert driver trace in kernel.
+  - Upgraded `internal/game/detector_windows.go` to execute an instant `poll()` upon startup, eliminating polling interval lag.
+- **Automatic SCM WinDivert Cleanup:**
+  - Added orphaned driver purge in preflight (`connectSteps`), `disconnectLocked`, and Game Mode transition to ensure no stale `WinDivert` services remain in Windows Service Control Manager after ungraceful crashes or system reboots.
+- **Anti-Dropper & Root CA Disarm:**
+  - Strengthened asset integrity checking in `internal/dpi/manager.go` to avoid heuristic dropper flags by Windows Defender.
+  - Completely disarmed Fake SNI MITM Root CA installation while gaming to prevent anti-cheat and EDR/AV banking-trojan heuristic alerts.
+- **Manual Game Mode Control:** Added `SetGameModeManual` to `internal/app/dpi.go` and `internal/app/toolsservice.go`, allowing 1-click toggling between Normal and Gaming profiles.
+
+---
+
 ## [1.0.3] - 2026-10-09
 
 ### 🎮 Low-Latency Gaming & VAC Safety

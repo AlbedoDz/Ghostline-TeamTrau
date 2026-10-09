@@ -59,6 +59,7 @@ func TestDefaultSettings_MatchSpec(t *testing.T) {
 	require.False(t, s.AutoConnect)
 	require.False(t, s.PinnedOnly)
 	require.Empty(t, s.Pinned)
+	require.Equal(t, store.GameModeSettings{Enabled: false, AutoDetect: true, ApplyTweaks: true}, s.GameMode)
 }
 
 func TestLoadSettings_MissingReturnsDefaults(t *testing.T) {

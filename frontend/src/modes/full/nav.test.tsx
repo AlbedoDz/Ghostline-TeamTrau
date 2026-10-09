@@ -19,6 +19,7 @@ vi.mock("./pages/tools/Lookup", () => ({ Lookup: stub("LOOKUP") }));
 vi.mock("./pages/tools/Scanner", () => ({ Scanner: stub("SCANNER") }));
 vi.mock("./pages/tools/CfScan", () => ({ CfScan: stub("CFSCAN") }));
 vi.mock("./pages/tools/Stamp", () => ({ Stamp: stub("STAMP") }));
+vi.mock("./pages/tools/Gaming", () => ({ Gaming: stub("GAMING") }));
 vi.mock("../../components/Warnings", () => ({ Warnings: () => null }));
 vi.mock("../../components/ConnectError", () => ({ ConnectError: () => null }));
 
@@ -49,7 +50,7 @@ test("tools opens on the logs tab, which comes first", () => {
   render(<FullView />);
   fireEvent.click(screen.getByRole("button", { name: "công cụ" }));
   const tabs = screen.getAllByRole("tab").map((t) => t.textContent);
-  expect(tabs).toEqual(["nhật ký", "lookup", "scanner", "ip cloudflare", "stamp"]);
+  expect(tabs).toEqual(["nhật ký", "chơi game", "lookup", "scanner", "ip cloudflare", "stamp"]);
   expect(screen.getByText("LOGS PAGE")).toBeInTheDocument();
   fireEvent.click(screen.getByRole("tab", { name: "lookup" }));
   expect(screen.getByText("LOOKUP PAGE")).toBeInTheDocument();

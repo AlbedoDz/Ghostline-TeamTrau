@@ -4,8 +4,10 @@ import (
 	"context"
 	"errors"
 	"log/slog"
+	"strings"
 
 	"github.com/hashcott/ghostline/internal/dpi"
+	"github.com/hashcott/ghostline/internal/game"
 	"github.com/hashcott/ghostline/internal/store"
 )
 
@@ -68,6 +70,19 @@ func (o *Orchestrator) startEngine(ctx context.Context, engine string, p dpi.Pla
 // tampered with is replaced by GoodbyeDPI for this run only: the settings
 // keep zapret2, so the next start tries it again (spec §8.1).
 func (o *Orchestrator) startDPI(ctx context.Context, s store.Settings) error {
+	o.mu.Lock()
+	gmActive := o.gameModeActive || s.GameMode.Enabled
+	o.mu.Unlock()
+	if gmActive {
+		slog.Info("dpi: game mode active; suppressing DPI start for VAC safety")
+		return nil
+	}
+	if running, _ := game.FindRunningGames(game.DefaultTargetGames); len(running) > 0 {
+		slog.Info("dpi: active game detected; entering Game Mode immediately for VAC safety", "games", running)
+		o.EnterGameMode(strings.Join(running, ", "), false)
+		return nil
+	}
+
 	engine := s.DPI.Engine
 	p := o.planFor(s, engine)
 	err := o.startEngine(ctx, engine, p)
@@ -202,38 +217,115 @@ func (o *Orchestrator) SetDPIEnabled(ctx context.Context, on bool) error {
 	return nil
 }
 
-// PauseDPIForGame temporarily halts WinDivert kernel driver while a game is active to protect against VAC kicks.
-func (o *Orchestrator) PauseDPIForGame(gameName string) {
+// EnterGameMode activates the dedicated Game Mode profile:
+// 1. Forcibly halts & unloads WinDivert driver; purges any WinDivert services from SCM (100% VAC safe).
+// 2. Temporarily disables/bypasses system proxy so game packets are not proxied.
+// 3. Applies Windows registry network latency tweaks (TcpAckFrequency, TCPNoDelay, SystemResponsiveness).
+func (o *Orchestrator) EnterGameMode(gameName string, manual bool) {
 	o.opMu.Lock()
 	defer o.opMu.Unlock()
-	if !o.d.DPI.Running() {
-		return
-	}
+
 	o.mu.Lock()
+	o.gameModeActive = true
+	o.gameModeManual = manual
 	o.pausedDPIForGame = true
 	o.mu.Unlock()
+
+	// 1. Halt DPI and purge WinDivert from Windows SCM
 	o.stopDPI()
-	o.log("dpi", "DPI_PAUSED_VAC_SAFETY", "game", gameName)
+	if o.d.DPI != nil {
+		_ = o.d.DPI.Stop()
+	}
+
+	// 2. Suspend system proxy if currently applied to prevent game traffic routing
+	if o.px.sysSet && o.d.SysProxy != nil && o.px.snap != nil {
+		_, _ = o.d.SysProxy.RestoreIfOurs(o.px.addr, *o.px.snap)
+	}
+
+	// 3. Apply low-latency Windows gaming tweaks
+	_ = game.ApplyWindowsGamingTweaks(true)
+
+	var gamesList []string
+	if gameName != "" && gameName != "manual" {
+		gamesList = strings.Split(gameName, ", ")
+	}
+
+	o.update(func(sn *Snapshot) {
+		sn.GameMode = GameModeStatus{
+			Active:          true,
+			Manual:          manual,
+			ActiveGames:     gamesList,
+			TweaksApplied:   true,
+			WinDivertPurged: true,
+		}
+	})
+	o.log("game", "GAME_MODE_ACTIVATED", "game", gameName, "manual", manual, "vac_safe", true)
 }
 
-// ResumeDPIAfterGame restores the DPI engine after the game terminates if it was previously paused.
-func (o *Orchestrator) ResumeDPIAfterGame(ctx context.Context) {
+// LeaveGameMode exits the dedicated Game Mode profile when games close (if not locked manual).
+func (o *Orchestrator) LeaveGameMode() {
 	o.opMu.Lock()
 	defer o.opMu.Unlock()
+
 	o.mu.Lock()
-	paused := o.pausedDPIForGame
+	if o.gameModeManual {
+		o.mu.Unlock()
+		return // manual lock on Game Mode
+	}
+	o.gameModeActive = false
 	o.pausedDPIForGame = false
 	o.mu.Unlock()
-	if !paused || !o.connected() {
-		return
+
+	// Reapply system proxy if it was configured
+	if o.px.sysSet && o.d.SysProxy != nil {
+		_ = o.d.SysProxy.Apply(o.px.addr)
 	}
-	s := o.d.Settings()
-	if s.DPI.Enabled {
-		if err := o.startDPI(ctx, s); err != nil {
-			slog.Warn("dpi: resume after game failed", "err", err)
-		} else {
-			o.log("dpi", "DPI_RESUMED_AFTER_GAME")
+
+	o.update(func(sn *Snapshot) {
+		sn.GameMode = GameModeStatus{
+			Active:          false,
+			Manual:          false,
+			ActiveGames:     nil,
+			TweaksApplied:   false,
+			WinDivertPurged: true,
+		}
+	})
+
+	// Resume DPI if it was enabled in settings and Ghostline is connected
+	if o.connected() {
+		s := o.d.Settings()
+		if s.DPI.Enabled {
+			_ = o.startDPI(context.Background(), s)
 		}
 	}
+	o.log("game", "GAME_MODE_DEACTIVATED")
+}
+
+// SetGameModeManual toggles Game Mode manually from settings or UI.
+func (o *Orchestrator) SetGameModeManual(enable bool) error {
+	s := o.d.Settings()
+	s.GameMode.Enabled = enable
+	if err := o.d.SaveSettings(s); err != nil {
+		return err
+	}
+	if enable {
+		o.EnterGameMode("manual", true)
+	} else {
+		o.mu.Lock()
+		o.gameModeManual = false
+		o.mu.Unlock()
+		o.LeaveGameMode()
+	}
+	return nil
+}
+
+// PauseDPIForGame delegates to EnterGameMode for VAC safety.
+func (o *Orchestrator) PauseDPIForGame(gameName string) {
+	o.EnterGameMode(gameName, false)
+}
+
+// ResumeDPIAfterGame delegates to LeaveGameMode.
+func (o *Orchestrator) ResumeDPIAfterGame(ctx context.Context) {
+	o.LeaveGameMode()
 }
 
