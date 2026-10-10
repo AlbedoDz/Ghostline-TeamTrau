@@ -27,6 +27,7 @@ type Result struct {
 	ServerID  string        `json:"serverId"`
 	OK        bool          `json:"ok"`
 	Latency   time.Duration `json:"latency"`
+	Jitter    time.Duration `json:"jitter,omitempty"`
 	Reason    string        `json:"reason,omitempty"` // "" | timeout | poisoned | rcode:<NAME> | empty | error
 	CheckedAt time.Time     `json:"checkedAt"`
 }
@@ -100,6 +101,7 @@ func (c DNSChecker) Check(ctx context.Context, s model.Server) Result {
 	qctx, cancel := context.WithTimeout(ctx, c.Timeout+time.Duration(len(domains)-1)*time.Second)
 	defer cancel()
 	queries := append([]string{domains[0]}, domains...)
+	var firstLat time.Duration
 	for i, domain := range queries {
 		fail := func(reason string) Result {
 			if i >= 2 {
@@ -109,8 +111,15 @@ func (c DNSChecker) Check(ctx context.Context, s model.Server) Result {
 			return r
 		}
 		resp, d, err := Exchange(qctx, u, domain, dns.TypeA, false)
-		if i == 1 {
+		if i == 0 {
+			firstLat = d
+		} else if i == 1 {
 			lat = d
+			if firstLat > d {
+				r.Jitter = firstLat - d
+			} else {
+				r.Jitter = d - firstLat
+			}
 		}
 		if err != nil {
 			return fail(Classify(err, qctx.Err()))
@@ -258,11 +267,15 @@ feed:
 				return -1
 			}
 			return 1
-		case a.OK && a.Latency != b.Latency:
-			if a.Latency < b.Latency {
-				return -1
+		case a.OK:
+			scoreA := a.Latency + a.Jitter/2
+			scoreB := b.Latency + b.Jitter/2
+			if scoreA != scoreB {
+				if scoreA < scoreB {
+					return -1
+				}
+				return 1
 			}
-			return 1
 		}
 		return strings.Compare(a.ServerID, b.ServerID)
 	})

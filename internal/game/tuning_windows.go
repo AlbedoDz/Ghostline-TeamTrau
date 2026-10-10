@@ -4,14 +4,25 @@ package game
 
 import (
 	"errors"
+	"sync/atomic"
 
+	"golang.org/x/sys/windows"
 	"golang.org/x/sys/windows/registry"
+)
+
+var (
+	winmm              = windows.NewLazySystemDLL("winmm.dll")
+	procTimeBeginPeriod = winmm.NewProc("timeBeginPeriod")
+	procTimeEndPeriod   = winmm.NewProc("timeEndPeriod")
+
+	timerActive atomic.Bool
 )
 
 const (
 	sysProfilePath = `SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile`
 	gamesTaskPath  = `SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games`
 	tcpipIntfPath  = `SYSTEM\CurrentControlSet\Services\Tcpip\Parameters\Interfaces`
+	tcpipParamPath = `SYSTEM\CurrentControlSet\Services\Tcpip\Parameters`
 )
 
 // ApplyWindowsGamingTweaks optimizes or restores Windows network latency registry parameters.
@@ -74,6 +85,17 @@ func ApplyWindowsGamingTweaks(enable bool) error {
 		}
 	} else {
 		errs = append(errs, err)
+	}
+
+	// 4. Multimedia High-Resolution Timer (1ms scheduler precision for lowest packet dispatch jitter)
+	if enable {
+		if !timerActive.Swap(true) {
+			_, _, _ = procTimeBeginPeriod.Call(1)
+		}
+	} else {
+		if timerActive.Swap(false) {
+			_, _, _ = procTimeEndPeriod.Call(1)
+		}
 	}
 
 	return errors.Join(errs...)

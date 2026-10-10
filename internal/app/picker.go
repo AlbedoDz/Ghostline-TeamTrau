@@ -117,7 +117,9 @@ func best(rs []scanner.Result, pool []model.Server, s store.Settings, exclude []
 			}
 			return 1
 		}
-		return int(a.Latency - b.Latency)
+		scoreA := a.Latency + a.Jitter/2
+		scoreB := b.Latency + b.Jitter/2
+		return int(scoreA - scoreB)
 	})
 	var out []model.Server
 	for _, r := range ok {
