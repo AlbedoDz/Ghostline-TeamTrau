@@ -130,7 +130,10 @@ func (w *Watcher) RunningGames() []string {
 }
 
 func (w *Watcher) loop(ctx context.Context) {
-	ticker := time.NewTicker(w.interval)
+	// Adaptive polling: when idle (no games running), back off to 4s to cut snapshot CPU usage.
+	// When gaming, poll at 2s (or configured interval) for responsive exit detection.
+	currentInterval := w.interval
+	ticker := time.NewTicker(currentInterval)
 	defer ticker.Stop()
 
 	for {
@@ -139,6 +142,30 @@ func (w *Watcher) loop(ctx context.Context) {
 			return
 		case <-ticker.C:
 			w.poll()
+
+			w.mu.Lock()
+			hasActive := false
+			for _, active := range w.running {
+				if active {
+					hasActive = true
+					break
+				}
+			}
+			w.mu.Unlock()
+
+			targetInterval := w.interval
+			if !hasActive {
+				idleInterval := w.interval * 2
+				if idleInterval < 4*time.Second {
+					idleInterval = 4 * time.Second
+				}
+				targetInterval = idleInterval
+			}
+
+			if targetInterval != currentInterval {
+				currentInterval = targetInterval
+				ticker.Reset(currentInterval)
+			}
 		}
 	}
 }

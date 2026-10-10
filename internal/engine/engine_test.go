@@ -155,3 +155,37 @@ func TestEngine_StatsResetOnStartAndSwap(t *testing.T) { // review minor: stale 
 	require.NoError(t, e.Start(context.Background(), engine.Config{ListenV4: netip.MustParseAddrPort("127.0.0.1:0"), Upstreams: []upstream.Upstream{up}}))
 	require.Zero(t, e.Stats().Queries, "a new session starts from zero")
 }
+
+func TestEngine_FallbackToSecondUpstream(t *testing.T) {
+	// First upstream errors; second fallback upstream succeeds
+	up1 := errUp{}
+	up2 := &fakeUp{ip: net.IPv4(192, 0, 2, 88), name: "fallback"}
+	e := start(t, nil, up1, up2)
+	r := query(t, e, "fallback.test.")
+	require.NotEmpty(t, r.Answer)
+	require.Equal(t, "192.0.2.88", r.Answer[0].(*dns.A).A.String())
+}
+
+func BenchmarkEngine_Handle(b *testing.B) {
+	up := &fakeUp{ip: net.IPv4(192, 0, 2, 80), name: "bench"}
+	e := engine.New(nil)
+	if err := e.Start(context.Background(), engine.Config{
+		ListenV4:  netip.MustParseAddrPort("127.0.0.1:0"),
+		Upstreams: []upstream.Upstream{up},
+	}); err != nil {
+		b.Fatalf("failed to start engine: %v", err)
+	}
+	defer func() { _ = e.Stop(context.Background()) }()
+
+	addr := e.ListenAddr().String()
+	c := &dns.Client{Timeout: 2 * time.Second}
+	msg := new(dns.Msg).SetQuestion("bench.example.", dns.TypeA)
+
+	b.ResetTimer()
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			_, _, _ = c.Exchange(msg, addr)
+		}
+	})
+}
+

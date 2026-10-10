@@ -1,11 +1,11 @@
 {
 	"fixed": {
-		"file_version": "1.0.6",
-		"product_version": "1.0.6"
+		"file_version": "1.0.7",
+		"product_version": "1.0.7"
 	},
 	"info": {
 		"0409": {
-			"ProductVersion": "1.0.6",
+			"ProductVersion": "1.0.7",
 			"CompanyName": "TeamTrau",
 			"FileDescription": "Ghostline - Secure DNS client",
 			"LegalCopyright": "© 2026 TeamTrau. GPL-3.0-only.",

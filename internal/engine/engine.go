@@ -13,6 +13,7 @@ import (
 	"net/netip"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/AdguardTeam/dnsproxy/proxy"
@@ -79,29 +80,42 @@ type Stats struct {
 type Engine struct {
 	onQuery func(QueryEvent)
 
-	mu      sync.Mutex
+	mu      sync.RWMutex
 	p       *proxy.Proxy
 	cfg     Config
 	addr    netip.AddrPort
 	addr6   netip.AddrPort
 	expect  map[string]bool
 	seen    map[string]bool
-	queries uint64
-	latSum  time.Duration
-	latN    uint64
+
+	// Lock-free atomic metrics for zero hotpath contention
+	queries atomic.Uint64
+	latSum  atomic.Int64 // nanoseconds
+	latN    atomic.Uint64
+
+	statsMu sync.Mutex
 	per     map[string]UpstreamStat
 
 	// DNS server for this PC and the LAN (serve.go).
 	serve        *proxy.Proxy
 	serveDoH     []*http.Server // Ghostline-run DoH listeners of serve
-	serveQueries uint64
+	serveQueries atomic.Uint64
+	clientMu     sync.Mutex
 	clients      map[netip.Addr]time.Time
+	rateMu       sync.Mutex
 	rates        map[netip.Addr]*rateWindow
 }
 
 // New creates an engine; onQuery may be nil.
 func New(onQuery func(QueryEvent)) *Engine {
-	return &Engine{onQuery: onQuery, expect: map[string]bool{}, seen: map[string]bool{}, per: map[string]UpstreamStat{}}
+	return &Engine{
+		onQuery: onQuery,
+		expect:  map[string]bool{},
+		seen:    map[string]bool{},
+		per:     map[string]UpstreamStat{},
+		clients: map[netip.Addr]time.Time{},
+		rates:   map[netip.Addr]*rateWindow{},
+	}
 }
 
 // Start begins serving on the configured loopback addresses.
@@ -112,7 +126,12 @@ func (e *Engine) Start(ctx context.Context, cfg Config) error {
 		return errors.New("engine: already running")
 	}
 	e.cfg = cfg
-	e.queries, e.latSum, e.latN, e.per = 0, 0, 0, map[string]UpstreamStat{}
+	e.queries.Store(0)
+	e.latSum.Store(0)
+	e.latN.Store(0)
+	e.statsMu.Lock()
+	e.per = map[string]UpstreamStat{}
+	e.statsMu.Unlock()
 	return e.startLocked(ctx, cfg.ListenV4, cfg.ListenV6, cfg.Upstreams)
 }
 
@@ -129,18 +148,32 @@ func (e *Engine) startLocked(ctx context.Context, v4, v6 netip.AddrPort, ups []u
 		// the domain. They must never reach the file log.
 		logger = slog.New(slog.DiscardHandler)
 	}
+	// Upstream strategy: Sequential Failover.
+	// Primary upstream receives all queries; subsequent upstreams are fallbacks.
+	var upCfg *proxy.UpstreamConfig
+	var fbCfg *proxy.UpstreamConfig
+	if len(ups) > 0 {
+		upCfg = &proxy.UpstreamConfig{Upstreams: []upstream.Upstream{ups[0]}}
+		if len(ups) > 1 {
+			fbCfg = &proxy.UpstreamConfig{Upstreams: ups[1:]}
+		}
+	} else {
+		upCfg = &proxy.UpstreamConfig{Upstreams: ups}
+	}
+
 	p, err := proxy.New(&proxy.Config{
 		Logger:         logger,
 		UDPListenAddr:  udp,
 		TCPListenAddr:  tcp,
-		UpstreamConfig:  &proxy.UpstreamConfig{Upstreams: ups},
-		UpstreamMode:    proxy.UpstreamModeParallel,
-		CacheEnabled:    e.cfg.CacheEnabled,
+		UpstreamConfig: upCfg,
+		Fallbacks:      fbCfg,
+		CacheEnabled:   e.cfg.CacheEnabled,
 		CacheOptimistic: true,
-		CacheSizeBytes:  16 * 1024 * 1024,
-		CacheMinTTL:     60,
-		CacheMaxTTL:     86400,
-		RequestHandler:  proxy.HandlerFunc(e.handle),
+		CacheSizeBytes: 32 * 1024 * 1024,
+		CacheMinTTL:    60,
+		CacheMaxTTL:    86400,
+		UDPBufferSize:  1232, // RFC-recommended EDNS buffer size to prevent IP fragmentation
+		RequestHandler: proxy.HandlerFunc(e.handle),
 	})
 	if err != nil {
 		slog.Warn("engine: creating the DNS proxy failed", "upstreams", len(ups), "err", err)
@@ -174,7 +207,9 @@ func (e *Engine) Swap(ctx context.Context, ups []upstream.Upstream) error {
 		return fmt.Errorf("engine: shutdown: %w", err)
 	}
 	e.p = nil
+	e.statsMu.Lock()
 	e.per = map[string]UpstreamStat{} // old upstreams must not count
+	e.statsMu.Unlock()
 	return e.startLocked(ctx, v4, e.addr6, ups)
 }
 
@@ -198,8 +233,8 @@ func (e *Engine) Stop(ctx context.Context) error {
 
 // ListenAddr is the actual UDP address the engine serves on.
 func (e *Engine) ListenAddr() netip.AddrPort {
-	e.mu.Lock()
-	defer e.mu.Unlock()
+	e.mu.RLock()
+	defer e.mu.RUnlock()
 	return e.addr
 }
 
@@ -213,16 +248,16 @@ func (e *Engine) ExpectVerify(nonce string) {
 
 // SawVerify reports whether the nonce's query reached the engine.
 func (e *Engine) SawVerify(nonce string) bool {
-	e.mu.Lock()
-	defer e.mu.Unlock()
+	e.mu.RLock()
+	defer e.mu.RUnlock()
 	return e.seen[strings.ToLower(nonce)]
 }
 
 // SelfTest queries the engine through its own listener.
 func (e *Engine) SelfTest(ctx context.Context) error {
-	e.mu.Lock()
+	e.mu.RLock()
 	running, addr := e.p != nil, e.addr
-	e.mu.Unlock()
+	e.mu.RUnlock()
 	if !running {
 		return errors.New("engine: not running")
 	}
@@ -242,15 +277,22 @@ func (e *Engine) SelfTest(ctx context.Context) error {
 
 // Stats returns a copy of the counters.
 func (e *Engine) Stats() Stats {
-	e.mu.Lock()
-	defer e.mu.Unlock()
-	st := Stats{Queries: e.queries, PerUpstream: make(map[string]UpstreamStat, len(e.per))}
-	if e.latN > 0 {
-		st.AvgLatency = e.latSum / time.Duration(e.latN)
+	queries := e.queries.Load()
+	latN := e.latN.Load()
+	latSum := time.Duration(e.latSum.Load())
+
+	st := Stats{Queries: queries}
+	if latN > 0 {
+		st.AvgLatency = latSum / time.Duration(latN)
 	}
+
+	e.statsMu.Lock()
+	st.PerUpstream = make(map[string]UpstreamStat, len(e.per))
 	for k, v := range e.per {
 		st.PerUpstream[k] = v
 	}
+	e.statsMu.Unlock()
+
 	return st
 }
 
@@ -287,7 +329,8 @@ func (e *Engine) handle(ctx context.Context, p *proxy.Proxy, d *proxy.DNSContext
 }
 
 func (e *Engine) record(d *proxy.DNSContext, started time.Time, err error) {
-	ev := QueryEvent{Time: started, Latency: time.Since(started)}
+	dur := time.Since(started)
+	ev := QueryEvent{Time: started, Latency: dur}
 	if len(d.Req.Question) > 0 {
 		ev.Domain = d.Req.Question[0].Name
 		ev.Type = dns.TypeToString[d.Req.Question[0].Qtype]
@@ -298,9 +341,13 @@ func (e *Engine) record(d *proxy.DNSContext, started time.Time, err error) {
 	if err != nil {
 		ev.Err = err.Error()
 	}
-	e.mu.Lock()
-	e.queries++
-	if qs := d.QueryStatistics(); qs != nil {
+
+	// Atomic add for total queries - zero lock contention
+	e.queries.Add(1)
+
+	qs := d.QueryStatistics()
+	if qs != nil {
+		e.statsMu.Lock()
 		for _, us := range qs.Main() {
 			s := e.per[us.Address]
 			s.Queries++
@@ -314,12 +361,14 @@ func (e *Engine) record(d *proxy.DNSContext, started time.Time, err error) {
 			ev.Cached = ev.Cached || us.IsCached
 			e.per[us.Address] = s
 		}
+		e.statsMu.Unlock()
 	}
+
 	if err == nil && !ev.Cached {
-		e.latSum += ev.Latency
-		e.latN++
+		e.latSum.Add(int64(dur))
+		e.latN.Add(1)
 	}
-	e.mu.Unlock()
+
 	if e.onQuery != nil {
 		e.onQuery(ev)
 	}
@@ -327,9 +376,9 @@ func (e *Engine) record(d *proxy.DNSContext, started time.Time, err error) {
 
 // applyRules answers req from the rules, or returns nil to forward it.
 func (e *Engine) applyRules(req *dns.Msg, name string) *dns.Msg {
-	e.mu.Lock()
+	e.mu.RLock()
 	get, mode := e.cfg.Rules, e.cfg.BlockMode
-	e.mu.Unlock()
+	e.mu.RUnlock()
 	if get == nil {
 		return nil
 	}

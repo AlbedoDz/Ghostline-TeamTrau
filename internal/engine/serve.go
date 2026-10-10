@@ -165,15 +165,15 @@ func (e *Engine) StopServe(ctx context.Context) error {
 
 // ServeStats returns the DNS server counters.
 func (e *Engine) ServeStats() ServeStats {
-	e.mu.Lock()
-	defer e.mu.Unlock()
-	st := ServeStats{Queries: e.serveQueries, ClientIPs: []string{}}
+	st := ServeStats{Queries: e.serveQueries.Load(), ClientIPs: []string{}}
 	cut := time.Now().Add(-clientWindow)
+	e.clientMu.Lock()
 	for ip, seen := range e.clients {
 		if seen.After(cut) && !ip.IsLoopback() {
 			st.ClientIPs = append(st.ClientIPs, ip.String())
 		}
 	}
+	e.clientMu.Unlock()
 	sort.Strings(st.ClientIPs)
 	st.Clients10m = len(st.ClientIPs)
 	return st
@@ -187,14 +187,18 @@ func (e *Engine) serveHandle(ctx context.Context, _ *proxy.Proxy, d *proxy.DNSCo
 		d.Res = new(dns.Msg).SetRcode(d.Req, dns.RcodeRefused)
 		return nil
 	}
-	e.mu.Lock()
+	e.mu.RLock()
 	main := e.p
-	e.serveQueries++
+	e.mu.RUnlock()
+
+	e.serveQueries.Add(1)
+	e.clientMu.Lock()
 	if e.clients == nil {
 		e.clients = map[netip.Addr]time.Time{}
 	}
 	e.clients[ip] = time.Now()
-	e.mu.Unlock()
+	e.clientMu.Unlock()
+
 	if main == nil {
 		d.Res = new(dns.Msg).SetRcode(d.Req, dns.RcodeServerFailure)
 		return nil
@@ -214,8 +218,8 @@ func isANY(m *dns.Msg) bool {
 // allow counts a query from ip and reports whether it is within the rate.
 func (e *Engine) allow(ip netip.Addr) bool {
 	now := time.Now().Unix()
-	e.mu.Lock()
-	defer e.mu.Unlock()
+	e.rateMu.Lock()
+	defer e.rateMu.Unlock()
 	if e.rates == nil {
 		e.rates = map[netip.Addr]*rateWindow{}
 	}
@@ -233,8 +237,8 @@ func (e *Engine) allow(ip netip.Addr) bool {
 
 // limited reports whether ip is over the rate in the current second.
 func (e *Engine) limited(ip netip.Addr) bool {
-	e.mu.Lock()
-	defer e.mu.Unlock()
+	e.rateMu.Lock()
+	defer e.rateMu.Unlock()
 	w := e.rates[ip]
 	return w != nil && w.sec == time.Now().Unix() && w.n > serveRateLimit
 }
