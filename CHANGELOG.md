@@ -7,6 +7,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.0.8] - 2026-10-10
+
+### ⚡ Performance & Precision Gaming
+- **Native Windows 11 Multimedia Timer (1ms):** Enabled `timeBeginPeriod(1)` via `winmm.dll` in `internal/game/tuning_windows.go`, tightening kernel timer tick resolution to 1ms to eliminate micro-stutters and timer jitter during competitive gaming.
+- **Weighted Score Picker Algorithm:** Upgraded upstream selection in `internal/scanner/scan.go` and `internal/app/picker.go` with a composite scoring algorithm evaluating latency, probe success rate, and RTT jitter for resilient DNS resolution under fluctuating ISP conditions.
+
+---
+
+## [1.0.7] - 2026-10-10
+
+### 🚀 Ultra-Low Latency DNS Engine & Adaptive Monitoring
+- **Lock-Free DNS Metrics & Sequential Failover:** Redesigned DNS engine in `internal/engine/engine.go` with sequential failover, adaptive timeouts, and lock-free atomic query statistics (`ServeStats`) to prevent UI latency spikes under heavy concurrent lookups.
+- **Adaptive Polling Game Detector:** Implemented dynamic poll frequency in `internal/game/detector_windows.go` (accelerating during game state transitions, throttling when idle) to reduce CPU overhead to virtually 0%.
+
+---
+
+## [1.0.6] - 2026-10-10
+
+### 🛡️ Windows 11 Stability & Diagnostics
+- **Explorer Taskbar Crash Recovery:** Added Windows message handler for `TaskbarCreated` in `internal/shell/taskbar_windows.go` and `internal/shell/system_windows.go` to automatically restore the tray icon when `explorer.exe` restarts.
+- **DNS Interception & Tampering Diagnostics:** Added detection for ISP/middlebox port 53 hijacking (`ERR_DNS_INTERCEPTED`) in `internal/app/intercept.go`.
+- **System DNS Process & Handle Leak Fixes:** Hardened network adapter query and restoration routines in `internal/sysdns/manager.go`.
+
+---
+
+## [1.0.5] - 2026-10-09
+
+### 🔧 Stability & Tray Lifecycle Fixes
+- **Deadlock Resolution:** Fixed mutex lock sequencing on window minimize-to-tray and close events in `internal/shell/ui.go`.
+- **Custom Fork Branding & Updates:** Suppressed redundant upstream update notices in custom build to prevent confusion.
+
+---
+
 ## [1.0.4] - 2026-10-09
 
 ### 🛡️ Radical Security Hardening & Zero-VAC Ban Architecture
