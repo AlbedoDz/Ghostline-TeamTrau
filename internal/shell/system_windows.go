@@ -66,6 +66,39 @@ func (system) IPv6Available() bool {
 	return true
 }
 
+// LoopbackUDP binds 127.0.0.1:port, sends itself a datagram and waits
+// for it. A program that redirects DNS (AdGuard, an antivirus, a VPN)
+// takes such a datagram to port 53 before it arrives.
+func (system) LoopbackUDP(port uint16) error {
+	srv, err := net.ListenUDP("udp4", &net.UDPAddr{IP: net.IPv4(127, 0, 0, 1), Port: int(port)})
+	if err != nil {
+		return err
+	}
+	defer srv.Close()
+	c, err := net.DialUDP("udp4", nil, srv.LocalAddr().(*net.UDPAddr))
+	if err != nil {
+		return err
+	}
+	defer c.Close()
+	if _, err := c.Write([]byte("ghostline-probe")); err != nil {
+		return err
+	}
+	if err := srv.SetReadDeadline(time.Now().Add(time.Second)); err != nil {
+		return err
+	}
+	buf := make([]byte, 64)
+	n, _, err := srv.ReadFromUDP(buf)
+	if err != nil {
+		return err
+	}
+	if string(buf[:n]) != "ghostline-probe" {
+		return errors.New("shell: loopback probe: unexpected datagram")
+	}
+	return nil
+}
+
+func (system) ProcessNames() ([]string, error) { return winutil.ProcessNames() }
+
 // safety implements app.Safety. machineDir holds the network guard
 // script; state is the state.json it reads.
 type safety struct{ exe, machineDir, state string }

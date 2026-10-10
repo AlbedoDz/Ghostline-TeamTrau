@@ -11,6 +11,7 @@ const (
 	CodePort53Busy        = "PORT53_BUSY"
 	CodeNoServers         = "NO_SERVERS"
 	CodeEngineSelfTest    = "ENGINE_SELFTEST_FAILED"
+	CodeDNSIntercepted    = "DNS_INTERCEPTED"
 	CodeSetDNSFailed      = "SET_DNS_FAILED"
 	CodeVerifyLeak        = "VERIFY_LEAK"
 	CodeRestoreFailed     = "RESTORE_FAILED"

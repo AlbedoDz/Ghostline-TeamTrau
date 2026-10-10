@@ -1,7 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { Service } from "../app/api";
 import { useGhost } from "../app/store";
-import { tCode } from "../i18n";
+import i18n, { tCode } from "../i18n";
 import { Banner, type BannerAction } from "./neon/Banner";
 
 type Props = { onOpenServers: () => void; onOpenLogs: () => void };
@@ -29,6 +29,17 @@ export function ConnectError({ onOpenServers }: Props) {
   if (code === "NO_PINNED_SERVERS") {
     actions.unshift({ label: t("simple.openServers"), onClick: onOpenServers, primary: true });
     actions.push({ label: t("simple.disablePinnedOnly"), onClick: () => void saveAndConnect((s) => ({ ...s, pinnedOnly: false })) });
+  }
+
+  if (code === "DNS_INTERCEPTED") {
+    const named = Boolean(snap.error.params?.name);
+    const hint = `errors.DNS_INTERCEPTED.hint.${String(snap.error.params?.hint ?? "")}`;
+    return (
+      <Banner tone="err" actions={actions}>
+        <div>{tCode(`errors.DNS_INTERCEPTED.${named ? "messageNamed" : "message"}`, snap.error.params ?? undefined)}</div>
+        <div>{tCode(snap.error.params?.hint && i18n.exists(hint) ? hint : "errors.DNS_INTERCEPTED.action")}</div>
+      </Banner>
+    );
   }
 
   return (

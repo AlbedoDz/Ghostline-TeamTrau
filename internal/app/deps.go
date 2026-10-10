@@ -42,6 +42,12 @@ type DNS interface {
 	Report() ([]sysdns.AdapterDNS, error)
 }
 
+// DNSNetshApplier is implemented by DNS backends that can also set loopback
+// through netsh when the API change succeeds but Windows ignores it.
+type DNSNetshApplier interface {
+	ApplyLoopbackNetsh([]model.AdapterSnapshot, bool) error
+}
+
 // DPI runs one DPI bypass engine at a time (dpi.Manager).
 type DPI interface {
 	Start(ctx context.Context, engine string, p dpi.Plan) (int, error)
@@ -67,6 +73,8 @@ type System interface {
 	ListenFree([]netip.AddrPort) error
 	SelfPID() (uint32, time.Time)
 	IPv6Available() bool
+	LoopbackUDP(uint16) error
+	ProcessNames() ([]string, error)
 }
 
 // Picker chooses the upstream servers to use.

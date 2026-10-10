@@ -315,6 +315,9 @@ func Run(o Options) error {
 		orch.AddWarning(app.AppError{Code: app.CodeRulesParse, Params: map[string]any{"line": 0}})
 	}
 
+	if err := allowTaskbarCreated(); err != nil {
+		log.Warn("shell: the tray icon will not come back after Explorer restarts", "err", err)
+	}
 	wapp = application.New(application.Options{
 		Name:        brand.AppName,
 		Description: "Secure DNS client",

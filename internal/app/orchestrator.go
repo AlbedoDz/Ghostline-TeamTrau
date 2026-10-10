@@ -419,7 +419,7 @@ func (o *Orchestrator) connectSteps() []step {
 			}
 			if err := o.d.Engine.SelfTest(ctx); err != nil {
 				warnIgnored("engine stop", o.d.Engine.Stop(context.WithoutCancel(ctx)))
-				return appErr(CodeEngineSelfTest, err)
+				return o.selfTestErr(err)
 			}
 			o.mu.Lock()
 			o.servers = picked
@@ -494,16 +494,44 @@ func (o *Orchestrator) connectSteps() []step {
 			return o.restoreOrHalt(snaps, nil)
 		}},
 		{name: "verify", do: func(ctx context.Context) error {
-			nonce := randomHex(8)
-			o.d.Engine.ExpectVerify(nonce)
-			ips, err := o.d.Resolver.LookupNetIP(ctx, "ip4", nonce+".verify.ghostline.test")
-			hit := err == nil && slices.Contains(ips, engine.VerifyAnswer)
-			if saw := o.d.Engine.SawVerify(nonce); !hit || !saw {
-				return o.verifyLeakError(err, ips, saw, snaps, v6)
+			ips, saw, err := o.verifyLookup(ctx)
+			retried := false
+			if na, ok := o.d.DNS.(DNSNetshApplier); ok && !saw {
+				// Windows can take SetInterfaceDnsSettings while its DNS
+				// client keeps asking the old servers: set loopback through netsh
+				// and verify once more.
+				retried = true
+				if nerr := na.ApplyLoopbackNetsh(snaps, v6); nerr != nil {
+					slog.Warn("system: setting loopback DNS through netsh failed", "err", nerr)
+				} else {
+					warnIgnored("dns flush", o.d.DNS.Flush())
+					ips, saw, err = o.verifyLookup(ctx)
+					slog.Warn("system: leak check retried after setting loopback DNS through netsh", "passed", verifyHit(ips, err) && saw)
+				}
+			}
+			if !verifyHit(ips, err) || !saw {
+				ae := o.verifyLeakError(err, ips, saw, snaps, v6)
+				if retried {
+					ae.Params["netshRetried"] = true
+				}
+				return ae
 			}
 			return nil
 		}},
 	}
+}
+
+// verifyLookup resolves a fresh name only the engine answers, and reports
+// whether the engine saw the query.
+func (o *Orchestrator) verifyLookup(ctx context.Context) (ips []netip.Addr, saw bool, err error) {
+	nonce := randomHex(8)
+	o.d.Engine.ExpectVerify(nonce)
+	ips, err = o.d.Resolver.LookupNetIP(ctx, "ip4", nonce+".verify.ghostline.test")
+	return ips, o.d.Engine.SawVerify(nonce), err
+}
+
+func verifyHit(ips []netip.Addr, err error) bool {
+	return err == nil && slices.Contains(ips, engine.VerifyAnswer)
 }
 
 func randomHex(n int) string {

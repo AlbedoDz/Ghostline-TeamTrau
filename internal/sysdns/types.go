@@ -1,6 +1,8 @@
 // Package sysdns reads and changes the DNS servers of Windows network adapters.
 package sysdns
 
+import "strings"
+
 // Adapter is a network interface as seen by Ghostline.
 type Adapter struct {
 	GUID       string `json:"guid"`
@@ -31,6 +33,18 @@ type RestoreError struct {
 }
 
 func (e RestoreError) Error() string { return "sysdns: restore " + e.Alias + ": " + e.Err.Error() }
+
+// ApplyError reports adapters whose loopback DNS could not be set.
+type ApplyError struct {
+	Failed []string
+	Err    error
+}
+
+func (e *ApplyError) Error() string {
+	return "sysdns: could not set " + strings.Join(e.Failed, ", ") + ": " + e.Err.Error()
+}
+
+func (e *ApplyError) Unwrap() error { return e.Err }
 
 const (
 	ifTypeEthernet = 6
